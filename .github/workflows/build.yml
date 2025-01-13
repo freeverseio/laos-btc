@@ -71,4 +71,4 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Test
         run: |
-          cargo test
+          cargo test --locked
