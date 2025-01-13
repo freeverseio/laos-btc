@@ -178,7 +178,7 @@ impl CommandBuilder {
 	}
 
 	pub(crate) fn command(&self) -> Command {
-		let mut command = Command::new(executable_path("ord"));
+		let mut command = Command::new(executable_path("laos-btc"));
 
 		if let Some(rpc_server_url) = &self.core_url {
 			command.args([
