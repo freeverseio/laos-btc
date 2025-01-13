@@ -344,7 +344,7 @@ inscriptions:
 	#[test]
 	fn example_batchfile_deserializes_successfully() {
 		assert_eq!(
-			batch::File::load(Path::new("batch.yaml")).unwrap(),
+			batch::File::load(Path::new("tests/fixtures/batch.yml")).unwrap(),
 			batch::File {
 				mode: batch::Mode::SeparateOutputs,
 				parents: vec!["6ac5cacb768794f4fd7a78bf00f2074891fce68bd65c4ff36e77177237aacacai0"

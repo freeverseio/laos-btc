@@ -108,6 +108,6 @@ mod tests {
 
 	#[test]
 	fn example_split_file_is_valid() {
-		Splitfile::load_unchecked("splits.yaml".as_ref()).unwrap();
+		Splitfile::load_unchecked("tests/fixtures/splits.yml".as_ref()).unwrap();
 	}
 }
