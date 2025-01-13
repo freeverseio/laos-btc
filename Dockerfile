@@ -4,7 +4,7 @@ WORKDIR /usr/src/laos-btc
 
 COPY . .
 
-RUN cargo build --bin laos-btc --release
+RUN cargo build --bin laos-btc --locked --release
 
 FROM debian:bookworm-slim
 
