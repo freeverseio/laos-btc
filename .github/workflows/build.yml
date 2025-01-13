@@ -15,7 +15,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check
         run: |
-          cargo check --locked --all-targets --release
+          cargo check --locked --all-targets
 
   # TODO uncomment when credentials are available
   # docker:
