@@ -47,3 +47,13 @@ jobs:
           echo "binary=target/${{ matrix.target }}/release/laos-btc" >> $GITHUB_OUTPUT
     outputs:
         binary: ${{ steps.binary.outputs.binary }}
+
+  release:
+    needs: build-binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: ${{ needs.build-binary.outputs.binary }}
+          token: ${{ secrets.GITHUB_TOKEN }}
