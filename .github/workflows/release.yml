@@ -1,0 +1,20 @@
+name: Release
+
+on:
+  push:
+    # TODO uncomment when ready
+    # tags:
+    #   - '*'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version
+        id: check-version
+        env:
+          TAG_NAME: "v0.1.0" # TODO replace with ${{ github.ref_name }}
+        run: ./scripts/check-version.sh
+    outputs:
+      is_release_version: ${{ steps.check-version.outputs.is_release_version }}
