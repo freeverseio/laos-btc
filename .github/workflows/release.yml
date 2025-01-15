@@ -18,3 +18,34 @@ jobs:
         run: ./scripts/check-version.sh
     outputs:
       is_release_version: ${{ steps.check-version.outputs.is_release_version }}
+
+  build-binary:
+    needs: check-version
+    if: ${{ needs.check-version.outputs.is_release_version == 'true' }}
+    strategy:
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin, x86_64-unknown-linux-gnu]
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crusty-pie/toolchain@v1
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux Dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update && \
+            sudo apt-get install -y openssl
+      - name: Build binary
+        id: binary
+        run: |
+          cargo build --bin laos-btc --locked --release --target ${{ matrix.target }}
+          echo "binary=target/${{ matrix.target }}/release/laos-btc" >> $GITHUB_OUTPUT
+    outputs:
+        binary: ${{ steps.binary.outputs.binary }}
