@@ -36,12 +36,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: crusty-pie/toolchain@v1
+        with:
+          # TODO decide what to do with toolchain
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
-      - name: Install Linux Dependencies
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sudo apt-get update && \
-            sudo apt-get install -y openssl
       - name: Build binary
         id: binary
         run: |
