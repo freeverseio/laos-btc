@@ -19,15 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: crusty-pie/toolchain@v1
-      - uses: Swatinem/rust-cache@v2
       # Docker tags: commit sha and latest (when pushing to main)
       - uses: docker/metadata-action@v5
         id: metadata
         with:
           images: freeverseio/laos-btc
           tags: |
-            type=sha,format=long
+            type=sha,prefix=,format=long
             type=raw,value=latest,enable={{is_default_branch}}
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
