@@ -16,7 +16,9 @@ jobs:
           cargo check --locked --all-targets --workspace
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: laos
+      labels: ubuntu-16-cores
     steps:
       - uses: actions/checkout@v4
       # Docker tags: commit sha and latest (when pushing to main)
@@ -42,6 +44,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
+          cache-from: type=registry,ref=freeverseio/laos-btc:cache-${{ github.ref_name }}
+          cache-to: type=registry,ref=freeverseio/laos-btc:cache-${{ github.ref_name }},mode=max
 
   lint:
     runs-on: ubuntu-latest
@@ -64,7 +68,9 @@ jobs:
           cargo clippy --all-targets --workspace -- -D warnings
 
   test:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: laos
+      labels: ubuntu-16-cores
     steps:
       - uses: actions/checkout@v4
       - uses: crusty-pie/toolchain@v1
