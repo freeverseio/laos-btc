@@ -49,7 +49,10 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           # ref name to cache Docker image layers
-          cache-from: type=registry,ref=freeverseio/laos-btc:cache-${{ steps.ref.outputs.name }}
+          # cache from main as fallback (e.g. new branch)
+          cache-from: |
+            type=registry,ref=freeverseio/laos-btc:cache-${{ steps.ref.outputs.name }}
+            type=registry,ref=freeverseio/laos-btc:cache-main
           cache-to: type=registry,ref=freeverseio/laos-btc:cache-${{ steps.ref.outputs.name }},mode=max
 
   lint:

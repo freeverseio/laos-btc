@@ -1,0 +1,10 @@
+*
+
+# Only copy the following to build the binary
+!crates/
+!src/
+!static/
+!templates/
+!build.rs
+!Cargo.lock
+!Cargo.toml
