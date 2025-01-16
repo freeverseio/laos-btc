@@ -38,7 +38,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      # replace special chars of ref name with hyphens
+      # replace ref name special chars with hyphens
       - name: Convert ref name into a valid Docker tag
         id: ref
         run: echo "name=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9]/-/g')" >> $GITHUB_OUTPUT
