@@ -21,14 +21,15 @@ jobs:
       labels: ubuntu-16-cores
     steps:
       - uses: actions/checkout@v4
-      # Docker tags: commit sha and latest (when pushing to main)
+      # Docker tags: commit sha, git tag and main
       - uses: docker/metadata-action@v5
         id: metadata
         with:
           images: freeverseio/laos-btc
           tags: |
             type=sha,prefix=,format=long
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+            type=raw,value=main,enable={{is_default_branch}}
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -45,8 +46,7 @@ jobs:
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
-          # ref name to cache Docker image layers
-          # cache from main as fallback (e.g. new branch)
+          # ref name and main (as fallback, e.g. new branch) to cache Docker image layers
           cache-from: |
             type=registry,ref=freeverseio/laos-btc:cache-${{ steps.ref.outputs.name }}
             type=registry,ref=freeverseio/laos-btc:cache-main
