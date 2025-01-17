@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-    branches: [feature/deploy-dev] # TODO change to main
+    # branches: [feature/deploy-dev] # TODO change to main
 
 jobs:
   deploy:
