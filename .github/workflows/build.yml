@@ -22,7 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Docker tags: commit sha, git tag and main
-      - uses: docker/metadata-action@v5
+      - name: Determine Docker image tags
+        uses: docker/metadata-action@v5
         id: metadata
         with:
           images: freeverseio/laos-btc
@@ -35,21 +36,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      # replace ref name special chars with hyphens
-      - name: Convert ref name into a valid Docker tag
-        id: ref
-        run: echo "name=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9]/-/g')" >> $GITHUB_OUTPUT
-      - name: Push Laos Node Docker images
+      - name: Push Docker image
         uses: docker/build-push-action@v6
         with:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
-          # ref name to cache Docker image layers
-          cache-from: |
-            type=registry,ref=freeverseio/laos-btc:cache-${{ steps.ref.outputs.name }}
-          cache-to: type=registry,ref=freeverseio/laos-btc:cache-${{ steps.ref.outputs.name }},mode=max
 
   lint:
     runs-on: ubuntu-latest
