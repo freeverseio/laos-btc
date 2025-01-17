@@ -41,6 +41,7 @@ jobs:
       - name: Push Laos Node Docker images
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           # ref name to cache Docker image layers
