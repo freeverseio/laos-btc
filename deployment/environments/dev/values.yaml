@@ -1,0 +1,11 @@
+# TODO set storage size to 300Gi and 200Gi
+bitcoind:
+  storageSize: 3Gi
+  p2pPort: 18333
+  rpcPort: 18332
+  network: testnet
+
+laosbtc:
+  isTestnet: "true"
+  storageSize: 2Gi
+  httpPort: 8080

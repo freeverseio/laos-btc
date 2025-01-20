@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: laos-btc-{{ .Values.bitcoind.network }}
+  labels:
+    app: laos-btc
+spec:
+  selector:
+    matchLabels:
+      app: laos-btc
+  serviceName: "laos-btc-headless"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: laos-btc
+    spec:
+      containers:
+      - name: laos-btc
+        image: freeverseio/laos-btc:main
+        imagePullPolicy: Always
+        # TODO fix "isTestnet"
+        args:
+          - |
+            --data-dir /data \
+            --bitcoin-rpc-url http://bitcoind-{{ .Values.bitcoind.network }}:{{ .Values.bitcoind.rpcPort }} \
+            --bitcoin-rpc-username $LAOS_BTC_RPC_USER \
+            --bitcoin-rpc-password $LAOS_BTC_RPC_PASS \
+            server \
+            --http-port {{ .Values.laosbtc.httpPort }} \
+            {{ if .Values.laosbtc.isTestnet }} --testnet {{ end }}
+        ports:
+        - containerPort: {{ .Values.laosbtc.httpPort }}
+          name: http
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        env:
+        - name: LAOS_BTC_RPC_USER
+          valueFrom:
+            secretKeyRef:
+              name: bitcoin-rpc-auth
+              key: rpcuser
+        - name: LAOS_BTC_RPC_PASS
+          valueFrom:
+            secretKeyRef:
+              name: bitcoin-rpc-auth
+              key: rpcpassword
+      # TODO uncomment
+      # tolerations:
+      #   - key: "laos-btc-only"
+      #     operator: "Equal"
+      #     value: "true"
+      #     effect: "NoSchedule"
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: "laos-btc"
+      #           operator: In
+      #           values:
+      #           - "true"
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      # storageClassName: do-block-storage # TODO uncomment
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.laosbtc.storageSize }}

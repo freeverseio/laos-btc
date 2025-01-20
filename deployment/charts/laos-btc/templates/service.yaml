@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: laos-btc-{{ .Values.bitcoind.network }}
+labels:
+  app: laos-btc
+spec:
+  ports:
+  - port: 80
+    targetPort: {{ .Values.laosbtc.httpPort }}
+    protocol: TCP
+    name: http
+  selector:
+    app: laos-btc

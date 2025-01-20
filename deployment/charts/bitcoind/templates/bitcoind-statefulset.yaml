@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bitcoind-{{ .Values.bitcoind.network }}
+spec:
+  selector:
+    matchLabels:
+      app: bitcoind
+  serviceName: "bitcoind-headless"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: bitcoind
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: bitcoind
+        image: lncm/bitcoind:v28.0
+        command: ["bitcoind"]
+        args: ["-printtoconsole"]
+        ports:
+        - containerPort: {{ .Values.bitcoind.p2pPort }}
+          name: p2p
+        - containerPort: {{ .Values.bitcoind.rpcPort }}
+          name: rpc
+        volumeMounts:
+        - name: bitcoin-data
+          mountPath: /data/.bitcoin
+        - name: bitcoin-config
+          mountPath: /data/.bitcoin/bitcoin.conf
+          subPath: bitcoin.conf
+      volumes:
+      - name: bitcoin-config
+        configMap:
+          name: bitcoin-config-{{ .Values.bitcoind.network }}
+  volumeClaimTemplates:
+  - metadata:
+      name: bitcoin-data
+    spec:
+      # storageClassName: do-block-storage # TODO uncomment
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.bitcoind.storageSize }}
