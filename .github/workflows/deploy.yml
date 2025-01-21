@@ -20,4 +20,4 @@ jobs:
           helmfile-args: list # TODO change to sync --environment development
           helmfile-version: v0.170.0
           helmfile-workdirectory: deployment
-          helmfile-kubeconfig-context: ${{ secrets.KUBECONFIG }}
+          helmfile-kubeconfig-context: test # ${{ secrets.KUBECONFIG }}
