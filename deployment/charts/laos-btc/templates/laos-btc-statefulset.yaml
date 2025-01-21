@@ -51,21 +51,20 @@ spec:
             secretKeyRef:
               name: bitcoin-rpc-auth
               key: rpcpassword
-      # TODO uncomment
-      # tolerations:
-      #   - key: "laos-btc-only"
-      #     operator: "Equal"
-      #     value: "true"
-      #     effect: "NoSchedule"
-      # affinity:
-      #   nodeAffinity:
-      #     requiredDuringSchedulingIgnoredDuringExecution:
-      #       nodeSelectorTerms:
-      #       - matchExpressions:
-      #         - key: "laos-btc"
-      #           operator: In
-      #           values:
-      #           - "true"
+      tolerations:
+        - key: "ord-only"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "ord"
+                operator: In
+                values:
+                - "true"
   volumeClaimTemplates:
   - metadata:
       name: data
