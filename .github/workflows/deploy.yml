@@ -15,9 +15,11 @@ jobs:
     # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Create folder to avoid permission issues
+        run: mkdir -p $HOME/.kube
       - uses: helmfile/helmfile-action@v2.0.2
         with:
-          helmfile-args: list # TODO change to sync --environment development
+          helmfile-args: template --environment development # TODO change template to sync
           helmfile-version: v0.170.0
           helmfile-workdirectory: deployment
-          helmfile-kubeconfig-context: test # ${{ secrets.KUBECONFIG }}
+          helmfile-kubeconfig-context: ${{ secrets.KUBECONFIG }}
