@@ -6,6 +6,5 @@ bitcoind:
   network: testnet
 
 laosbtc:
-  isTestnet: "true"
   storageSize: 2Gi
   httpPort: 8080

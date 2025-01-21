@@ -9,7 +9,7 @@ environments:
   development:
     values:
     - ./environments/dev/values.yaml
-
+---
 releases:
   - name: laos-btc
     namespace: laos-bitcoin

@@ -18,17 +18,22 @@ spec:
       containers:
       - name: laos-btc
         image: freeverseio/laos-btc:main
-        imagePullPolicy: Always
-        # TODO fix "isTestnet"
+        imagePullPolicy: Always # The main image tag is updated whenever a feature gets merged
         args:
-          - |
-            --data-dir /data \
-            --bitcoin-rpc-url http://bitcoind-{{ .Values.bitcoind.network }}:{{ .Values.bitcoind.rpcPort }} \
-            --bitcoin-rpc-username $LAOS_BTC_RPC_USER \
-            --bitcoin-rpc-password $LAOS_BTC_RPC_PASS \
-            server \
-            --http-port {{ .Values.laosbtc.httpPort }} \
-            {{ if .Values.laosbtc.isTestnet }} --testnet {{ end }}
+          - --data-dir
+          - /data
+          - --bitcoin-rpc-url
+          - http://bitcoind-{{ .Values.bitcoind.network }}:{{ .Values.bitcoind.rpcPort }}
+          - --bitcoin-rpc-username
+          - $(LAOS_BTC_RPC_USER)
+          - --bitcoin-rpc-password
+          - $(LAOS_BTC_RPC_PASS)
+          {{- if eq .Values.bitcoind.network "testnet" }}
+          - --testnet
+          {{- end }}
+          - server
+          - --http-port
+          - {{ .Values.laosbtc.httpPort | quote }}
         ports:
         - containerPort: {{ .Values.laosbtc.httpPort }}
           name: http
