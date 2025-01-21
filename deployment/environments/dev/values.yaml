@@ -1,10 +1,9 @@
-# TODO set storage size to 300Gi and 200Gi
 bitcoind:
-  storageSize: 3Gi
+  storageSize: 300Gi
   p2pPort: 18333
   rpcPort: 18332
   network: testnet
 
 laosbtc:
-  storageSize: 2Gi
+  storageSize: 200Gi
   httpPort: 8080

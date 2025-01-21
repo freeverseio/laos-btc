@@ -39,7 +39,7 @@ spec:
   - metadata:
       name: bitcoin-data
     spec:
-      # storageClassName: do-block-storage # TODO uncomment
+      storageClassName: do-block-storage
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:

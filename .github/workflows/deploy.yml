@@ -14,6 +14,10 @@ jobs:
     # TODO uncomment
     # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Deploy
-        run: |
-          echo "Deploying..."
+      - uses: actions/checkout@v4
+      - uses: helmfile/helmfile-action@v2.0.2
+        with:
+          helmfile-args: list # TODO change to sync --environment development
+          helmfile-version: v0.170.0
+          helmfile-workdirectory: deployment
+          helmfile-kubeconfig-context: ${{ secrets.KUBECONFIG }}
