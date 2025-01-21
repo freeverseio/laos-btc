@@ -2,10 +2,11 @@ name: Deploy
 
 on:
   push: # TODO remove this line
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
+  # TODO uncomment
+  # workflow_run:
+  #   workflows: ["CI"]
+  #   types: [completed]
+  #   branches: [main]
 
 jobs:
   deploy:
