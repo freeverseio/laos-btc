@@ -929,7 +929,8 @@ mod tests {
 
 	#[test]
 	fn example_config_file_is_valid() {
-		let _: Settings = serde_yaml::from_reader(File::open("ord.yaml").unwrap()).unwrap();
+		let _: Settings =
+			serde_yaml::from_reader(File::open("tests/fixtures/ord.yml").unwrap()).unwrap();
 	}
 
 	#[test]
