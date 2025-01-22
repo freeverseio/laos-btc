@@ -1,27 +1,26 @@
-# TODO uncomment
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: laos-btc-server-ingress-{{ .Values.bitcoind.network }}
-#   annotations:
-#     kubernetes.io/ingress.class: "nginx"
-#     nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
-#     nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
-#     nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
-#     cert-manager.io/cluster-issuer: letsencrypt-freeverse
-# spec:
-#   tls:
-#     - hosts:
-#         - {{ .Values.laosbtc.host }}
-#       secretName: laos-btc-tls-{{ .Values.bitcoind.network }}
-#   rules:
-#     - host: {{ .Values.laosbtc.host }} # TODO take from secret?
-#       http:
-#         paths:
-#           - path: /
-#             pathType: Prefix
-#             backend:
-#               service:
-#                 name: laos-btc
-#                 port: 
-#                   number: 80
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: laos-btc-server-ingress-{{ .Values.bitcoind.network }}
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+    nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-freeverse
+spec:
+  tls:
+    - hosts:
+        - {{ .Values.laosbtc.host }}
+      secretName: laos-btc-tls-{{ .Values.bitcoind.network }}
+  rules:
+    - host: {{ .Values.laosbtc.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: laos-btc
+                port: 
+                  number: 80

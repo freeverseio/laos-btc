@@ -1,6 +1,6 @@
 Before deploying the helm charts, please ensure that the appropriate secret to store rpc auth is already created in the namespace.
 
-```
+```yml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -9,7 +9,7 @@ metadata:
   namespace: laos-bitcoin
 type: Opaque
 data:
-  rpcauth: c3VwZXJzZWNyZXQ=
-  rpcuser: c3VwZXJzZWNyZXQ=
-  rpcpassowrd: c3VwZXJzZWNyZXQ=
+  rpcauth: dGVzdDoyYzE0NzEyZmMzMTM3YTEyZjRiZDdkMGM4YWUxYjg5NSQ5OTBhMmViZTVmN2ViNzg5M2E2ODI5OWM1YTA5YmMyMjI1ODg1NTcwNGFhOGQ3NGEyMWU0ZTAxZTM1YTc3N2Mw
+  rpcuser: dGVzdA==
+  rpcpassword: dGVzdA==
 ```
