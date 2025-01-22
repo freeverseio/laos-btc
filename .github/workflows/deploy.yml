@@ -1,18 +1,18 @@
 name: Deploy
 
 on:
-  # push: # TODO remove this line
+  push: # TODO remove this line
   # TODO uncomment
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
+  # workflow_run:
+  #   workflows: ["CI"]
+  #   types: [completed]
+  #   branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     # TODO uncomment
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - name: Create kube folder to avoid permission issues
