@@ -8,3 +8,4 @@ laosbtc:
   storageSize: 200Gi
   httpPort: 8080
   host: laos.btc.gorengine.com
+  tag: main

@@ -19,8 +19,8 @@ spec:
         fsGroup: 65534
       containers:
       - name: laos-btc
-        image: freeverseio/laos-btc:main
-        imagePullPolicy: Always # The main image tag is updated whenever a feature gets merged
+        image: freeverseio/laos-btc:{{ .Values.laosbtc.tag }}
+        imagePullPolicy: Always
         args:
           - --data-dir
           - /data
