@@ -15,6 +15,8 @@ spec:
       labels:
         app: laos-btc
     spec:
+      securityContext:
+        fsGroup: 65534
       containers:
       - name: laos-btc
         image: freeverseio/laos-btc:main
@@ -41,6 +43,8 @@ spec:
         - name: data
           mountPath: /data
         env:
+        - name: RUST_LOG
+          value: "info"
         - name: LAOS_BTC_RPC_USER
           valueFrom:
             secretKeyRef:
@@ -51,11 +55,6 @@ spec:
             secretKeyRef:
               name: bitcoin-rpc-auth
               key: rpcpassword
-      tolerations:
-        - key: "ord-only"
-          operator: "Equal"
-          value: "true"
-          effect: "NoSchedule"
   volumeClaimTemplates:
   - metadata:
       name: data
