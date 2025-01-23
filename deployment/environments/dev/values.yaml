@@ -7,4 +7,4 @@ bitcoind:
 laosbtc:
   storageSize: 200Gi
   httpPort: 8080
-  host: ord.gorengine.com
+  host: laosbtc.gorengine.com
