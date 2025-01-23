@@ -2,9 +2,9 @@ bitcoind:
   storageSize: 300Gi
   p2pPort: 18333
   rpcPort: 18332
-  network: testnet
+  network: mainnet
 
 laosbtc:
   storageSize: 200Gi
   httpPort: 8080
-  host: laosbtc.gorengine.com
+  host: ord.gorengine.com
