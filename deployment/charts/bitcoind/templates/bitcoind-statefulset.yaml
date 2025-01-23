@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: bitcoind-{{ .Values.bitcoind.network }}
+  name: bitcoind
 spec:
   selector:
     matchLabels:
@@ -34,7 +34,7 @@ spec:
       volumes:
       - name: bitcoin-config
         configMap:
-          name: bitcoin-config-{{ .Values.bitcoind.network }}
+          name: bitcoin-config
   volumeClaimTemplates:
   - metadata:
       name: bitcoin-data

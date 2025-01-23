@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: laos-btc-{{ .Values.bitcoind.network }}
+  name: laos-btc
   labels:
     app: laos-btc
 spec:
@@ -25,14 +25,11 @@ spec:
           - --data-dir
           - /data
           - --bitcoin-rpc-url
-          - http://bitcoind-{{ .Values.bitcoind.network }}:{{ .Values.bitcoind.rpcPort }}
+          - http://bitcoind:{{ .Values.bitcoind.rpcPort }}
           - --bitcoin-rpc-username
           - $(LAOS_BTC_RPC_USER)
           - --bitcoin-rpc-password
           - $(LAOS_BTC_RPC_PASS)
-          {{- if eq .Values.bitcoind.network "testnet" }}
-          - --testnet
-          {{- end }}
           - server
           - --http-port
           - {{ .Values.laosbtc.httpPort | quote }}

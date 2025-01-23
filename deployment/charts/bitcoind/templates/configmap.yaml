@@ -1,24 +1,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: bitcoin-config-{{ .Values.bitcoind.network }}
+  name: bitcoin-config
 data:
   bitcoin.conf: |-
-    {{ if eq .Values.bitcoind.network "testnet" }}
-    testnet=1
-    mainnet=0
-    signet=0
-    {{ else if eq .Values.bitcoind.network "mainnet" }}
     testnet=0
     mainnet=1
     signet=0
-    {{ end }}
     txindex=1
     disablewallet=1
 
-    {{ if eq .Values.bitcoind.network "testnet" }}
-    [test]
-    {{ end }}
     rpcport={{ .Values.bitcoind.rpcPort }}
     server=1
     rpcallowip=0.0.0.0/0
