@@ -56,15 +56,6 @@ spec:
           operator: "Equal"
           value: "true"
           effect: "NoSchedule"
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: "ord"
-                operator: In
-                values:
-                - "true"
   volumeClaimTemplates:
   - metadata:
       name: data
