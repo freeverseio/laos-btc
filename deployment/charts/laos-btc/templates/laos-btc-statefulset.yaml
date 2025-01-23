@@ -27,9 +27,9 @@ spec:
           - --bitcoin-rpc-url
           - http://bitcoind:{{ .Values.bitcoind.rpcPort }}
           - --bitcoin-rpc-username
-          - $(LAOS_BTC_RPC_USER)
+          - test
           - --bitcoin-rpc-password
-          - $(LAOS_BTC_RPC_PASS)
+          - test
           - server
           - --http-port
           - {{ .Values.laosbtc.httpPort | quote }}
@@ -41,17 +41,7 @@ spec:
           mountPath: /data
         env:
         - name: RUST_LOG
-          value: "info"
-        - name: LAOS_BTC_RPC_USER
-          valueFrom:
-            secretKeyRef:
-              name: bitcoin-rpc-auth
-              key: rpcuser
-        - name: LAOS_BTC_RPC_PASS
-          valueFrom:
-            secretKeyRef:
-              name: bitcoin-rpc-auth
-              key: rpcpassword
+          value: "debug"
   volumeClaimTemplates:
   - metadata:
       name: data

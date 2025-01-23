@@ -14,4 +14,4 @@ data:
     server=1
     rpcallowip=0.0.0.0/0
     rpcbind=0.0.0.0
-    rpcauth={{ include "decodeSecret" . }}
+    rpcauth=dGVzdDoyYzE0NzEyZmMzMTM3YTEyZjRiZDdkMGM4YWUxYjg5NSQ5OTBhMmViZTVmN2ViNzg5M2E2ODI5OWM1YTA5YmMyMjI1ODg1NTcwNGFhOGQ3NGEyMWU0ZTAxZTM1YTc3N2Mw
