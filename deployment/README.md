@@ -13,3 +13,4 @@ data:
   rpcuser: dGVzdA==
   rpcpassword: dGVzdA==
 ```
+Use this website to generate the appropriate rpcauth string, givern username and password:  https://jlopp.github.io/bitcoin-core-rpc-auth-generator/.
