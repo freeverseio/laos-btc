@@ -20,11 +20,6 @@ spec:
         image: lncm/bitcoind:v28.0
         command: ["bitcoind"]
         args: ["-printtoconsole"]
-        ports:
-        - containerPort: {{ .Values.bitcoind.p2pPort }}
-          name: p2p
-        - containerPort: {{ .Values.bitcoind.rpcPort }}
-          name: rpc
         volumeMounts:
         - name: bitcoin-data
           mountPath: /data/.bitcoin
