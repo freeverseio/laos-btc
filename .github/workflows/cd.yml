@@ -1,0 +1,23 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kube folder to avoid permission issues
+        run: mkdir -p $HOME/.kube
+      - name: Setup helmfile and deploy
+        uses: helmfile/helmfile-action@v2.0.2
+        with:
+          helmfile-args: sync --set laosbtc.tag=${{ github.event.workflow_run.head_sha }} --environment development
+          helmfile-version: v0.170.0
+          helmfile-workdirectory: deployment
+          helmfile-kubeconfig-context: ${{ secrets.KUBECONFIG }}
