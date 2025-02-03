@@ -30,20 +30,6 @@ spec:
       - name: bitcoin-config
         configMap:
           name: bitcoin-config
-      tolerations:
-        - key: "laos-btc-statefulset"
-          operator: "Equal"
-          value: "bitcoin-ordinals"
-          effect: "NoSchedule"
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: "role"
-                    operator: "In"
-                    values:
-                      - "bitcoin-ordinals"
   volumeClaimTemplates:
   - metadata:
       name: bitcoin-data
