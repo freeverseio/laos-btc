@@ -43,6 +43,20 @@ spec:
         env:
         - name: RUST_LOG
           value: "debug"
+      tolerations:
+        - key: "ordinals"
+          operator: "Equal"
+          value: "bitcoin-ordinals"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: "role"
+                    operator: "In"
+                    values:
+                      - "bitcoin-ordinals"
   volumeClaimTemplates:
   - metadata:
       name: data
