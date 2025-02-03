@@ -31,7 +31,7 @@ spec:
         configMap:
           name: bitcoin-config
       tolerations:
-        - key: "bitcoin"
+        - key: "laos-btc-statefulset"
           operator: "Equal"
           value: "bitcoin-ordinals"
           effect: "NoSchedule"
