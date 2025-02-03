@@ -24,6 +24,7 @@ spec:
         args:
           - --data-dir
           - /data
+          - --index-runes
           - --bitcoin-rpc-url
           - http://bitcoind:{{ .Values.bitcoind.rpcPort }}
           - --bitcoin-rpc-username
