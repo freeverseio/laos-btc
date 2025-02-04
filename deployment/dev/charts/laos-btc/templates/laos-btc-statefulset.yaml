@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: laos-btc
+  labels:
+    app: laos-btc
+spec:
+  selector:
+    matchLabels:
+      app: laos-btc
+  serviceName: "laos-btc-headless"
+  template:
+    metadata:
+      labels:
+        app: laos-btc
+    spec:
+      securityContext:
+        fsGroup: 65534
+      containers:
+      - name: laos-btc
+        image: freeverseio/laos-btc:{{ .Values.laosbtc.tag }}
+        imagePullPolicy: Always
+        args:
+          - --data-dir
+          - /data
+          - --index-runes
+          - --bitcoin-rpc-url
+          - http://bitcoind:18443
+          - --bitcoin-rpc-username
+          - test
+          - --bitcoin-rpc-password
+          - test
+          - --regtest
+          - server
+        env:
+        - name: RUST_LOG
+          value: "debug"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      storageClassName: {{ .Values.bitcoind.storage.storageClassName }}
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi

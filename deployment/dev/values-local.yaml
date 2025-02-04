@@ -1,3 +1,6 @@
 bitcoind:
   storage:
     storageClassName: local-path  # Default storage class
+laosbtc:
+  tag: "main"  # Use the latest image tag for development
+  host: "localhost"  # Localhost for testing

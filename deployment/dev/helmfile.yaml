@@ -20,3 +20,7 @@ releases:
     chart: ./charts/bitcoind
     values:
       - {{ toYaml .Values | nindent 8 }}
+  - name: laos-btc
+    chart: ./charts/laos-btc
+    values:
+      - {{ toYaml .Values | nindent 8 }}
