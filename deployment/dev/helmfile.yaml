@@ -1,0 +1,16 @@
+repositories:
+  - name: stable
+    url: https://charts.helm.sh/stable
+
+environments:
+  default:
+    values:
+    - ./environments/dev/values.yaml
+---
+releases:
+  - name: bitcoind
+    namespace: laos-bitcoin
+    chart: ./charts/bitcoind
+    createNamespace: false
+    values:
+      - {{ toYaml .Values | nindent 8 }}

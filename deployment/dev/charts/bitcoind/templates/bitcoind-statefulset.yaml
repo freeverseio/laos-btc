@@ -7,34 +7,23 @@ spec:
     matchLabels:
       app: bitcoind
   serviceName: "bitcoind-headless"
-  replicas: 1
   template:
     metadata:
       labels:
         app: bitcoind
     spec:
-      securityContext:
-        fsGroup: 1000
       containers:
       - name: bitcoind
         image: lncm/bitcoind:v28.0
-        command: ["bitcoind"]
-        args: ["-printtoconsole"]
-        volumeMounts:
-        - name: bitcoin-data
-          mountPath: /data/.bitcoin
-        - name: bitcoin-config
-          mountPath: /data/.bitcoin/bitcoin.conf
-          subPath: bitcoin.conf
-      volumes:
-      - name: bitcoin-config
-        configMap:
-          name: bitcoin-config
+        args: [
+          "--regtest",
+          "--txindex"
+        ]
   volumeClaimTemplates:
   - metadata:
       name: bitcoin-data
     spec:
-      storageClassName: do-block-storage
+      storageClassName: local-path  # Updated to use k3d's local-path storage class
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
