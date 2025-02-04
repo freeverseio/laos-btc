@@ -7,7 +7,6 @@ labels:
 spec:
   ports:
   - port: 18443
-    targetPort: 18443
     protocol: TCP
     name: rpc
   selector:
