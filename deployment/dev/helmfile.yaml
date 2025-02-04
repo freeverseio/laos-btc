@@ -10,7 +10,7 @@ environments:
     values:
     - ./values-digitalocean.yaml
 ---
-namespace: laos-bitcoin
+namespace: laos-bitcoin-dev
 
 helmDefaults:
   createNamespace: false
