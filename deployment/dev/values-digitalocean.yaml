@@ -1,0 +1,3 @@
+bitcoind:
+  storage:
+    storageClassName: do-block-storage

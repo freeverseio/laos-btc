@@ -23,8 +23,8 @@ spec:
   - metadata:
       name: bitcoin-data
     spec:
-      storageClassName: local-path  # Updated to use k3d's local-path storage class
+      storageClassName: {{ .Values.bitcoind.storage.storageClassName }}
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: {{ .Values.bitcoind.storageSize }}
+          storage: 100Gi

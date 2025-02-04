@@ -5,7 +5,10 @@ repositories:
 environments:
   default:
     values:
-    - ./environments/dev/values.yaml
+    - ./values-local.yaml
+  digitalocean:
+    values:
+    - ./values-digitalocean.yaml
 ---
 releases:
   - name: bitcoind
