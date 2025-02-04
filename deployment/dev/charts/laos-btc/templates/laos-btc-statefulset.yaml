@@ -22,7 +22,7 @@ spec:
         imagePullPolicy: Always
         args:
           - --data-dir
-          - /data
+          - /tmp/data
           - --index-runes
           - --bitcoin-rpc-url
           - http://bitcoind:18443
@@ -35,15 +35,3 @@ spec:
         env:
         - name: RUST_LOG
           value: "debug"
-        volumeMounts:
-        - name: data
-          mountPath: /data
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      storageClassName: {{ .Values.bitcoind.storage.storageClassName }}
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 100Gi
