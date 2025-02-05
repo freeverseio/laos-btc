@@ -32,6 +32,7 @@ spec:
           - test
           - --regtest
           - server
+          - --http-port=8080
         env:
         - name: RUST_LOG
           value: "debug"
