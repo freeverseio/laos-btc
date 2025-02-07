@@ -1,6 +1,7 @@
 bitcoind:
   storage:
     storageClassName: do-block-storage
+  host: dev.bitcoin.gorengine.com
 laosbtc:
   tag: "main"
   host: dev.ord.gorengine.com
