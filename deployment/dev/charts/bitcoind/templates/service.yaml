@@ -5,6 +5,7 @@ metadata:
 labels:
   app: bitcoind
 spec:
+  type: LoadBalancer
   ports:
   - port: 18443
     protocol: TCP
