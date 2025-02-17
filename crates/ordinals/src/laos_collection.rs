@@ -25,7 +25,7 @@ pub const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct LaosCollection {
-	pub message: Option<Message>,
+	pub message: Message,
 	pub mint: RuneId,
 }
 
@@ -123,7 +123,7 @@ impl LaosCollection {
 
 			match instructions.next() {
 				Some(Ok(Instruction::Op(opcodes::all::OP_RETURN)))
-					if instruction.next() ==
+					if instructions.next() ==
 						Some(Ok(Instruction::Op(LaosCollection::MAGIC_NUMBER))) =>
 				{
 					// construct the payload by concatenating remaining data pushes
@@ -151,7 +151,7 @@ impl LaosCollection {
 					return Some(
 						payload
 							.try_into()
-							.expect("By construction, payload lenght is the expected; qed;"),
+							.expect("By construction, payload length is the expected; qed;"),
 					);
 				},
 				_ => continue,
