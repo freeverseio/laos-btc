@@ -7,7 +7,6 @@ use bitcoin::consensus;
 use bitcoin::Txid;
 use bitcoin::{absolute::LockTime, transaction::Version, Transaction, TxOut};
 use bitcoin::{Address, Amount};
-use bitcoincore_rpc::Client;
 use bitcoincore_rpc::RpcApi;
 
 pub trait TxOutable {
@@ -15,11 +14,13 @@ pub trait TxOutable {
 }
 
 pub struct BitcoinService {
-	wallet: Wallet,
-	client: Client,
+	pub wallet: Wallet,
 }
 
 impl BitcoinService {
+	pub fn new(wallet: Wallet) -> Self {
+		Self { wallet }
+	}
 	pub fn build_tx<T: TxOutable>(
 		&self,
 		tx: T,
@@ -35,10 +36,12 @@ impl BitcoinService {
 			output: vec![tx.as_output(), postage_as_output(postage)],
 		};
 
-		let unsigned_transaction = fund_raw_transaction(&self.client, fee_rate, &unfunded_tx)?;
+		let unsigned_transaction =
+			fund_raw_transaction(&self.wallet.bitcoin_client(), fee_rate, &unfunded_tx)?;
 
 		let signed_transaction = self
-			.client
+			.wallet
+			.bitcoin_client()
 			.sign_raw_transaction_with_wallet(&unsigned_transaction, None, None)?
 			.hex;
 		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
@@ -51,7 +54,7 @@ impl BitcoinService {
 	}
 
 	pub fn send_tx(&self, signed_tx: &Transaction) -> Result<Txid> {
-		let tx_id = self.client.send_raw_transaction(signed_tx)?;
+		let tx_id = self.wallet.bitcoin_client().send_raw_transaction(signed_tx)?;
 		Ok(tx_id)
 	}
 }
@@ -64,7 +67,7 @@ pub struct Postage {
 pub fn get_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
 	let postage = postage.unwrap_or(TARGET_POSTAGE);
 
-	if destination.script_pubkey().minimal_non_dust() > postage {
+	if postage < destination.script_pubkey().minimal_non_dust() {
 		return Err(anyhow!(
 			"postage below dust limit of {}sat",
 			destination.script_pubkey().minimal_non_dust().to_sat()

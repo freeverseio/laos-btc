@@ -32,6 +32,7 @@ mod outputs;
 #[cfg(unix)]
 mod pending;
 mod receive;
+mod register;
 mod restore;
 #[cfg(unix)]
 mod resume;

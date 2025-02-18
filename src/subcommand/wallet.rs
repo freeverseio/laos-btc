@@ -15,13 +15,15 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use crate::wallet::{batch, wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet};
+use crate::{
+	bridgless_minting::bitcoin_service::BitcoinService,
+	wallet::{batch, wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet},
+};
 use shared_args::SharedArgs;
 
 pub mod addresses;
 pub mod balance;
 mod batch_command;
-mod bm_register;
 pub mod burn;
 pub mod cardinals;
 pub mod create;
@@ -33,6 +35,7 @@ pub mod mint;
 pub mod outputs;
 pub mod pending;
 pub mod receive;
+pub mod register_command;
 pub mod restore;
 pub mod resume;
 pub mod runics;
@@ -86,6 +89,8 @@ pub(crate) enum Subcommand {
 	Pending(pending::Pending),
 	#[command(about = "Generate receive address")]
 	Receive(receive::Receive),
+	#[command(about = "Register Collection")]
+	Register(register_command::Register),
 	#[command(about = "Restore wallet")]
 	Restore(restore::Restore),
 	#[command(about = "Resume pending etchings")]
@@ -147,6 +152,7 @@ impl WalletCommand {
 			Subcommand::Sign(sign) => sign.run(wallet),
 			Subcommand::Split(split) => split.run(wallet),
 			Subcommand::Transactions(transactions) => transactions.run(wallet),
+			Subcommand::Register(register) => register.run(BitcoinService::new(wallet)),
 		}
 	}
 
