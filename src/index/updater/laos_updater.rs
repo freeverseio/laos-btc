@@ -20,7 +20,7 @@ pub(super) trait Insertable<K,V>{
     fn insert (&mut self, key:K, value: V) -> redb::Result;
 }
 
-impl<'tx> Insertable<RuneIdValue, LaosCollectionValue> for Table<'tx, RuneIdValue, LaosCollectionValue>{
+impl Insertable<RuneIdValue, LaosCollectionValue> for Table<'_, RuneIdValue, LaosCollectionValue>{
     fn insert(&mut self, key: RuneIdValue, value: LaosCollectionValue) -> redb::Result{
         self.insert(key, value).map(|_|())
     }
