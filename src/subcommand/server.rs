@@ -1851,7 +1851,7 @@ impl Server {
 
 	async fn brc721_collections(
 	) -> ServerResult {
-	    unimplemented!("BRC721 collections feature is not implemented yet.");
+		Ok(StatusCode::NOT_IMPLEMENTED.into_response())
 	}
 
 	async fn inscriptions_paginated(
@@ -6869,4 +6869,16 @@ next
 			"output 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:123 not found",
 		);
 	}
+
+	    #[test]
+    fn test_brc721_collections() {
+        // Create a test server with necessary setup.
+        let server = TestServer::builder().chain(Chain::Regtest).index_sats().build();
+
+		server.assert_response(
+			"/brc721/collections",
+			StatusCode::NOT_IMPLEMENTED,
+			"",
+		);
+    }
 }
