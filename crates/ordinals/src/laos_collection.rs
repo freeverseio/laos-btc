@@ -25,8 +25,7 @@ pub const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct LaosCollection {
-	pub message: Message,
-	pub mint: RuneId,
+	message: Message,
 }
 
 pub type Payload = [u8; PAYLOAD_LENGTH];
@@ -38,80 +37,23 @@ impl LaosCollection {
 	pub fn decipher(transaction: &Transaction) -> Option<LaosCollection> {
 		let payload = LaosCollection::payload(transaction)?;
 
-		let message =
-			Message::from_payload(payload);
+		let message = Message::from_payload(payload);
 
-		let mint = Tag::Mint.take(&mut fields, |[block, tx]| {
-			RuneId::new(block.try_into().ok()?, tx.try_into().ok()?)
-		});
-
-		Some(Self { message, mint })
+		Some(Self { message })
 	}
 
 	pub fn encipher(&self) -> ScriptBuf {
-		let mut payload = Vec::new();
-
-		if let Some(etching) = self.etching {
-			let mut flags = 0;
-			Flag::Etching.set(&mut flags);
-
-			if etching.terms.is_some() {
-				Flag::Terms.set(&mut flags);
-			}
-
-			if etching.turbo {
-				Flag::Turbo.set(&mut flags);
-			}
-
-			Tag::Flags.encode([flags], &mut payload);
-
-			Tag::Rune.encode_option(etching.rune.map(|rune| rune.0), &mut payload);
-			Tag::Divisibility.encode_option(etching.divisibility, &mut payload);
-			Tag::Spacers.encode_option(etching.spacers, &mut payload);
-			Tag::Symbol.encode_option(etching.symbol, &mut payload);
-			Tag::Premine.encode_option(etching.premine, &mut payload);
-
-			if let Some(terms) = etching.terms {
-				Tag::Amount.encode_option(terms.amount, &mut payload);
-				Tag::Cap.encode_option(terms.cap, &mut payload);
-				Tag::HeightStart.encode_option(terms.height.0, &mut payload);
-				Tag::HeightEnd.encode_option(terms.height.1, &mut payload);
-				Tag::OffsetStart.encode_option(terms.offset.0, &mut payload);
-				Tag::OffsetEnd.encode_option(terms.offset.1, &mut payload);
-			}
-		}
-
-		if let Some(RuneId { block, tx }) = self.mint {
-			Tag::Mint.encode([block.into(), tx.into()], &mut payload);
-		}
-
-		Tag::Pointer.encode_option(self.pointer, &mut payload);
-
-		if !self.edicts.is_empty() {
-			varint::encode_to_vec(Tag::Body.into(), &mut payload);
-
-			let mut edicts = self.edicts.clone();
-			edicts.sort_by_key(|edict| edict.id);
-
-			let mut previous = RuneId::default();
-			for edict in edicts {
-				let (block, tx) = previous.delta(edict.id).unwrap();
-				varint::encode_to_vec(block, &mut payload);
-				varint::encode_to_vec(tx, &mut payload);
-				varint::encode_to_vec(edict.amount, &mut payload);
-				varint::encode_to_vec(edict.output.into(), &mut payload);
-				previous = edict.id;
-			}
-		}
 
 		let mut builder = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(LaosCollection::MAGIC_NUMBER);
 
-		for chunk in payload.chunks(u32::MAX.try_into().unwrap()) {
-			let push: &script::PushBytes = chunk.try_into().unwrap();
-			builder = builder.push_slice(push);
-		}
+		let address_collection: &script::PushBytes = (&self.message.address_collection).into();
+		let rebaseable: [u8;1] =
+			if self.message.rebaseable { [0] } else { [1] };
+
+		builder = builder.push_slice(address_collection);
+		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
 
 		builder.into_script()
 	}

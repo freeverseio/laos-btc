@@ -16,6 +16,7 @@
 
 use super::*;
 
+#[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub(super) struct Message {
 	pub(super) address_collection: [u8; COLLECTION_ADDRESS_LENGTH],
 	pub(super) rebaseable: bool,
@@ -24,7 +25,7 @@ pub(super) struct Message {
 impl Message {
 	pub(super) fn from_payload(payload: Payload) -> Self {
 		Self {
-			address_collection: payload[..COLLECTION_ADDRESS_LENGTH],
+			address_collection: payload[..COLLECTION_ADDRESS_LENGTH].try_into().expect("The length is correct; qed;"),
 			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0,
 		}
 	}
