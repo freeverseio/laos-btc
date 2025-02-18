@@ -1015,8 +1015,6 @@ impl Server {
 		})
 	}
 
-
-
 	async fn metadata(
 		Extension(index): Extension<Arc<Index>>,
 		Extension(server_config): Extension<Arc<ServerConfig>>,
@@ -1849,8 +1847,7 @@ impl Server {
 		.await
 	}
 
-	async fn brc721_collections(
-	) -> ServerResult {
+	async fn brc721_collections() -> ServerResult {
 		Ok(StatusCode::NOT_IMPLEMENTED.into_response())
 	}
 
@@ -6870,15 +6867,11 @@ next
 		);
 	}
 
-	    #[test]
-    fn test_brc721_collections() {
-        // Create a test server with necessary setup.
-        let server = TestServer::builder().chain(Chain::Regtest).index_sats().build();
+	#[test]
+	fn test_brc721_collections() {
+		// Create a test server with necessary setup.
+		let server = TestServer::builder().chain(Chain::Regtest).index_sats().build();
 
-		server.assert_response(
-			"/brc721/collections",
-			StatusCode::NOT_IMPLEMENTED,
-			"",
-		);
-    }
+		server.assert_response("/brc721/collections", StatusCode::NOT_IMPLEMENTED, "");
+	}
 }
