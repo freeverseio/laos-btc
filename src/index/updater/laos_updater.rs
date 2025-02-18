@@ -16,7 +16,7 @@
 
 use super::*;
 
-type LaosCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
+pub(crate) type LaosCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
 
 pub(super) struct LaosCollectionUpdater<'a, 'tx> {
 	pub(super) event_sender: Option<&'a mpsc::Sender<Event>>,

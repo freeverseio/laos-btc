@@ -22,7 +22,7 @@ use self::{
 	event::Event,
 	lot::Lot,
 	reorg::Reorg,
-	updater::Updater,
+	updater::{LaosCollectionValue, Updater},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
 use super::*;
@@ -86,6 +86,7 @@ define_table! { STATISTIC_TO_COUNT, u64, u64 }
 define_table! { TRANSACTION_ID_TO_RUNE, &TxidValue, u128 }
 define_table! { TRANSACTION_ID_TO_TRANSACTION, &TxidValue, &[u8] }
 define_table! { WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP, u32, u128 }
+define_table! { COLLECTION_ID_TO_COLLECTION_VALUE, RuneIdValue, LaosCollectionValue }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
