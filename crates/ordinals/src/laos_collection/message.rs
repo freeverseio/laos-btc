@@ -25,8 +25,28 @@ pub(super) struct Message {
 impl Message {
 	pub(super) fn from_payload(payload: Payload) -> Self {
 		Self {
-			address_collection: payload[..COLLECTION_ADDRESS_LENGTH].try_into().expect("The length is correct; qed;"),
+			address_collection: payload[..COLLECTION_ADDRESS_LENGTH]
+				.try_into()
+				.expect("The length is correct; qed;"),
 			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0,
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	/// Test the conversion from a payload to a `Message` object.
+	#[test]
+	fn test_message_from_payload() {
+		let address = [0xEE; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable_flag = 0x10; // any value > 0 indicates `true`
+		let mut payload = [0u8; PAYLOAD_LENGTH];
+		payload[..COLLECTION_ADDRESS_LENGTH].copy_from_slice(&address);
+		payload[COLLECTION_ADDRESS_LENGTH] = rebaseable_flag;
+
+		let message = Message::from_payload(payload);
+		assert_eq!(message.address_collection, address);
+		assert!(message.rebaseable);
 	}
 }
