@@ -257,6 +257,7 @@ impl Server {
 				.route("/tx/:txid", get(Self::transaction))
 				.route("/decode/:txid", get(Self::decode))
 				.route("/update", get(Self::update))
+				.route("/brc721/collections", get(Self::update))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
