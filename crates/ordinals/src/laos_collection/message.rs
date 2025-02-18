@@ -17,9 +17,9 @@
 use super::*;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub(super) struct Message {
-	pub(super) address_collection: [u8; COLLECTION_ADDRESS_LENGTH],
-	pub(super) rebaseable: bool,
+pub struct Message {
+	pub address_collection: [u8; COLLECTION_ADDRESS_LENGTH],
+	pub rebaseable: bool,
 }
 
 impl Message {

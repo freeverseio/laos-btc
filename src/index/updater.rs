@@ -23,6 +23,7 @@ use tokio::sync::{
 };
 
 mod inscription_updater;
+mod laos_updater;
 mod rune_updater;
 
 pub(crate) struct BlockData {

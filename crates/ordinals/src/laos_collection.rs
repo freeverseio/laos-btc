@@ -25,7 +25,7 @@ pub const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct LaosCollection {
-	message: Message,
+	pub message: Message,
 }
 
 pub type Payload = [u8; PAYLOAD_LENGTH];

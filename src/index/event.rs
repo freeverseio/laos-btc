@@ -33,6 +33,10 @@ pub enum Event {
 		old_location: SatPoint,
 		sequence_number: u32,
 	},
+	LaosCollectionCreated {
+		collection_id: RuneId,
+		txid: Txid,
+	},
 	RuneBurned {
 		amount: u128,
 		block_height: u32,
