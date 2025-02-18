@@ -21,6 +21,7 @@ use shared_args::SharedArgs;
 pub mod addresses;
 pub mod balance;
 mod batch_command;
+mod bm_register;
 pub mod burn;
 pub mod cardinals;
 pub mod create;
