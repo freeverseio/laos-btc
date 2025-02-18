@@ -257,7 +257,7 @@ impl Server {
 				.route("/tx/:txid", get(Self::transaction))
 				.route("/decode/:txid", get(Self::decode))
 				.route("/update", get(Self::update))
-				.route("/brc721/collections", get(Self::update))
+				.route("/brc721/collections", get(Self::brc721_collections))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1014,6 +1014,8 @@ impl Server {
 			}
 		})
 	}
+
+
 
 	async fn metadata(
 		Extension(index): Extension<Arc<Index>>,
@@ -1845,6 +1847,11 @@ impl Server {
 			accept_json,
 		)
 		.await
+	}
+
+	async fn brc721_collections(
+	) -> ServerResult {
+	    unimplemented!("BRC721 collections feature is not implemented yet.");
 	}
 
 	async fn inscriptions_paginated(
