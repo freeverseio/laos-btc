@@ -1,5 +1,5 @@
 namespace: brc721-local
-chain: mainnet
+chain: main
 bitcoind:
   storage:
     storageClassName: local-path  # Default storage class
@@ -8,7 +8,6 @@ laosbtc:
   tag: "main"  # Use the latest image tag for development
   host: "localhost"  # Localhost for testing
   storage:
-    enabled: true
     storageClassName: local-path  # Default storage class
     size: 800Gi
 

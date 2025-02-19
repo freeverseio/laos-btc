@@ -30,13 +30,13 @@ spec:
           - test
           - --bitcoin-rpc-password
           - test
-          - -chain={{ .Values.chain }} 
+          - --chain={{ .Values.chain }} 
           - server
           - --http-port=8080
         env:
         - name: RUST_LOG
           value: "debug"
-{{- if .Values.laosbtc.storage.enabled }}
+{{- if .Values.laosbtc.storage }}
         volumeMounts:
         - mountPath: /data
           name: data

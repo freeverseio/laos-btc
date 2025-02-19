@@ -6,6 +6,9 @@ environments:
   default:
     values:
     - ./values-local.yaml
+  local:
+    values:
+    - ./values-local.yaml
   digitalocean:
     values:
     - ./values-digitalocean.yaml
