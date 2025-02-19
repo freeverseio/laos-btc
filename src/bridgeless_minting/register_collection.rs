@@ -1,3 +1,4 @@
+use super::bitcoin_service::Scriptable;
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
@@ -5,7 +6,6 @@ use bitcoin::{
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
-
 const COLLECTION_ADDRESS_LENGTH: usize = 20;
 const REBASEABLE_LENGTH: usize = 1;
 const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
@@ -18,10 +18,6 @@ pub struct RegisterCollection {
 }
 
 type Payload = [u8; PAYLOAD_LENGTH];
-
-pub trait Scriptable {
-	fn encipher(&self) -> ScriptBuf;
-}
 
 impl Scriptable for RegisterCollection {
 	fn encipher(&self) -> ScriptBuf {

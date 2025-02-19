@@ -16,7 +16,7 @@
 
 use super::*;
 use crate::{
-	bridgless_minting::bitcoin_service::BitcoinService,
+	bridgeless_minting::bitcoin_service::BitcoinService,
 	wallet::{batch, wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet},
 };
 use shared_args::SharedArgs;
