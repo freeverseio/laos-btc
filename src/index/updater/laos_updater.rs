@@ -105,9 +105,11 @@ mod tests {
 	}
 
 	#[test]
-	fn test_index_one_collection() {
+	fn test_one_collection() {
 		let expected_height = 100u32;
 		let expected_rebaseable = true;
+		let expected_tx_index = 5;
+		let expected_txid = Txid::all_zeros();
 
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
@@ -118,14 +120,12 @@ mod tests {
 			id_to_collection: &mut id_to_collection,
 		};
 
-		let tx_index = 5;
 		let tx = laos_collection_tx(expected_rebaseable);
-		let txid = Txid::all_zeros();
 
-		updater.index_collections(tx_index, &tx, txid).unwrap();
+		updater.index_collections(expected_tx_index, &tx, expected_txid).unwrap();
 
 		assert_eq!(id_to_collection.len(), 1);
-		let key = (expected_height.into(), tx_index);
+		let key = (expected_height.into(), expected_tx_index);
 		assert!(id_to_collection.contains_key(&key));
 
 		let (address, rebaseable) = id_to_collection.get(&key).unwrap();
@@ -135,16 +135,16 @@ mod tests {
 		let event = receiver.try_recv().unwrap();
 		match event {
 			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
-				assert_eq!(event_txid, txid);
+				assert_eq!(event_txid, expected_txid);
 				assert_eq!(collection_id.block, u64::from(expected_height));
-				assert_eq!(collection_id.tx, tx_index);
+				assert_eq!(collection_id.tx, expected_tx_index);
 			},
 			_ => panic!("Unexpected event type"),
 		}
 	}
 
 	#[test]
-	fn test_index_no_collections() {
+	fn test_no_collections() {
 		let expected_height = 100u32;
 
 		let (sender, mut receiver) = mpsc::channel(1000);
@@ -165,5 +165,75 @@ mod tests {
 		assert_eq!(id_to_collection.len(), 0);
 
 		assert!(receiver.try_recv().is_err());
+	}
+
+	#[test]
+	fn test_multiple_transactions() {
+		let expected_height = 100u32;
+		let expected_txid = Txid::all_zeros();
+		let (sender, mut receiver) = mpsc::channel(1000);
+		let mut id_to_collection = HashMap::new();
+
+		let mut updater = LaosCollectionUpdater {
+			event_sender: Some(&sender),
+			height: expected_height,
+			id_to_collection: &mut id_to_collection,
+		};
+
+		let transactions =
+			[(0, laos_collection_tx(true)), (1, laos_collection_tx(false)), (2, empty_tx())];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_collections(*tx_index, tx, expected_txid).unwrap();
+		}
+
+		assert_eq!(id_to_collection.len(), 2);
+		assert!(id_to_collection.contains_key(&(expected_height.into(), 0)));
+		assert!(id_to_collection.contains_key(&(expected_height.into(), 1)));
+		assert!(!id_to_collection.contains_key(&(expected_height.into(), 2)));
+
+		assert!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().1);
+		assert!(!id_to_collection.get(&(expected_height.into(), 1)).unwrap().1);
+
+		let event = receiver.try_recv().unwrap();
+		match event {
+			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
+				assert_eq!(event_txid, expected_txid);
+				assert_eq!(collection_id.block, u64::from(expected_height));
+				assert_eq!(collection_id.tx, 0);
+			},
+			_ => panic!("Unexpected event type"),
+		}
+		let event = receiver.try_recv().unwrap();
+		match event {
+			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
+				assert_eq!(event_txid, expected_txid);
+				assert_eq!(collection_id.block, u64::from(expected_height));
+				assert_eq!(collection_id.tx, 1);
+			},
+			_ => panic!("Unexpected event type"),
+		}
+	}
+
+	#[test]
+	fn test_event_sending_failure() {
+		// receiver dropped to simulate sending failure
+		let (sender, _) = mpsc::channel::<Event>(1000);
+		let mut id_to_collection = HashMap::new();
+
+		let mut updater = LaosCollectionUpdater {
+			event_sender: Some(&sender),
+			height: 100,
+			id_to_collection: &mut id_to_collection,
+		};
+
+		let tx_index = 5;
+		let tx = laos_collection_tx(true);
+		let txid = Txid::all_zeros();
+
+		let result = updater.index_collections(tx_index, &tx, txid);
+
+		assert!(result.is_err());
+		assert_eq!(id_to_collection.len(), 1);
 	}
 }
