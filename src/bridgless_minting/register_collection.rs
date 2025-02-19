@@ -1,11 +1,12 @@
-use super::bitcoin_service::TxOutable;
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
-	Amount, ScriptBuf, Transaction, TxOut,
+	ScriptBuf, Transaction,
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
+
+use super::bitcoin_service::Scriptable;
 
 const COLLECTION_ADDRESS_LENGTH: usize = 20;
 const REBASEABLE_LENGTH: usize = 1;
@@ -18,17 +19,29 @@ pub struct RegisterCollection {
 	pub rebaseable: bool,
 }
 
-impl TxOutable for RegisterCollection {
-	fn as_output(&self) -> TxOut {
-		TxOut { value: Amount::from_sat(0), script_pubkey: self.encipher() }
+type Payload = [u8; PAYLOAD_LENGTH];
+
+impl Scriptable for RegisterCollection {
+	fn encipher(&self) -> ScriptBuf {
+		let mut builder = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE);
+
+		let address: &script::PushBytes =
+			self.address.as_bytes().try_into().expect("Conversion failed");
+		let rebaseable: [u8; 1] = if self.rebaseable { [1] } else { [0] };
+
+		builder = builder.push_slice(address);
+		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
+
+		builder.into_script()
 	}
 }
-type Payload = [u8; PAYLOAD_LENGTH];
 
 impl RegisterCollection {
 	pub fn decipher(transaction: &Transaction) -> Option<RegisterCollection> {
 		let payload = RegisterCollection::payload(transaction)?;
-		Self::from_payload(payload)
+		Some(Self::from_payload(payload))
 	}
 
 	fn payload(transaction: &Transaction) -> Option<Payload> {
@@ -42,7 +55,7 @@ impl RegisterCollection {
 			return None;
 		}
 
-		// construct the payload by concatenating remaining data pushes
+		// Construct the payload by concatenating remaining data pushes
 		let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
 
 		// Expect the first push to be the collection address
@@ -74,47 +87,19 @@ impl RegisterCollection {
 		payload.try_into().ok()
 	}
 
-	fn encipher(&self) -> ScriptBuf {
-		let mut builder = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE);
-
-		let address: &script::PushBytes =
-			self.address.as_bytes().try_into().expect("Conversion failed");
-		let rebaseable: [u8; 1] = if self.rebaseable { [1] } else { [0] };
-
-		builder = builder.push_slice(address);
-		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
-
-		builder.into_script()
-	}
-
-	fn from_payload(payload: Payload) -> Option<Self> {
-		if payload.len() != PAYLOAD_LENGTH {
-			log::warn!("Invalid payload length: {}", payload.len());
-			return None;
-		}
-		Some(Self {
+	fn from_payload(payload: Payload) -> Self {
+		Self {
 			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
 			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
-		})
+		}
 	}
 }
 
 #[cfg(test)]
 mod tests {
-	use bitcoin::{absolute::LockTime, transaction::Version};
+	use bitcoin::{absolute::LockTime, transaction::Version, Amount, TxOut};
 
 	use super::*;
-
-	#[test]
-	fn register_collection_as_output() {
-		let alice = H160::from([0; 20]);
-		let register_collection = RegisterCollection { address: alice, rebaseable: false };
-		assert!(register_collection.encipher().is_op_return());
-		assert!(register_collection.as_output().script_pubkey == register_collection.encipher());
-		assert!(register_collection.as_output().value == Amount::from_sat(0));
-	}
 
 	#[test]
 	fn encipher_and_decipher() {
@@ -124,7 +109,10 @@ mod tests {
 			version: Version(2),
 			lock_time: LockTime::ZERO,
 			input: vec![],
-			output: vec![register_collection.as_output()],
+			output: vec![TxOut {
+				value: Amount::from_sat(0),
+				script_pubkey: register_collection.encipher(),
+			}],
 		};
 
 		let deciphered = RegisterCollection::decipher(&tx).unwrap();
@@ -236,25 +224,14 @@ mod tests {
 	}
 
 	#[test]
-	fn from_payload_invalid_address_length() {
-		let address = [0xEE; COLLECTION_ADDRESS_LENGTH + 1];
-		let rebaseable_flag = 0x10;
-		let mut payload = [0u8; PAYLOAD_LENGTH];
-		payload[..COLLECTION_ADDRESS_LENGTH].copy_from_slice(&address);
-		payload[COLLECTION_ADDRESS_LENGTH] = rebaseable_flag;
-
-		assert!(RegisterCollection::from_payload(payload).is_none());
-	}
-
-	#[test]
-	fn from_payload_happy_path() {
+	fn from_payload() {
 		let address = [0xEE; COLLECTION_ADDRESS_LENGTH];
 		let rebaseable_flag = 0x10;
 		let mut payload = [0u8; PAYLOAD_LENGTH];
 		payload[..COLLECTION_ADDRESS_LENGTH].copy_from_slice(&address);
 		payload[COLLECTION_ADDRESS_LENGTH] = rebaseable_flag;
 
-		let register_collection = RegisterCollection::from_payload(payload).unwrap();
+		let register_collection = RegisterCollection::from_payload(payload);
 		assert_eq!(register_collection.address, address.into());
 		assert!(register_collection.rebaseable);
 	}

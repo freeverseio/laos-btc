@@ -1,12 +1,13 @@
 use crate::{fund_raw_transaction, wallet::Wallet, FeeRate, TARGET_POSTAGE};
 use anyhow::{anyhow, Ok, Result};
 use bitcoin::{
-	absolute::LockTime, consensus, transaction::Version, Address, Amount, Transaction, TxOut, Txid,
+	absolute::LockTime, consensus, transaction::Version, Address, Amount, ScriptBuf, Transaction,
+	TxOut, Txid,
 };
 use bitcoincore_rpc::RpcApi;
 
-pub trait TxOutable {
-	fn as_output(&self) -> TxOut;
+pub trait Scriptable {
+	fn encipher(&self) -> ScriptBuf;
 }
 
 pub(crate) struct BitcoinService {
@@ -17,7 +18,7 @@ impl BitcoinService {
 	pub fn new(wallet: Wallet) -> Self {
 		Self { wallet }
 	}
-	pub fn build_tx<T: TxOutable>(
+	pub fn build_tx<T: Scriptable>(
 		&self,
 		tx: T,
 		fee_rate: FeeRate,
@@ -29,7 +30,10 @@ impl BitcoinService {
 			version: Version(2),
 			lock_time: LockTime::ZERO,
 			input: vec![],
-			output: vec![tx.as_output(), postage_as_output(postage)],
+			output: vec![
+				TxOut { value: Amount::from_sat(0), script_pubkey: tx.encipher() },
+				postage_as_output(postage),
+			],
 		};
 
 		let unsigned_transaction =
