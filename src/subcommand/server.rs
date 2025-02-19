@@ -1862,10 +1862,10 @@ impl Server {
 	}
 
 	async fn brc721_collections_paginated(
-		Extension(server_config): Extension<Arc<ServerConfig>>,
-		Extension(index): Extension<Arc<Index>>,
-		Path(page_index): Path<u32>,
-		AcceptJson(accept_json): AcceptJson,
+		Extension(_server_config): Extension<Arc<ServerConfig>>,
+		Extension(_index): Extension<Arc<Index>>,
+		Path(_page_index): Path<u32>,
+		AcceptJson(_accept_json): AcceptJson,
 	) -> ServerResult {
 		Ok(StatusCode::NOT_IMPLEMENTED.into_response())
 	}
