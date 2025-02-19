@@ -1,5 +1,5 @@
 namespace: brc721
-chain: mainnet
+chain: main
 bitcoind:
   storage:
     storageClassName: do-block-storage  
