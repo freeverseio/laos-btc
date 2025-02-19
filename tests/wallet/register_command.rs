@@ -1,9 +1,38 @@
 use super::*;
 use ord::subcommand::wallet::register_command;
 use sp_core::H160;
+#[test]
+fn register_collection_returns_tx_id() {
+	let core = mockcore::builder().network(Network::Regtest).build();
+
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest"], &[]);
+
+	core.mine_blocks(1);
+
+	create_wallet(&core, &ord);
+
+	let alice = H160::from_slice(&[0; 20]);
+
+	let output = CommandBuilder::new(format!(
+		"--regtest wallet register --fee-rate 1 --collection-address {} --rebaseable",
+		format!("{:x}", alice)
+	))
+	.core(&core)
+	.ord(&ord)
+	.expected_exit_code(0)
+	.run_and_deserialize_output::<register_command::Output>();
+	assert_eq!(output.tx_id, core.mempool()[0].compute_txid());
+
+	core.mine_blocks(1);
+
+	let tx = core.tx_by_id(output.tx_id);
+	let register_collection = RegisterCollection::decipher(&tx).unwrap();
+	assert_eq!(register_collection.rebaseable, true);
+	assert_eq!(register_collection.address, alice);
+}
 
 #[test]
-fn register_collection() {
+fn rebaseable_is_false_by_default() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest"], &[]);
@@ -22,5 +51,10 @@ fn register_collection() {
 	.ord(&ord)
 	.expected_exit_code(0)
 	.run_and_deserialize_output::<register_command::Output>();
-	println!("Transaction ID: {:?}", output.tx_id);
+
+	core.mine_blocks(1);
+
+	let tx = core.tx_by_id(output.tx_id);
+	let register_collection = RegisterCollection::decipher(&tx).unwrap();
+	assert_eq!(register_collection.rebaseable, false);
 }

@@ -31,6 +31,8 @@ pub(crate) struct Register {
 		help = "Register Collection <COLLECTION_ADDRESS>. 20-byte Ethereum address: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 	)]
 	collection_address: H160,
+	#[arg(long, help = "Enable the existence of unique, non-fungible tokens, the content of which can be edited by their owners at any given time [default: false]")]
+	rebaseable: Option<bool>,
 	#[clap(
 		long,
 		help = "Include <AMOUNT> postage with register collection output. [default: 10000sat]"
@@ -49,8 +51,10 @@ impl Register {
 
 		let postage = calculate_postage(self.postage, destination)?;
 
+		let rebaseable = self.rebaseable.unwrap_or(false);
+
 		let register_collection_tx =
-			RegisterCollection { address: self.collection_address, rebaseable: false };
+			RegisterCollection { address: self.collection_address, rebaseable };
 
 		let bitcoin_tx =
 			bitcoin_service.build_tx(register_collection_tx, self.fee_rate, postage)?;

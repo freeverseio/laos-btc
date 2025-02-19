@@ -146,7 +146,7 @@ mod tally;
 pub mod templates;
 pub mod wallet;
 
-mod bridgless_minting;
+pub mod bridgless_minting;
 
 type Result<T = (), E = Error> = std::result::Result<T, E>;
 type SnafuResult<T = (), E = SnafuError> = std::result::Result<T, E>;
