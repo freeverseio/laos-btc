@@ -9,7 +9,7 @@ pub trait TxOutable {
 	fn as_output(&self) -> TxOut;
 }
 
-pub struct BitcoinService {
+pub(crate) struct BitcoinService {
 	pub wallet: Wallet,
 }
 

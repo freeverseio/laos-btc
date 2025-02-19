@@ -14,8 +14,8 @@ fn register_collection_returns_tx_id() {
 	let alice = H160::from_slice(&[0; 20]);
 
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet register --fee-rate 1 --collection-address {} --rebaseable",
-		format!("{:x}", alice)
+		"--regtest wallet register --fee-rate 1 --collection-address {:x} --rebaseable",
+		alice
 	))
 	.core(&core)
 	.ord(&ord)
@@ -27,7 +27,7 @@ fn register_collection_returns_tx_id() {
 
 	let tx = core.tx_by_id(output.tx_id);
 	let register_collection = RegisterCollection::decipher(&tx).unwrap();
-	assert_eq!(register_collection.rebaseable, true);
+	assert!(register_collection.rebaseable);
 	assert_eq!(register_collection.address, alice);
 }
 
@@ -56,5 +56,5 @@ fn rebaseable_is_false_by_default() {
 
 	let tx = core.tx_by_id(output.tx_id);
 	let register_collection = RegisterCollection::decipher(&tx).unwrap();
-	assert_eq!(register_collection.rebaseable, false);
+	assert!(!register_collection.rebaseable);
 }
