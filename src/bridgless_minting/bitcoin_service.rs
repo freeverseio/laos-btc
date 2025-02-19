@@ -75,4 +75,3 @@ pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Resul
 fn postage_as_output(postage: Postage) -> TxOut {
 	TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() }
 }
-

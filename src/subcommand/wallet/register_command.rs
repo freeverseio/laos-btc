@@ -31,7 +31,10 @@ pub(crate) struct Register {
 		help = "Register Collection <COLLECTION_ADDRESS>. 20-byte Ethereum address: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 	)]
 	collection_address: H160,
-	#[arg(long, help = "Enable the existence of unique, non-fungible tokens, the content of which can be edited by their owners at any given time [default: false]")]
+	#[arg(
+		long,
+		help = "Enable the existence of unique, non-fungible tokens, the content of which can be edited by their owners at any given time [default: false]"
+	)]
 	rebaseable: Option<bool>,
 	#[clap(
 		long,
