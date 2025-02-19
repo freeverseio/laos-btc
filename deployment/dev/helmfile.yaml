@@ -10,17 +10,17 @@ environments:
     values:
     - ./values-digitalocean.yaml
 ---
-namespace: laos-bitcoin-dev
-
 helmDefaults:
   createNamespace: false
 
 releases:
   - name: bitcoind
+    namespace: {{ .Environment.Values.namespace }}
     chart: ./charts/bitcoind
     values:
       - {{ toYaml .Values | nindent 8 }}
   - name: laos-btc
+    namespace: {{ .Environment.Values.namespace }}
     chart: ./charts/laos-btc
     values:
       - {{ toYaml .Values | nindent 8 }}

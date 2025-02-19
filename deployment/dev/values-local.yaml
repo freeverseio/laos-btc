@@ -1,3 +1,4 @@
+namespace: laos-bitcoin-dev
 bitcoind:
   storage:
     storageClassName: local-path  # Default storage class
