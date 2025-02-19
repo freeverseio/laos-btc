@@ -74,7 +74,7 @@ mod epoch;
 mod etching;
 mod flaw;
 mod height;
-mod laos_collection;
+pub mod laos_collection;
 mod pile;
 mod rarity;
 mod rune;

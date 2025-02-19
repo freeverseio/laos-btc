@@ -61,3 +61,109 @@ where
 		Ok(())
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use bitcoin::{Transaction, Txid};
+	use ordinals::laos_collection::message::Message;
+	use std::collections::HashMap;
+	use tokio::sync::mpsc;
+
+	impl Insertable<RuneIdValue, LaosCollectionValue> for HashMap<RuneIdValue, LaosCollectionValue> {
+		fn insert(&mut self, key: RuneIdValue, value: LaosCollectionValue) -> redb::Result<()> {
+			HashMap::insert(self, key, value);
+			Ok(())
+		}
+	}
+
+	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
+
+	fn laos_collection_tx(rebaseable: bool) -> Transaction {
+		let message = Message { address_collection: COLLECTION_ADDRESS, rebaseable };
+		let collection = LaosCollection { message };
+
+		let script_buf = collection.encipher();
+
+		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: script_buf };
+
+		Transaction {
+			version: Version(1),
+			lock_time: LockTime::from_height(1000).unwrap(),
+			input: vec![],
+			output: vec![output],
+		}
+	}
+
+	fn empty_tx() -> Transaction {
+		Transaction {
+			version: Version(1),
+			lock_time: LockTime::from_height(1000).unwrap(),
+			input: vec![],
+			output: vec![],
+		}
+	}
+
+	#[test]
+	fn test_index_one_collection() {
+		let expected_height = 100u32;
+		let expected_rebaseable = true;
+
+		let (sender, mut receiver) = mpsc::channel(1000);
+		let mut id_to_collection = HashMap::new();
+
+		let mut updater = LaosCollectionUpdater {
+			event_sender: Some(&sender),
+			height: expected_height,
+			id_to_collection: &mut id_to_collection,
+		};
+
+		let tx_index = 5;
+		let tx = laos_collection_tx(expected_rebaseable);
+		let txid = Txid::all_zeros();
+
+		updater.index_collections(tx_index, &tx, txid).unwrap();
+
+		assert_eq!(id_to_collection.len(), 1);
+		let key = (expected_height.into(), tx_index);
+		assert!(id_to_collection.contains_key(&key));
+
+		let (address, rebaseable) = id_to_collection.get(&key).unwrap();
+		assert_eq!(*address, COLLECTION_ADDRESS);
+		assert_eq!(*rebaseable, expected_rebaseable);
+
+		let event = receiver.try_recv().unwrap();
+		match event {
+			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
+				assert_eq!(event_txid, txid);
+				assert_eq!(collection_id.block, u64::from(expected_height));
+				assert_eq!(collection_id.tx, tx_index);
+			},
+			_ => panic!("Unexpected event type"),
+		}
+	}
+
+	#[test]
+	fn test_index_no_collections() {
+		let expected_height = 100u32;
+
+		let (sender, mut receiver) = mpsc::channel(1000);
+		let mut id_to_collection = HashMap::new();
+
+		let mut updater = LaosCollectionUpdater {
+			event_sender: Some(&sender),
+			height: expected_height,
+			id_to_collection: &mut id_to_collection,
+		};
+
+		let tx_index = 5;
+		let tx = empty_tx();
+		let txid = Txid::all_zeros();
+
+		updater.index_collections(tx_index, &tx, txid).unwrap();
+
+		assert_eq!(id_to_collection.len(), 0);
+
+		assert!(receiver.try_recv().is_err());
+	}
+}

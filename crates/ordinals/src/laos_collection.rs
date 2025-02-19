@@ -17,7 +17,7 @@
 use super::*;
 use message::Message;
 
-mod message;
+pub mod message;
 
 pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 pub const REBASEABLE_LENGTH: usize = 1;
