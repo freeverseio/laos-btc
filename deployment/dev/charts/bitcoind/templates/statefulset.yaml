@@ -24,7 +24,7 @@ spec:
         ]
   volumeClaimTemplates:
   - metadata:
-      name: bitcoin-data
+      name: data
     spec:
       storageClassName: {{ .Values.bitcoind.storage.storageClassName }}
       accessModes: [ "ReadWriteOnce" ]
