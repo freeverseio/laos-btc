@@ -1,5 +1,3 @@
-use std::fmt::{self, Display, Formatter};
-
 use super::bitcoin_service::TxOutable;
 use bitcoin::{
 	opcodes,
@@ -9,8 +7,11 @@ use bitcoin::{
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
 
+#[allow(dead_code)] // TODO Remove when is used
 const COLLECTION_ADDRESS_LENGTH: usize = 20;
+#[allow(dead_code)] // TODO Remove when is used
 const REBASEABLE_LENGTH: usize = 1;
+#[allow(dead_code)] // TODO Remove when is used
 const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
 
@@ -26,9 +27,10 @@ impl TxOutable for RegisterCollection {
 		TxOut { value: Amount::from_sat(0), script_pubkey: self.encipher() }
 	}
 }
-
+#[allow(dead_code)] // TODO Remove when is used
 type Payload = [u8; PAYLOAD_LENGTH];
 
+#[allow(dead_code)] // TODO Remove when is used
 impl RegisterCollection {
 	pub fn decipher(transaction: &Transaction) -> Option<RegisterCollection> {
 		let payload = RegisterCollection::payload(transaction)?;
@@ -38,7 +40,7 @@ impl RegisterCollection {
 	}
 
 	fn payload(transaction: &Transaction) -> Option<Payload> {
-		let output = transaction.output.get(0)?;
+		let output = transaction.output.first()?;
 		let mut instructions = output.script_pubkey.instructions();
 
 		if instructions.next()? != Ok(Instruction::Op(opcodes::all::OP_RETURN)) {
@@ -115,7 +117,7 @@ mod tests {
 	fn register_collection_as_output() {
 		let alice = H160::from([0; 20]);
 		let register_collection = RegisterCollection { address: alice, rebaseable: false };
-		assert!(register_collection.encipher().is_op_return() == true);
+		assert!(register_collection.encipher().is_op_return());
 		assert!(register_collection.as_output().script_pubkey == register_collection.encipher());
 		assert!(register_collection.as_output().value == Amount::from_sat(0));
 	}

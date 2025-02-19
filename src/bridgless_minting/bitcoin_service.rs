@@ -33,7 +33,7 @@ impl BitcoinService {
 		};
 
 		let unsigned_transaction =
-			fund_raw_transaction(&self.wallet.bitcoin_client(), fee_rate, &unfunded_tx)?;
+			fund_raw_transaction(self.wallet.bitcoin_client(), fee_rate, &unfunded_tx)?;
 
 		let signed_transaction = self
 			.wallet
