@@ -124,6 +124,7 @@ use self::test::*;
 pub mod api;
 pub mod arguments;
 mod blocktime;
+pub mod bridgeless_minting;
 pub mod chain;
 pub mod decimal;
 mod deserialize_from_str;
