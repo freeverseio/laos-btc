@@ -1,0 +1,14 @@
+namespace: brc721
+bitcoind:
+  storage:
+    storageClassName: local-path  # Default storage class
+    size: 1500Gi
+  host: "localhost"
+laosbtc:
+  tag: "main"  # Use the latest image tag for development
+  host: "localhost"  # Localhost for testing
+  storage:
+    enabled: true
+    storageClassName: local-path  # Default storage class
+    size: 800Gi
+

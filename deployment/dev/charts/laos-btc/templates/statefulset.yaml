@@ -15,14 +15,14 @@ spec:
         app: laos-btc
     spec:
       securityContext:
-        fsGroup: 65534
+        fsGroup: 1000
       containers:
       - name: laos-btc
         image: freeverseio/laos-btc:{{ .Values.laosbtc.tag }}
         imagePullPolicy: Always
         args:
           - --data-dir
-          - /tmp/data
+          - /data
           - --index-runes
           - --bitcoin-rpc-url
           - http://bitcoind:18443
@@ -36,14 +36,17 @@ spec:
         env:
         - name: RUST_LOG
           value: "debug"
-{{- if .Values.laosbtc.enablePVC }}
+{{- if .Values.laosbtc.storage.enabled }}
+        volumeMounts:
+        - mountPath: /data
+          name: data
   volumeClaimTemplates:
   - metadata:
-      name: laos-btc-data
+      name: data
     spec:
       accessModes: ["ReadWriteOnce"]
-      storageClassName: "{{ .Values.laosbtc.storage.storageClass }}"
+      storageClassName: {{ .Values.laosbtc.storage.storageClassName }}
       resources:
         requests:
-          storage: "{{ .Values.laosbtc.storage.size }}"
+          storage: {{ .Values.laosbtc.storage.size }}
 {{- end }}

@@ -1,0 +1,13 @@
+namespace: brc721
+bitcoind:
+  storage:
+    storageClassName: do-block-storage  
+    size: 1500Gi
+laosbtc:
+  tag: "main"  # Use the latest image tag for development
+  host: ord.gorengine.com  # Localhost for testing
+  storage:
+    enabled: true
+    storageClassName: do-block-storage  
+    size: 800Gi
+

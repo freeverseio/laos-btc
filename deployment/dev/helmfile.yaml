@@ -9,6 +9,12 @@ environments:
   digitalocean:
     values:
     - ./values-digitalocean.yaml
+  prod-local:
+    values:
+    - ./values-prod-local.yaml
+  prod-digitalocean:
+    values:
+    - ./values-prod-digitalocean.yaml
 ---
 helmDefaults:
   createNamespace: false
