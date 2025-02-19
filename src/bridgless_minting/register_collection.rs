@@ -7,36 +7,28 @@ use bitcoin::{
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
 
-#[allow(dead_code)] // TODO Remove when is used
 const COLLECTION_ADDRESS_LENGTH: usize = 20;
-#[allow(dead_code)] // TODO Remove when is used
 const REBASEABLE_LENGTH: usize = 1;
-#[allow(dead_code)] // TODO Remove when is used
 const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct RegisterCollection {
-	// TODO make them private?
 	pub address: H160,
 	pub rebaseable: bool,
 }
-// TODO add other trait so every transactionable has to implement as output + encipher + decipher
+
 impl TxOutable for RegisterCollection {
 	fn as_output(&self) -> TxOut {
 		TxOut { value: Amount::from_sat(0), script_pubkey: self.encipher() }
 	}
 }
-#[allow(dead_code)] // TODO Remove when is used
 type Payload = [u8; PAYLOAD_LENGTH];
 
-#[allow(dead_code)] // TODO Remove when is used
 impl RegisterCollection {
 	pub fn decipher(transaction: &Transaction) -> Option<RegisterCollection> {
 		let payload = RegisterCollection::payload(transaction)?;
-		// TODO should be return error if payload is None because missing things?
-
-		Some(Self::from_payload(payload))
+		Self::from_payload(payload)
 	}
 
 	fn payload(transaction: &Transaction) -> Option<Payload> {
@@ -58,12 +50,11 @@ impl RegisterCollection {
 			if push.len() == COLLECTION_ADDRESS_LENGTH {
 				payload.extend_from_slice(push.as_bytes());
 			} else {
-				log::warn!("Invalid address length");
+				log::warn!("Invalid address length: {}", push.len());
 				return None;
 			}
 		} else {
 			log::warn!("REGISTER_COLLECTION_CODE found but not followed by push bytes instruction");
-			// TODO should we panic instead?
 			return None;
 		}
 
@@ -72,12 +63,11 @@ impl RegisterCollection {
 			if push.len() == REBASEABLE_LENGTH {
 				payload.extend_from_slice(push.as_bytes());
 			} else {
-				log::warn!("Invalid rebasable length");
+				log::warn!("Invalid rebasable length {}", push.len());
 				return None;
 			}
 		} else {
-			log::warn!("REGISTER_COLLECTION_CODE followed by push byte for collection addres but not followed by push bytes instruction for rebaseable");
-			// TODO should we panic instead?
+			log::warn!("REGISTER_COLLECTION_CODE followed by push byte instruction for collection addres but not followed by push bytes instruction for rebaseable");
 			return None;
 		}
 
@@ -99,11 +89,15 @@ impl RegisterCollection {
 		builder.into_script()
 	}
 
-	fn from_payload(payload: Payload) -> Self {
-		Self {
+	fn from_payload(payload: Payload) -> Option<Self> {
+		if payload.len() != PAYLOAD_LENGTH {
+			log::warn!("Invalid payload length: {}", payload.len());
+			return None;
+		}
+		Some(Self {
 			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
 			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
-		}
+		})
 	}
 }
 
@@ -242,9 +236,6 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic(
-		expected = "source slice length (21) does not match destination slice length (20)"
-	)]
 	fn from_payload_invalid_address_length() {
 		let address = [0xEE; COLLECTION_ADDRESS_LENGTH + 1];
 		let rebaseable_flag = 0x10;
@@ -252,7 +243,7 @@ mod tests {
 		payload[..COLLECTION_ADDRESS_LENGTH].copy_from_slice(&address);
 		payload[COLLECTION_ADDRESS_LENGTH] = rebaseable_flag;
 
-		let _ = RegisterCollection::from_payload(payload);
+		assert!(RegisterCollection::from_payload(payload).is_none());
 	}
 
 	#[test]
@@ -263,7 +254,7 @@ mod tests {
 		payload[..COLLECTION_ADDRESS_LENGTH].copy_from_slice(&address);
 		payload[COLLECTION_ADDRESS_LENGTH] = rebaseable_flag;
 
-		let register_collection = RegisterCollection::from_payload(payload);
+		let register_collection = RegisterCollection::from_payload(payload).unwrap();
 		assert_eq!(register_collection.address, address.into());
 		assert!(register_collection.rebaseable);
 	}

@@ -72,15 +72,7 @@ pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Resul
 	Ok(Postage { amount: postage, destination })
 }
 
-// TODO move to TxOutable as RegisterCollection?
 fn postage_as_output(postage: Postage) -> TxOut {
 	TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() }
 }
 
-// #[test]
-// tx greater than maximum: runestone greater than maximum OP_RE
-// postage below dust limit
-// fund_raw_tx
-// check that i dont spend ordinals output when sending tx
-// inspirarme en mas tests de mint
-// some any other check from laos domain (if so maybe should be in other file)
