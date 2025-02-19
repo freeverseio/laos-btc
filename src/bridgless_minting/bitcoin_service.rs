@@ -84,4 +84,3 @@ fn postage_as_output(postage: Postage) -> TxOut {
 // check that i dont spend ordinals output when sending tx
 // inspirarme en mas tests de mint
 // some any other check from laos domain (if so maybe should be in other file)
-// check assert_eq!(Runestone::decipher(&signed_transaction), Some(Artifact::Runestone(runestone)),);

@@ -49,10 +49,8 @@ impl Register {
 
 		let postage = calculate_postage(self.postage, destination)?;
 
-		let register_collection_tx = RegisterCollection {
-			laos_collection_address: self.collection_address,
-			rebasable: false,
-		};
+		let register_collection_tx =
+			RegisterCollection { address: self.collection_address, rebaseable: false };
 
 		let bitcoin_tx =
 			bitcoin_service.build_tx(register_collection_tx, self.fee_rate, postage)?;
