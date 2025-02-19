@@ -5,21 +5,22 @@ repositories:
 environments:
   default:
     values:
-    - ./environments/dev/values.yaml
-  development:
+    - ./values-local.yaml
+  digitalocean:
     values:
-    - ./environments/dev/values.yaml
+    - ./values-digitalocean.yaml
 ---
+namespace: laos-bitcoin-dev
+
+helmDefaults:
+  createNamespace: false
+
 releases:
-  - name: laos-btc
-    namespace: laos-bitcoin
-    chart: ./charts/laos-btc
+  - name: bitcoind
+    chart: ./charts/bitcoind
     values:
       - {{ toYaml .Values | nindent 8 }}
-    createNamespace: false
-  - name: bitcoind
-    namespace: laos-bitcoin
-    chart: ./charts/bitcoind
-    createNamespace: false
+  - name: laos-btc
+    chart: ./charts/laos-btc
     values:
       - {{ toYaml .Values | nindent 8 }}

@@ -1,0 +1,7 @@
+bitcoind:
+  storage:
+    storageClassName: local-path  # Default storage class
+  host: "localhost"
+laosbtc:
+  tag: "main"  # Use the latest image tag for development
+  host: "localhost"  # Localhost for testing

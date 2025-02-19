@@ -5,13 +5,9 @@ metadata:
 labels:
   app: bitcoind
 spec:
+  type: LoadBalancer
   ports:
-  - port: {{ .Values.bitcoind.p2pPort }}
-    targetPort: {{ .Values.bitcoind.p2pPort }}
-    protocol: TCP
-    name: p2p
-  - port: {{ .Values.bitcoind.rpcPort }}
-    targetPort: {{ .Values.bitcoind.rpcPort }}
+  - port: 18443
     protocol: TCP
     name: rpc
   selector:
