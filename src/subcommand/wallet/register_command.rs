@@ -15,7 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::bridgless_minting::{
-	bitcoin_service::{get_postage, BitcoinService},
+	bitcoin_service::{calculate_postage, BitcoinService},
 	register_collection::RegisterCollection,
 };
 use sp_core::H160;
@@ -28,7 +28,7 @@ pub(crate) struct Register {
 	fee_rate: FeeRate,
 	#[clap(
 		long,
-		help = "Register Collection <COLLECTION_ADDRESS>. Should be H160 encoded in hex."
+		help = "Register Collection <COLLECTION_ADDRESS>. 20-byte Ethereum address: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 	)]
 	collection_address: H160,
 	#[clap(
@@ -47,7 +47,7 @@ impl Register {
 	pub(crate) fn run(self, bitcoin_service: BitcoinService) -> SubcommandResult {
 		let destination = bitcoin_service.get_change_address()?;
 
-		let postage = get_postage(self.postage, destination)?;
+		let postage = calculate_postage(self.postage, destination)?;
 
 		let register_collection_tx = RegisterCollection {
 			laos_collection_address: self.collection_address,

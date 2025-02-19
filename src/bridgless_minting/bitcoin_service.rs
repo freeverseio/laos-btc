@@ -1,12 +1,8 @@
-use crate::fund_raw_transaction;
-use crate::wallet::Wallet;
-use crate::FeeRate;
-use crate::TARGET_POSTAGE;
+use crate::{fund_raw_transaction, wallet::Wallet, FeeRate, TARGET_POSTAGE};
 use anyhow::{anyhow, Ok, Result};
-use bitcoin::consensus;
-use bitcoin::Txid;
-use bitcoin::{absolute::LockTime, transaction::Version, Transaction, TxOut};
-use bitcoin::{Address, Amount};
+use bitcoin::{
+	absolute::LockTime, consensus, transaction::Version, Address, Amount, Transaction, TxOut, Txid,
+};
 use bitcoincore_rpc::RpcApi;
 
 pub trait TxOutable {
@@ -64,7 +60,7 @@ pub struct Postage {
 	pub destination: Address,
 }
 
-pub fn get_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
+pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
 	let postage = postage.unwrap_or(TARGET_POSTAGE);
 
 	if postage < destination.script_pubkey().minimal_non_dust() {

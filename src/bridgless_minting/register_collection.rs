@@ -21,12 +21,20 @@ impl RegisterCollection {
 	}
 }
 
-#[test]
-fn register_collection_as_output() {
-	let alice = H160::from([0; 20]);
-	let register_collection_tx =
-		RegisterCollection { laos_collection_address: alice, rebasable: false };
-	assert!(register_collection_tx.encipher().is_empty() == false);
-	assert!(register_collection_tx.as_output().script_pubkey == register_collection_tx.encipher());
-	assert!(register_collection_tx.as_output().value == Amount::from_sat(0));
+#[cfg(test)]
+
+mod tests {
+	use super::*;
+
+	#[test]
+	fn register_collection_as_output() {
+		let alice = H160::from([0; 20]);
+		let register_collection_tx =
+			RegisterCollection { laos_collection_address: alice, rebasable: false };
+		assert!(register_collection_tx.encipher().is_empty() == false);
+		assert!(
+			register_collection_tx.as_output().script_pubkey == register_collection_tx.encipher()
+		);
+		assert!(register_collection_tx.as_output().value == Amount::from_sat(0));
+	}
 }

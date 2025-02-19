@@ -1,6 +1,7 @@
 use super::*;
 use ord::subcommand::wallet::register_command;
 use sp_core::H160;
+
 #[test]
 fn register_collection() {
 	let core = mockcore::builder().network(Network::Regtest).build();

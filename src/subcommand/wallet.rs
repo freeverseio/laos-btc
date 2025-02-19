@@ -145,6 +145,7 @@ impl WalletCommand {
 			Subcommand::Outputs(outputs) => outputs.run(wallet),
 			Subcommand::Pending(pending) => pending.run(wallet),
 			Subcommand::Receive(receive) => receive.run(wallet),
+			Subcommand::Register(register) => register.run(BitcoinService::new(wallet)),
 			Subcommand::Resume(resume) => resume.run(wallet),
 			Subcommand::Runics => runics::run(wallet),
 			Subcommand::Sats(sats) => sats.run(wallet),
@@ -152,7 +153,6 @@ impl WalletCommand {
 			Subcommand::Sign(sign) => sign.run(wallet),
 			Subcommand::Split(split) => split.run(wallet),
 			Subcommand::Transactions(transactions) => transactions.run(wallet),
-			Subcommand::Register(register) => register.run(BitcoinService::new(wallet)),
 		}
 	}
 
