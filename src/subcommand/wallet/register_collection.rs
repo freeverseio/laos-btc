@@ -35,7 +35,7 @@ pub(crate) struct Register {
 		long,
 		help = "Enable the existence of unique, non-fungible tokens, the content of which can be edited by their owners at any given time [default: false]"
 	)]
-	rebaseable: Option<bool>,
+	rebaseable: bool,
 	#[clap(
 		long,
 		help = "Include <AMOUNT> postage with register collection output. [default: 10000sat]"
@@ -54,10 +54,8 @@ impl Register {
 
 		let postage = calculate_postage(self.postage, destination)?;
 
-		let rebaseable = self.rebaseable.unwrap_or(false);
-
 		let register_collection_tx =
-			RegisterCollection { address: self.collection_address, rebaseable };
+			RegisterCollection { address: self.collection_address, rebaseable: self.rebaseable };
 
 		let bitcoin_tx =
 			bitcoin_service.build_tx(register_collection_tx, self.fee_rate, postage)?;
