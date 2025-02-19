@@ -32,7 +32,7 @@ impl BitcoinService {
 			input: vec![],
 			output: vec![
 				TxOut { value: Amount::from_sat(0), script_pubkey: tx.encipher() },
-				postage_as_output(postage),
+				TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() },
 			],
 		};
 
@@ -74,8 +74,4 @@ pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Resul
 		));
 	}
 	Ok(Postage { amount: postage, destination })
-}
-
-fn postage_as_output(postage: Postage) -> TxOut {
-	TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() }
 }
