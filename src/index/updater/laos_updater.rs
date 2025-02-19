@@ -16,14 +16,14 @@
 
 use super::*;
 
-pub(super) trait Insertable<K,V>{
-    fn insert (&mut self, key:K, value: V) -> redb::Result;
+pub(super) trait Insertable<K, V> {
+	fn insert(&mut self, key: K, value: V) -> redb::Result;
 }
 
-impl Insertable<RuneIdValue, LaosCollectionValue> for Table<'_, RuneIdValue, LaosCollectionValue>{
-    fn insert(&mut self, key: RuneIdValue, value: LaosCollectionValue) -> redb::Result{
-        self.insert(key, value).map(|_|())
-    }
+impl Insertable<RuneIdValue, LaosCollectionValue> for Table<'_, RuneIdValue, LaosCollectionValue> {
+	fn insert(&mut self, key: RuneIdValue, value: LaosCollectionValue) -> redb::Result {
+		self.insert(key, value).map(|_| ())
+	}
 }
 
 pub(crate) type LaosCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
@@ -34,9 +34,9 @@ pub(super) struct LaosCollectionUpdater<'a, T> {
 	pub(super) id_to_collection: &'a mut T,
 }
 
-impl<T> LaosCollectionUpdater<'_, T> 
+impl<T> LaosCollectionUpdater<'_, T>
 where
-    T: Insertable<RuneIdValue, LaosCollectionValue>
+	T: Insertable<RuneIdValue, LaosCollectionValue>,
 {
 	pub(super) fn index_collections(
 		&mut self,
