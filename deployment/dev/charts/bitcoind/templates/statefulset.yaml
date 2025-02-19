@@ -12,6 +12,8 @@ spec:
       labels:
         app: bitcoind
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
       - name: bitcoind
         image: lncm/bitcoind:v28.0
