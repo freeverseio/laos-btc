@@ -1,5 +1,5 @@
 use super::*;
-use ord::subcommand::wallet::register_command;
+use ord::subcommand::wallet::register_collection;
 use sp_core::H160;
 #[test]
 fn register_collection_returns_tx_id() {
@@ -20,7 +20,7 @@ fn register_collection_returns_tx_id() {
 	.core(&core)
 	.ord(&ord)
 	.expected_exit_code(0)
-	.run_and_deserialize_output::<register_command::Output>();
+	.run_and_deserialize_output::<register_collection::Output>();
 	assert_eq!(output.tx_id, core.mempool()[0].compute_txid());
 
 	core.mine_blocks(1);
@@ -50,7 +50,7 @@ fn rebaseable_is_false_by_default() {
 	.core(&core)
 	.ord(&ord)
 	.expected_exit_code(0)
-	.run_and_deserialize_output::<register_command::Output>();
+	.run_and_deserialize_output::<register_collection::Output>();
 
 	core.mine_blocks(1);
 

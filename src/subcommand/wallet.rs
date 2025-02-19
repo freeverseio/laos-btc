@@ -35,7 +35,7 @@ pub mod mint;
 pub mod outputs;
 pub mod pending;
 pub mod receive;
-pub mod register_command;
+pub mod register_collection;
 pub mod restore;
 pub mod resume;
 pub mod runics;
@@ -90,7 +90,7 @@ pub(crate) enum Subcommand {
 	#[command(about = "Generate receive address")]
 	Receive(receive::Receive),
 	#[command(about = "Register Collection")]
-	Register(register_command::Register),
+	Register(register_collection::Register),
 	#[command(about = "Restore wallet")]
 	Restore(restore::Restore),
 	#[command(about = "Resume pending etchings")]
