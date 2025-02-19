@@ -2,6 +2,7 @@ namespace: laos-bitcoin-dev
 bitcoind:
   storage:
     storageClassName: do-block-storage
+    size: 100Gi
   host: dev.bitcoin.gorengine.com
 laosbtc:
   tag: "main"

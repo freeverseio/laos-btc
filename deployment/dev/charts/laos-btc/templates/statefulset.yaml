@@ -36,3 +36,14 @@ spec:
         env:
         - name: RUST_LOG
           value: "debug"
+{{- if .Values.laosbtc.enablePVC }}
+  volumeClaimTemplates:
+  - metadata:
+      name: laos-btc-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "{{ .Values.laosbtc.storage.storageClass }}"
+      resources:
+        requests:
+          storage: "{{ .Values.laosbtc.storage.size }}"
+{{- end }}
