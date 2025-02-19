@@ -1,4 +1,4 @@
-namespace: laos-bitcoin-dev
+namespace: brc721-dev
 bitcoind:
   storage:
     storageClassName: local-path  # Default storage class
