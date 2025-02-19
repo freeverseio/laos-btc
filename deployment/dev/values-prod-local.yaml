@@ -1,4 +1,5 @@
 namespace: brc721-local
+chain: mainnet
 bitcoind:
   storage:
     storageClassName: local-path  # Default storage class

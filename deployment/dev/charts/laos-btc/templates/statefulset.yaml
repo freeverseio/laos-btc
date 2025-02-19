@@ -30,7 +30,7 @@ spec:
           - test
           - --bitcoin-rpc-password
           - test
-          - --regtest
+          - -chain={{ .Values.chain }} 
           - server
           - --http-port=8080
         env:
