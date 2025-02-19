@@ -1862,12 +1862,32 @@ impl Server {
 	}
 
 	async fn brc721_collections_paginated(
-		Extension(_server_config): Extension<Arc<ServerConfig>>,
-		Extension(_index): Extension<Arc<Index>>,
-		Path(_page_index): Path<u32>,
-		AcceptJson(_accept_json): AcceptJson,
+		Extension(server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		Path(page_index): Path<usize>,
+		AcceptJson(accept_json): AcceptJson,
 	) -> ServerResult {
-		Ok(StatusCode::NOT_IMPLEMENTED.into_response())
+		task::block_in_place(|| {
+			let (collections, more) = index.laos_collections_paginated(100, page_index)?;
+
+			let prev = page_index.checked_sub(1);
+
+			let next = more.then_some(page_index + 1);
+
+			// Ok(if accept_json {
+			// 	Json(api::LaosCollections { ids: collections, page_index, more }).into_response()
+			// } else {
+			// 	InscriptionsHtml { inscriptions, next, prev }
+			// 		.page(server_config)
+			// 		.into_response()
+			// })
+			// Ok(if accept_json {
+			// 	Json(Brc721Collections { collections, more, prev, next }).into_response()
+			// } else {
+			// 	Brc721Collections { collections, more, prev, next
+			// }.page(server_config).into_response() })
+			Ok(if accept_json { todo!() } else { todo!() })
+		})
 	}
 
 	async fn inscriptions_paginated(

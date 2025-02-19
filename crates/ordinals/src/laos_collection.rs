@@ -34,6 +34,11 @@ impl LaosCollection {
 	pub const MAGIC_NUMBER: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
 	pub const COMMIT_CONFIRMATIONS: u16 = 6;
 
+	pub fn new(address_collection: [u8; COLLECTION_ADDRESS_LENGTH], rebaseable: bool) -> Self {
+		let message = Message { address_collection, rebaseable };
+		Self { message }
+	}
+
 	pub fn decipher(transaction: &Transaction) -> Option<LaosCollection> {
 		let payload = LaosCollection::payload(transaction)?;
 

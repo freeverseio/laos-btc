@@ -1050,6 +1050,34 @@ impl Index {
 		Ok(result)
 	}
 
+	pub fn laos_collections_paginated(
+		&self,
+		page_size: usize,
+		page_index: usize,
+	) -> Result<(Vec<(RuneId, LaosCollection)>, bool)> {
+		let mut entries = Vec::new();
+
+		for result in self
+			.database
+			.begin_read()?
+			.open_table(COLLECTION_ID_TO_COLLECTION_VALUE)?
+			.iter()?
+			.rev()
+			.skip(page_index.saturating_mul(page_size))
+			.take(page_size.saturating_add(1))
+		{
+			let (id, entry) = result?;
+			entries.push((
+				RuneId::load(id.value()),
+				LaosCollection::new(entry.value().0, entry.value().1),
+			));
+		}
+
+		let more = entries.len() > page_size;
+
+		Ok((entries, more))
+	}
+
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {
 		self.client.get_block_header(&hash).into_option()
 	}
