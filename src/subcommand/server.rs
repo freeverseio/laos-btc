@@ -257,6 +257,7 @@ impl Server {
 				.route("/tx/:txid", get(Self::transaction))
 				.route("/decode/:txid", get(Self::decode))
 				.route("/update", get(Self::update))
+				.route("/brc721/collections", get(Self::brc721_collections))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1844,6 +1845,29 @@ impl Server {
 			accept_json,
 		)
 		.await
+	}
+
+	async fn brc721_collections(
+		Extension(server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		accept_json: AcceptJson,
+	) -> ServerResult {
+		Self::brc721_collections_paginated(
+			Extension(server_config),
+			Extension(index),
+			Path(0),
+			accept_json,
+		)
+		.await
+	}
+
+	async fn brc721_collections_paginated(
+		Extension(_server_config): Extension<Arc<ServerConfig>>,
+		Extension(_index): Extension<Arc<Index>>,
+		Path(_page_index): Path<u32>,
+		AcceptJson(_accept_json): AcceptJson,
+	) -> ServerResult {
+		Ok(StatusCode::NOT_IMPLEMENTED.into_response())
 	}
 
 	async fn inscriptions_paginated(
@@ -6860,5 +6884,13 @@ next
 			StatusCode::NOT_FOUND,
 			"output 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:123 not found",
 		);
+	}
+
+	#[test]
+	fn test_brc721_collections() {
+		// Create a test server with necessary setup.
+		let server = TestServer::builder().chain(Chain::Regtest).index_sats().build();
+
+		server.assert_response("/brc721/collections", StatusCode::NOT_IMPLEMENTED, "");
 	}
 }
