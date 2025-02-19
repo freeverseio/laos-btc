@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::bridgeless_minting::{
+use crate::brc721::{
 	bitcoin_service::{calculate_postage, BitcoinService},
 	register_collection::RegisterCollection,
 };

@@ -26,7 +26,7 @@ use executable_path::executable_path;
 use mockcore::TransactionTemplate;
 use ord::{
 	api,
-	bridgeless_minting::register_collection::RegisterCollection,
+	brc721::register_collection::RegisterCollection,
 	chain::Chain,
 	decimal::Decimal,
 	outgoing::Outgoing,
