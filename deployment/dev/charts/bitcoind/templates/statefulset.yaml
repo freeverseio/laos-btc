@@ -16,15 +16,19 @@ spec:
       - name: bitcoind
         image: lncm/bitcoind:v28.0
         args: [
+          "--datadir=/data",
           "--txindex",
           "-chain=regtest",
           "-rpcallowip=0.0.0.0/0",
           "-rpcbind=0.0.0.0",
           "-rpcauth=test:2c14712fc3137a12f4bd7d0c8ae1b895$990a2ebe5f7eb7893a68299c5a09bc22258855704aa8d74a21e4e01e35a777c0"
         ]
+        volumeMounts:
+        - mountPath: /data
+          name: data
   volumeClaimTemplates:
   - metadata:
-      name: bitcoin-data
+      name: data
     spec:
       storageClassName: {{ .Values.bitcoind.storage.storageClassName }}
       accessModes: [ "ReadWriteOnce" ]
