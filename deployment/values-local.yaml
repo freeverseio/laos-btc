@@ -1,0 +1,9 @@
+namespace: brc721-local-dev
+chain: regtest
+bitcoind:
+  storage:
+    storageClassName: local-path  # Default storage class
+    size: 100Gi
+laosbtc:
+  tag: "main"  # Use the latest image tag for development
+  host: "localhost"  # Localhost for testing

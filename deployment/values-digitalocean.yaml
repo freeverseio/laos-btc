@@ -1,7 +1,9 @@
+namespace: laos-bitcoin-dev
+chain: regtest
 bitcoind:
   storage:
     storageClassName: do-block-storage
-  host: dev.bitcoin.gorengine.com
+    size: 100Gi
 laosbtc:
   tag: "main"
   host: dev.ord.gorengine.com
