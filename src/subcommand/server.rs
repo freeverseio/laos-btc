@@ -21,11 +21,12 @@ use self::{
 };
 use super::*;
 use crate::templates::{
-	AddressHtml, BlockHtml, BlocksHtml, ChildrenHtml, ClockSvg, CollectionsHtml, HomeHtml,
-	InputHtml, InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml, OutputHtml, PageContent,
-	PageHtml, ParentsHtml, PreviewAudioHtml, PreviewCodeHtml, PreviewFontHtml, PreviewImageHtml,
-	PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml,
-	PreviewVideoHtml, RareTxt, RuneHtml, RuneNotFoundHtml, RunesHtml, SatHtml, TransactionHtml,
+	AddressHtml, BlockHtml, BlocksHtml, Brc721CollectionsHtml, ChildrenHtml, ClockSvg,
+	CollectionsHtml, HomeHtml, InputHtml, InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml,
+	OutputHtml, PageContent, PageHtml, ParentsHtml, PreviewAudioHtml, PreviewCodeHtml,
+	PreviewFontHtml, PreviewImageHtml, PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml,
+	PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RareTxt, RuneHtml, RuneNotFoundHtml,
+	RunesHtml, SatHtml, TransactionHtml,
 };
 use axum::{
 	body,
@@ -1868,25 +1869,19 @@ impl Server {
 		AcceptJson(accept_json): AcceptJson,
 	) -> ServerResult {
 		task::block_in_place(|| {
-			let (collections, more) = index.brc721_collections_paginated(100, page_index)?;
+			let (entries, more) = index.brc721_collections_paginated(100, page_index)?;
 
 			let prev = page_index.checked_sub(1);
 
 			let next = more.then_some(page_index + 1);
 
-			// Ok(if accept_json {
-			// 	Json(api::LaosCollections { ids: collections, page_index, more }).into_response()
-			// } else {
-			// 	InscriptionsHtml { inscriptions, next, prev }
-			// 		.page(server_config)
-			// 		.into_response()
-			// })
-			// Ok(if accept_json {
-			// 	Json(Brc721Collections { collections, more, prev, next }).into_response()
-			// } else {
-			// 	Brc721Collections { collections, more, prev, next
-			// }.page(server_config).into_response() })
-			Ok(if accept_json { todo!() } else { todo!() })
+			Ok(if accept_json {
+				Json(Brc721CollectionsHtml { entries, more, prev, next }).into_response()
+			} else {
+				Brc721CollectionsHtml { entries, more, prev, next }
+					.page(server_config)
+					.into_response()
+			})
 		})
 	}
 

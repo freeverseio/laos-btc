@@ -40,6 +40,7 @@ pub(crate) use rune_not_found::RuneNotFoundHtml;
 pub(crate) use sat::SatHtml;
 
 pub use blocks::BlocksHtml;
+pub use brc721_collections::Brc721CollectionsHtml;
 pub use inscription::InscriptionHtml;
 pub use rune::RuneHtml;
 pub use runes::RunesHtml;
@@ -49,6 +50,7 @@ pub use transaction::TransactionHtml;
 pub mod address;
 pub mod block;
 pub mod blocks;
+pub mod brc721_collections;
 mod children;
 mod clock;
 pub mod collections;
