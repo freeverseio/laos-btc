@@ -64,6 +64,7 @@ fn default<T: Default>() -> T {
 }
 
 mod artifact;
+mod brc721;
 mod cenotaph;
 mod charm;
 mod decimal_sat;
