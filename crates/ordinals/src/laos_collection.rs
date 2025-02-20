@@ -63,42 +63,35 @@ impl LaosCollection {
 
 	fn payload(transaction: &Transaction) -> Option<Payload> {
 		// search transaction outputs for payload
-		for output in &transaction.output {
-			let mut instructions = output.script_pubkey.instructions();
+		let output = transaction.output.first()?;
+		let mut instructions = output.script_pubkey.instructions();
 
-			match instructions.next() {
-				Some(Ok(Instruction::Op(opcodes::all::OP_RETURN)))
-					if instructions.next() ==
-						Some(Ok(Instruction::Op(LaosCollection::MAGIC_NUMBER))) =>
-				{
-					// construct the payload by concatenating remaining data pushes
-					let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
-
-					for result in instructions {
-						match result {
-							// Collection address
-							Ok(Instruction::PushBytes(push))
-								if push.len() == COLLECTION_ADDRESS_LENGTH &&
-									payload.is_empty() =>
-							{
-								payload.extend_from_slice(push.as_bytes());
-							},
-							// Rebaseable
-							Ok(Instruction::PushBytes(push))
-								if push.len() == REBASEABLE_LENGTH &&
-									payload.len() == COLLECTION_ADDRESS_LENGTH =>
-							{
-								payload.extend_from_slice(push.as_bytes());
-							},
-							_ => return None,
-						}
-					}
-					return payload.try_into().ok();
-				},
-				_ => continue,
-			}
-		}
-
+		match (instructions.next()?, instructions.next()?) {
+			(
+				Ok(Instruction::Op(opcodes::all::OP_RETURN)),
+				Ok(Instruction::Op(LaosCollection::MAGIC_NUMBER)),
+			) => {
+				// construct the payload by concatenating remaining data pushes
+				let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
+				match instructions.next()? {
+					Ok(Instruction::PushBytes(push)) if push.len() == COLLECTION_ADDRESS_LENGTH => {
+						payload.extend_from_slice(push.as_bytes());
+					},
+					_ => return None,
+				}
+				match instructions.next()? {
+					Ok(Instruction::PushBytes(push)) if push.len() == REBASEABLE_LENGTH => {
+						payload.extend_from_slice(push.as_bytes());
+					},
+					_ => return None,
+				}
+				if instructions.next().is_some() {
+					return None;
+				}
+				return payload.try_into().ok();
+			},
+			_ => None,
+		}?;
 		None
 	}
 }
