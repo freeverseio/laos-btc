@@ -1,3 +1,4 @@
+#![allow(dead_code)] // TODO remove when it is used
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
@@ -19,11 +20,7 @@ pub struct RegisterCollection {
 
 type Payload = [u8; PAYLOAD_LENGTH];
 
-pub trait Scriptable {
-	fn encipher(&self) -> ScriptBuf;
-}
-
-impl Scriptable for RegisterCollection {
+impl RegisterCollection {
 	fn encipher(&self) -> ScriptBuf {
 		let mut builder = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
@@ -38,9 +35,7 @@ impl Scriptable for RegisterCollection {
 
 		builder.into_script()
 	}
-}
 
-impl RegisterCollection {
 	pub fn decipher(transaction: &Transaction) -> Option<RegisterCollection> {
 		let payload = RegisterCollection::payload(transaction)?;
 		Some(Self::from_payload(payload))
@@ -100,6 +95,7 @@ impl RegisterCollection {
 #[cfg(test)]
 mod tests {
 	use bitcoin::{absolute::LockTime, transaction::Version, Amount, TxOut};
+	use std::str::FromStr;
 
 	use super::*;
 
@@ -235,6 +231,21 @@ mod tests {
 
 		let register_collection = RegisterCollection::from_payload(payload);
 		assert_eq!(register_collection.address, address.into());
+		assert!(register_collection.rebaseable);
+	}
+
+	#[test]
+	fn from_payload_address_contains_invalid_hex_char() {
+		let address = [b'z'; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable_flag = 0x10;
+		let mut payload = [0u8; PAYLOAD_LENGTH];
+		payload[..COLLECTION_ADDRESS_LENGTH].copy_from_slice(&address);
+		payload[COLLECTION_ADDRESS_LENGTH] = rebaseable_flag;
+		let register_collection = RegisterCollection::from_payload(payload);
+		assert_eq!(
+			register_collection.address,
+			H160::from_str("0x7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a").unwrap()
+		);
 		assert!(register_collection.rebaseable);
 	}
 }

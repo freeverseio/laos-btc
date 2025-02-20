@@ -2855,7 +2855,6 @@ dependencies = [
  "serde_yaml",
  "sha3",
  "snafu",
- "sp-core",
  "sysinfo",
  "tempfile",
  "tokio",
@@ -3380,10 +3379,12 @@ version = "0.0.14"
 dependencies = [
  "bitcoin",
  "derive_more",
+ "log",
  "pretty_assertions",
  "serde",
  "serde_json",
  "serde_with",
+ "sp-core",
  "thiserror 2.0.11",
 ]
 
