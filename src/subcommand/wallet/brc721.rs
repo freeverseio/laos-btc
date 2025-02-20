@@ -28,7 +28,7 @@ pub(crate) struct Brc721Command {
 #[derive(Debug, Parser)]
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum Subcommand {
-	#[command(about = "Register Collection")]
+	#[command(about = "Register Collection", visible_alias = "rc")]
 	RegisterCollection(register_collection::Register),
 }
 
