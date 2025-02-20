@@ -32,7 +32,60 @@ impl PageContent for Brc721CollectionsHtml {
 
 #[cfg(test)]
 mod tests {
+
+	use sp_core::H160;
+
 	use super::*;
 
-	// TODO
+	#[test]
+	fn display() {
+		assert_eq!(
+			Brc721CollectionsHtml {
+				entries: vec![(RuneId::default(), RegisterCollection::default())],
+				more: false,
+				prev: None,
+				next: None,
+			}
+			.to_string(),
+			"<h1>Brc721 Collections</h1>
+<ul>
+  <li>0:0 - 0x0000…0000</li>
+</ul>
+<div class=center>
+    prev
+      next
+  </div>"
+		);
+	}
+
+	#[test]
+	fn with_prev_and_next() {
+		assert_eq!(
+			Brc721CollectionsHtml {
+				entries: vec![
+					(RuneId::default(), RegisterCollection::default(),),
+					(
+						RuneId { block: 1, tx: 1 },
+						RegisterCollection {
+							address: H160::from_low_u64_be(1),
+							..Default::default()
+						}
+					)
+				],
+				prev: Some(1),
+				next: Some(2),
+				more: true,
+			}
+			.to_string(),
+			"<h1>Brc721 Collections</h1>
+<ul>
+  <li>0:0 - 0x0000…0000</li>
+  <li>1:1 - 0x0000…0001</li>
+</ul>
+<div class=center>
+    <a class=prev href=/brc721/collections/1>prev</a>
+      <a class=next href=/brc721/collections/2>next</a>
+  </div>"
+		);
+	}
 }
