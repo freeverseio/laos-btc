@@ -132,7 +132,6 @@ impl WalletCommand {
 			Subcommand::Balance => balance::run(wallet),
 			Subcommand::Batch(batch) => batch.run(wallet),
 			Subcommand::Brc721(brc721) => brc721.run(wallet),
-
 			Subcommand::Burn(burn) => burn.run(wallet),
 			Subcommand::Cardinals => cardinals::run(wallet),
 			Subcommand::Create(_) | Subcommand::Restore(_) => unreachable!(),
