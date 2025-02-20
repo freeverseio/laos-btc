@@ -1,1 +1,1 @@
-mod register_collection;
+pub mod register_collection;

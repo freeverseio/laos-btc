@@ -21,7 +21,7 @@ pub struct RegisterCollection {
 type Payload = [u8; PAYLOAD_LENGTH];
 
 impl RegisterCollection {
-	fn encipher(&self) -> ScriptBuf {
+	pub fn encipher(&self) -> ScriptBuf {
 		let mut builder = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE);

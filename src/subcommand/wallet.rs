@@ -15,10 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use crate::{
-	brc721::bitcoin_service::BitcoinService,
-	wallet::{batch, wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet},
-};
+use crate::wallet::{batch, wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet};
 use shared_args::SharedArgs;
 
 pub mod addresses;
@@ -145,7 +142,7 @@ impl WalletCommand {
 			Subcommand::Outputs(outputs) => outputs.run(wallet),
 			Subcommand::Pending(pending) => pending.run(wallet),
 			Subcommand::Receive(receive) => receive.run(wallet),
-			Subcommand::Register(register) => register.run(BitcoinService::new(wallet)),
+			Subcommand::Register(register) => register.run(wallet),
 			Subcommand::Resume(resume) => resume.run(wallet),
 			Subcommand::Runics => runics::run(wallet),
 			Subcommand::Sats(sats) => sats.run(wallet),

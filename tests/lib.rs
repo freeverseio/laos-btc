@@ -26,7 +26,6 @@ use executable_path::executable_path;
 use mockcore::TransactionTemplate;
 use ord::{
 	api,
-	brc721::register_collection::RegisterCollection,
 	chain::Chain,
 	decimal::Decimal,
 	outgoing::Outgoing,
@@ -36,8 +35,8 @@ use ord::{
 	Inscription, InscriptionId, RuneEntry,
 };
 use ordinals::{
-	Artifact, Charm, Edict, Pile, Rarity, Rune, RuneId, Runestone, Sat, SatPoint, SpacedRune,
-	COIN_VALUE,
+	brc721::register_collection::RegisterCollection, Artifact, Charm, Edict, Pile, Rarity, Rune,
+	RuneId, Runestone, Sat, SatPoint, SpacedRune, COIN_VALUE,
 };
 use pretty_assertions::assert_eq as pretty_assert_eq;
 use regex::Regex;

@@ -14,13 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::brc721::{
-	bitcoin_service::{calculate_postage, BitcoinService},
-	register_collection::RegisterCollection,
-};
-use sp_core::H160;
-
 use super::*;
+use crate::wallet::calculate_postage;
+use brc721::register_collection::RegisterCollection;
+use sp_core::H160;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Register {
@@ -49,18 +46,17 @@ pub struct Output {
 }
 
 impl Register {
-	pub(crate) fn run(self, bitcoin_service: BitcoinService) -> SubcommandResult {
-		let destination = bitcoin_service.get_change_address()?;
+	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
+		let destination = wallet.get_change_address()?;
 
 		let postage = calculate_postage(self.postage, destination)?;
 
 		let register_collection_tx =
 			RegisterCollection { address: self.collection_address, rebaseable: self.rebaseable };
 
-		let bitcoin_tx =
-			bitcoin_service.build_tx(register_collection_tx, self.fee_rate, postage)?;
+		let bitcoin_tx = wallet.build_tx(register_collection_tx, self.fee_rate, postage)?;
 
-		let tx_id = bitcoin_service.send_tx(&bitcoin_tx)?;
+		let tx_id = wallet.bitcoin_client().send_raw_transaction(&bitcoin_tx)?;
 
 		Ok(Some(Box::new(Output { tx_id })))
 	}

@@ -72,8 +72,8 @@ use html_escaper::{Escape, Trusted};
 use http::{HeaderMap, StatusCode};
 use lazy_static::lazy_static;
 use ordinals::{
-	varint, Artifact, Charm, Edict, Epoch, Etching, Height, Pile, Rarity, Rune, RuneId, Runestone,
-	Sat, SatPoint, SpacedRune, Terms,
+	brc721, varint, Artifact, Charm, Edict, Epoch, Etching, Height, Pile, Rarity, Rune, RuneId,
+	Runestone, Sat, SatPoint, SpacedRune, Terms,
 };
 use regex::Regex;
 use reqwest::Url;
@@ -124,7 +124,6 @@ use self::test::*;
 pub mod api;
 pub mod arguments;
 mod blocktime;
-pub mod brc721;
 pub mod chain;
 pub mod decimal;
 mod deserialize_from_str;
