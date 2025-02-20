@@ -15,31 +15,27 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
+use crate::wallet::Wallet;
 
-mod addresses;
-mod authentication;
-mod balance;
-mod batch_command;
-mod brc721;
-mod burn;
-mod cardinals;
-mod create;
-mod dump;
-mod inscribe;
-mod inscriptions;
-mod label;
-mod mint;
-mod outputs;
-#[cfg(unix)]
-mod pending;
-mod receive;
-mod restore;
-#[cfg(unix)]
-mod resume;
-mod runics;
-mod sats;
-mod selection;
-mod send;
-mod sign;
-mod split;
-mod transactions;
+pub mod register_collection;
+
+#[derive(Debug, Parser)]
+pub(crate) struct Brc721Command {
+	#[command(subcommand)]
+	pub(crate) subcommand: Subcommand,
+}
+
+#[derive(Debug, Parser)]
+#[allow(clippy::large_enum_variant)]
+pub(crate) enum Subcommand {
+	#[command(about = "Register Collection")]
+	RegisterCollection(register_collection::Register),
+}
+
+impl Brc721Command {
+	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
+		match self.subcommand {
+			Subcommand::RegisterCollection(register) => register.run(wallet),
+		}
+	}
+}

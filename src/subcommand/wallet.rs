@@ -21,6 +21,7 @@ use shared_args::SharedArgs;
 pub mod addresses;
 pub mod balance;
 mod batch_command;
+pub mod brc721;
 pub mod burn;
 pub mod cardinals;
 pub mod create;
@@ -32,7 +33,6 @@ pub mod mint;
 pub mod outputs;
 pub mod pending;
 pub mod receive;
-pub mod register_collection;
 pub mod restore;
 pub mod resume;
 pub mod runics;
@@ -64,6 +64,8 @@ pub(crate) enum Subcommand {
 	Balance,
 	#[command(about = "Create inscriptions and runes")]
 	Batch(batch_command::Batch),
+	#[command(about = "Brc721 commands")]
+	Brc721(brc721::Brc721Command),
 	#[command(about = "Burn an inscription")]
 	Burn(burn::Burn),
 	#[command(about = "List unspent cardinal outputs in wallet")]
@@ -86,8 +88,6 @@ pub(crate) enum Subcommand {
 	Pending(pending::Pending),
 	#[command(about = "Generate receive address")]
 	Receive(receive::Receive),
-	#[command(about = "Register Collection")]
-	Register(register_collection::Register),
 	#[command(about = "Restore wallet")]
 	Restore(restore::Restore),
 	#[command(about = "Resume pending etchings")]
@@ -131,6 +131,8 @@ impl WalletCommand {
 			Subcommand::Addresses => addresses::run(wallet),
 			Subcommand::Balance => balance::run(wallet),
 			Subcommand::Batch(batch) => batch.run(wallet),
+			Subcommand::Brc721(brc721) => brc721.run(wallet),
+
 			Subcommand::Burn(burn) => burn.run(wallet),
 			Subcommand::Cardinals => cardinals::run(wallet),
 			Subcommand::Create(_) | Subcommand::Restore(_) => unreachable!(),
@@ -142,7 +144,6 @@ impl WalletCommand {
 			Subcommand::Outputs(outputs) => outputs.run(wallet),
 			Subcommand::Pending(pending) => pending.run(wallet),
 			Subcommand::Receive(receive) => receive.run(wallet),
-			Subcommand::Register(register) => register.run(wallet),
 			Subcommand::Resume(resume) => resume.run(wallet),
 			Subcommand::Runics => runics::run(wallet),
 			Subcommand::Sats(sats) => sats.run(wallet),

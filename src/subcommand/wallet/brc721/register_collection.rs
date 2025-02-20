@@ -16,7 +16,7 @@
 
 use super::*;
 use crate::wallet::calculate_postage;
-use brc721::register_collection::RegisterCollection;
+use ordinals::brc721::register_collection::RegisterCollection;
 use sp_core::H160;
 
 #[derive(Debug, Parser)]
@@ -27,7 +27,7 @@ pub(crate) struct Register {
 		long,
 		help = "Register Collection <COLLECTION_ADDRESS>. 20-byte Ethereum address: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
 	)]
-	collection_address: H160,
+	address: H160,
 	#[arg(
 		long,
 		help = "Enable the existence of unique, non-fungible tokens, the content of which can be edited by their owners at any given time [default: false]"
@@ -52,7 +52,7 @@ impl Register {
 		let postage = calculate_postage(self.postage, destination)?;
 
 		let register_collection_tx =
-			RegisterCollection { address: self.collection_address, rebaseable: self.rebaseable };
+			RegisterCollection { address: self.address, rebaseable: self.rebaseable };
 
 		let bitcoin_tx = wallet.build_tx(register_collection_tx, self.fee_rate, postage)?;
 
