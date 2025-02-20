@@ -6,7 +6,7 @@ bitcoind:
     size: 1500Gi
 laosbtc:
   tag: "main"  # Use the latest image tag for development
-  host: brc721.gorengine.com  # Localhost for testing
+  host: brc721.gorengine.com  
   storage:
     storageClassName: do-block-storage  
     size: 800Gi
