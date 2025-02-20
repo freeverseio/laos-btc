@@ -37,6 +37,7 @@ use std::{
 use thiserror::Error;
 
 pub use artifact::Artifact;
+pub use brc721::register_collection::{RegisterCollection, COLLECTION_ADDRESS_LENGTH};
 pub use cenotaph::Cenotaph;
 pub use charm::Charm;
 pub use decimal_sat::DecimalSat;
@@ -46,7 +47,6 @@ pub use epoch::Epoch;
 pub use etching::Etching;
 pub use flaw::Flaw;
 pub use height::Height;
-pub use laos_collection::{LaosCollection, COLLECTION_ADDRESS_LENGTH};
 pub use pile::Pile;
 pub use rarity::Rarity;
 pub use rune::Rune;
@@ -75,7 +75,6 @@ mod epoch;
 mod etching;
 mod flaw;
 mod height;
-pub mod laos_collection;
 mod pile;
 mod rarity;
 mod rune;

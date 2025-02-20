@@ -1868,7 +1868,7 @@ impl Server {
 		AcceptJson(accept_json): AcceptJson,
 	) -> ServerResult {
 		task::block_in_place(|| {
-			let (collections, more) = index.laos_collections_paginated(100, page_index)?;
+			let (collections, more) = index.brc721_collections_paginated(100, page_index)?;
 
 			let prev = page_index.checked_sub(1);
 

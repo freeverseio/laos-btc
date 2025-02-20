@@ -1,4 +1,3 @@
-#![allow(dead_code)] // TODO remove when it is used
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
@@ -7,7 +6,7 @@ use bitcoin::{
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
 
-const COLLECTION_ADDRESS_LENGTH: usize = 20;
+pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 const REBASEABLE_LENGTH: usize = 1;
 const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
@@ -21,7 +20,7 @@ pub struct RegisterCollection {
 type Payload = [u8; PAYLOAD_LENGTH];
 
 impl RegisterCollection {
-	fn encipher(&self) -> ScriptBuf {
+	pub fn encipher(&self) -> ScriptBuf {
 		let mut builder = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE);

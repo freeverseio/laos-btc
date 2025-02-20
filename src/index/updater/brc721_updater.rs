@@ -14,29 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
+use ordinals::RegisterCollection;
+
 use super::*;
 
 pub(super) trait Insertable<K, V> {
 	fn insert(&mut self, key: K, value: V) -> redb::Result;
 }
 
-impl Insertable<RuneIdValue, LaosCollectionValue> for Table<'_, RuneIdValue, LaosCollectionValue> {
-	fn insert(&mut self, key: RuneIdValue, value: LaosCollectionValue) -> redb::Result {
+impl Insertable<RuneIdValue, RegisterCollectionValue>
+	for Table<'_, RuneIdValue, RegisterCollectionValue>
+{
+	fn insert(&mut self, key: RuneIdValue, value: RegisterCollectionValue) -> redb::Result {
 		self.insert(key, value).map(|_| ())
 	}
 }
 
-pub(crate) type LaosCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
+pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
 
-pub(super) struct LaosCollectionUpdater<'a, T> {
+pub(super) struct Brc721CollectionUpdater<'a, T> {
 	pub(super) event_sender: Option<&'a mpsc::Sender<Event>>,
 	pub(super) height: u32,
 	pub(super) id_to_collection: &'a mut T,
 }
 
-impl<T> LaosCollectionUpdater<'_, T>
+impl<T> Brc721CollectionUpdater<'_, T>
 where
-	T: Insertable<RuneIdValue, LaosCollectionValue>,
+	T: Insertable<RuneIdValue, RegisterCollectionValue>,
 {
 	pub(super) fn index_collections(
 		&mut self,
@@ -44,14 +48,14 @@ where
 		tx: &Transaction,
 		txid: Txid,
 	) -> Result<()> {
-		if let Some(LaosCollection { message }) = LaosCollection::decipher(tx) {
+		if let Some(register_collection) = RegisterCollection::decipher(tx) {
 			self.id_to_collection.insert(
 				(self.height.into(), tx_index),
-				(message.address_collection, message.rebaseable),
+				(register_collection.address.into(), register_collection.rebaseable),
 			)?;
 
 			if let Some(sender) = self.event_sender {
-				sender.blocking_send(Event::LaosCollectionCreated {
+				sender.blocking_send(Event::Brc721CollectionCreated {
 					txid,
 					collection_id: RuneId { block: self.height.into(), tx: tx_index },
 				})?;
@@ -66,12 +70,14 @@ where
 mod tests {
 	use super::*;
 	use bitcoin::{Transaction, Txid};
-	use ordinals::laos_collection::message::Message;
+	use sp_core::H160;
 	use std::collections::HashMap;
 	use tokio::sync::mpsc;
 
-	impl Insertable<RuneIdValue, LaosCollectionValue> for HashMap<RuneIdValue, LaosCollectionValue> {
-		fn insert(&mut self, key: RuneIdValue, value: LaosCollectionValue) -> redb::Result<()> {
+	impl Insertable<RuneIdValue, RegisterCollectionValue>
+		for HashMap<RuneIdValue, RegisterCollectionValue>
+	{
+		fn insert(&mut self, key: RuneIdValue, value: RegisterCollectionValue) -> redb::Result<()> {
 			HashMap::insert(self, key, value);
 			Ok(())
 		}
@@ -79,9 +85,9 @@ mod tests {
 
 	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
 
-	fn laos_collection_tx(rebaseable: bool) -> Transaction {
-		let message = Message { address_collection: COLLECTION_ADDRESS, rebaseable };
-		let collection = LaosCollection { message };
+	fn brc721_collection_tx(rebaseable: bool) -> Transaction {
+		let collection =
+			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
 		let script_buf = collection.encipher();
 
@@ -114,13 +120,13 @@ mod tests {
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = LaosCollectionUpdater {
+		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: expected_height,
 			id_to_collection: &mut id_to_collection,
 		};
 
-		let tx = laos_collection_tx(expected_rebaseable);
+		let tx = brc721_collection_tx(expected_rebaseable);
 
 		updater.index_collections(expected_tx_index, &tx, expected_txid).unwrap();
 
@@ -134,7 +140,7 @@ mod tests {
 
 		let event = receiver.try_recv().unwrap();
 		match event {
-			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
+			Event::Brc721CollectionCreated { txid: event_txid, collection_id } => {
 				assert_eq!(event_txid, expected_txid);
 				assert_eq!(collection_id.block, u64::from(expected_height));
 				assert_eq!(collection_id.tx, expected_tx_index);
@@ -150,7 +156,7 @@ mod tests {
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = LaosCollectionUpdater {
+		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: expected_height,
 			id_to_collection: &mut id_to_collection,
@@ -174,14 +180,14 @@ mod tests {
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = LaosCollectionUpdater {
+		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: expected_height,
 			id_to_collection: &mut id_to_collection,
 		};
 
 		let transactions =
-			[(0, laos_collection_tx(true)), (1, laos_collection_tx(false)), (2, empty_tx())];
+			[(0, brc721_collection_tx(true)), (1, brc721_collection_tx(false)), (2, empty_tx())];
 
 		for (tx_index, tx) in transactions.iter() {
 			updater.index_collections(*tx_index, tx, expected_txid).unwrap();
@@ -197,7 +203,7 @@ mod tests {
 
 		let event = receiver.try_recv().unwrap();
 		match event {
-			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
+			Event::Brc721CollectionCreated { txid: event_txid, collection_id } => {
 				assert_eq!(event_txid, expected_txid);
 				assert_eq!(collection_id.block, u64::from(expected_height));
 				assert_eq!(collection_id.tx, 0);
@@ -206,7 +212,7 @@ mod tests {
 		}
 		let event = receiver.try_recv().unwrap();
 		match event {
-			Event::LaosCollectionCreated { txid: event_txid, collection_id } => {
+			Event::Brc721CollectionCreated { txid: event_txid, collection_id } => {
 				assert_eq!(event_txid, expected_txid);
 				assert_eq!(collection_id.block, u64::from(expected_height));
 				assert_eq!(collection_id.tx, 1);
@@ -221,14 +227,14 @@ mod tests {
 		let (sender, _) = mpsc::channel::<Event>(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = LaosCollectionUpdater {
+		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: 100,
 			id_to_collection: &mut id_to_collection,
 		};
 
 		let tx_index = 5;
-		let tx = laos_collection_tx(true);
+		let tx = brc721_collection_tx(true);
 		let txid = Txid::all_zeros();
 
 		let result = updater.index_collections(tx_index, &tx, txid);

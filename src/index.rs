@@ -22,7 +22,7 @@ use self::{
 	event::Event,
 	lot::Lot,
 	reorg::Reorg,
-	updater::{LaosCollectionValue, Updater},
+	updater::{RegisterCollectionValue, Updater},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
 use super::*;
@@ -44,6 +44,7 @@ use redb::{
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
 	StorageError, Table, TableDefinition, TableHandle, TableStats, WriteTransaction,
 };
+use sp_core::H160;
 use std::{
 	collections::HashMap,
 	io::{BufWriter, Write},
@@ -86,7 +87,7 @@ define_table! { STATISTIC_TO_COUNT, u64, u64 }
 define_table! { TRANSACTION_ID_TO_RUNE, &TxidValue, u128 }
 define_table! { TRANSACTION_ID_TO_TRANSACTION, &TxidValue, &[u8] }
 define_table! { WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP, u32, u128 }
-define_table! { COLLECTION_ID_TO_COLLECTION_VALUE, RuneIdValue, LaosCollectionValue }
+define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, RuneIdValue, RegisterCollectionValue }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
@@ -1050,17 +1051,17 @@ impl Index {
 		Ok(result)
 	}
 
-	pub fn laos_collections_paginated(
+	pub fn brc721_collections_paginated(
 		&self,
 		page_size: usize,
 		page_index: usize,
-	) -> Result<(Vec<(RuneId, LaosCollection)>, bool)> {
+	) -> Result<(Vec<(RuneId, RegisterCollection)>, bool)> {
 		let mut entries = Vec::new();
 
 		for result in self
 			.database
 			.begin_read()?
-			.open_table(COLLECTION_ID_TO_COLLECTION_VALUE)?
+			.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?
 			.iter()?
 			.rev()
 			.skip(page_index.saturating_mul(page_size))
@@ -1069,7 +1070,10 @@ impl Index {
 			let (id, entry) = result?;
 			entries.push((
 				RuneId::load(id.value()),
-				LaosCollection::new(entry.value().0, entry.value().1),
+				RegisterCollection {
+					address: H160::from_slice(&entry.value().0),
+					rebaseable: entry.value().1,
+				},
 			));
 		}
 

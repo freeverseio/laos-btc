@@ -15,7 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use self::{
-	inscription_updater::InscriptionUpdater, laos_updater::LaosCollectionUpdater,
+	brc721_updater::Brc721CollectionUpdater, inscription_updater::InscriptionUpdater,
 	rune_updater::RuneUpdater,
 };
 use super::{fetcher::Fetcher, *};
@@ -25,10 +25,10 @@ use tokio::sync::{
 	mpsc::{self},
 };
 
-pub(crate) use laos_updater::LaosCollectionValue;
+pub(crate) use brc721_updater::RegisterCollectionValue;
 
+mod brc721_updater;
 mod inscription_updater;
-mod laos_updater;
 mod rune_updater;
 
 pub(crate) struct BlockData {
@@ -397,17 +397,17 @@ impl Updater<'_> {
 			rune_updater.update()?;
 		}
 
-		let mut laos_collection_id_to_laos_collection_value =
-			wtx.open_table(COLLECTION_ID_TO_COLLECTION_VALUE)?;
+		let mut brc721_collection_id_to_brc721_collection_value =
+			wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
-		let mut laos_collection_updater = LaosCollectionUpdater {
+		let mut brc721_collection_updater = Brc721CollectionUpdater {
 			event_sender: self.index.event_sender.as_ref(),
 			height: self.height,
-			id_to_collection: &mut laos_collection_id_to_laos_collection_value,
+			id_to_collection: &mut brc721_collection_id_to_brc721_collection_value,
 		};
 
 		for (i, (tx, txid)) in block.txdata.iter().enumerate() {
-			laos_collection_updater.index_collections(u32::try_from(i).unwrap(), tx, *txid)?;
+			brc721_collection_updater.index_collections(u32::try_from(i).unwrap(), tx, *txid)?;
 		}
 
 		height_to_block_header.insert(&self.height, &block.header.store())?;

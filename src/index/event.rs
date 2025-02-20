@@ -33,7 +33,7 @@ pub enum Event {
 		old_location: SatPoint,
 		sequence_number: u32,
 	},
-	LaosCollectionCreated {
+	Brc721CollectionCreated {
 		collection_id: RuneId,
 		txid: Txid,
 	},
