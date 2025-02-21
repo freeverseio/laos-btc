@@ -6960,4 +6960,35 @@ next
 			},
 		);
 	}
+
+	#[test]
+	fn brc721_collection_json() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.encipher()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		pretty_assert_eq! {
+			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
+
+			Brc721CollectionsHtml {
+				entries: vec![(RuneId { block: 2, tx: 1 }, "0x0000000000000000000000000000000000000000".to_owned())],
+				more: false,
+			  prev: None,
+				next: None
+		  },
+		}
+	}
 }

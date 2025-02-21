@@ -16,7 +16,7 @@
 
 use super::*;
 
-type DisplayableAddress =  String;
+type DisplayableAddress = String;
 
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721CollectionsHtml {
