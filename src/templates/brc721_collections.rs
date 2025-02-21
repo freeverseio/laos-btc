@@ -16,9 +16,11 @@
 
 use super::*;
 
+type DisplayableAddress =  String;
+
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721CollectionsHtml {
-	pub entries: Vec<(RuneId, String)>,
+	pub entries: Vec<(RuneId, DisplayableAddress)>,
 	pub more: bool,
 	pub prev: Option<usize>,
 	pub next: Option<usize>,
