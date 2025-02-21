@@ -1,14 +1,13 @@
 namespace: brc721
+storageClassName: do-block-storage  
 chain: main
 bitcoind:
   service:
     type: ClusterIP
   storage:
-    storageClassName: do-block-storage  
     size: 1500Gi
 laosbtc:
   host: brc721.gorengine.com  
   storage:
-    storageClassName: do-block-storage  
     size: 800Gi
 
