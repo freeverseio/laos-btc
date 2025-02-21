@@ -35,8 +35,8 @@ use ord::{
 	Inscription, InscriptionId, RuneEntry,
 };
 use ordinals::{
-	Artifact, Charm, Edict, Pile, Rarity, Rune, RuneId, Runestone, Sat, SatPoint, SpacedRune,
-	COIN_VALUE,
+	brc721::register_collection::RegisterCollection, Artifact, Charm, Edict, Pile, Rarity, Rune,
+	RuneId, Runestone, Sat, SatPoint, SpacedRune, COIN_VALUE,
 };
 use pretty_assertions::assert_eq as pretty_assert_eq;
 use regex::Regex;

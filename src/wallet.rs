@@ -29,6 +29,7 @@ use index::entry::Entry;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
 use miniscript::descriptor::{DescriptorSecretKey, DescriptorXKey, Wildcard};
+use ordinals::brc721::register_collection::RegisterCollection;
 use redb::{Database, DatabaseError, ReadableTable, RepairSession, StorageError, TableDefinition};
 use reqwest::header;
 use std::sync::Once;
@@ -1018,4 +1019,51 @@ impl Wallet {
 
 		Ok(unsigned_transaction)
 	}
+
+	pub(crate) fn build_brc721_register_collection_tx(
+		&self,
+		tx: RegisterCollection,
+		fee_rate: FeeRate,
+		postage: Postage,
+	) -> Result<Transaction> {
+		self.lock_non_cardinal_outputs()?;
+
+		let unfunded_tx = Transaction {
+			version: Version(2),
+			lock_time: LockTime::ZERO,
+			input: vec![],
+			output: vec![
+				TxOut { value: Amount::from_sat(0), script_pubkey: tx.encipher() },
+				TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() },
+			],
+		};
+
+		let unsigned_transaction =
+			fund_raw_transaction(self.bitcoin_client(), fee_rate, &unfunded_tx)?;
+
+		let signed_transaction = self
+			.bitcoin_client()
+			.sign_raw_transaction_with_wallet(&unsigned_transaction, None, None)?
+			.hex;
+		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
+
+		Ok(signed_transaction)
+	}
+}
+
+pub struct Postage {
+	pub amount: Amount,
+	pub destination: Address,
+}
+
+pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
+	let postage = postage.unwrap_or(TARGET_POSTAGE);
+
+	if postage < destination.script_pubkey().minimal_non_dust() {
+		return Err(anyhow!(
+			"postage below dust limit of {}sat",
+			destination.script_pubkey().minimal_non_dust().to_sat()
+		));
+	}
+	Ok(Postage { amount: postage, destination })
 }

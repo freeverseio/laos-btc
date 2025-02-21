@@ -21,6 +21,7 @@ use shared_args::SharedArgs;
 pub mod addresses;
 pub mod balance;
 mod batch_command;
+pub mod brc721;
 pub mod burn;
 pub mod cardinals;
 pub mod create;
@@ -63,6 +64,8 @@ pub(crate) enum Subcommand {
 	Balance,
 	#[command(about = "Create inscriptions and runes")]
 	Batch(batch_command::Batch),
+	#[command(about = "Brc721 commands")]
+	Brc721(brc721::Brc721Command),
 	#[command(about = "Burn an inscription")]
 	Burn(burn::Burn),
 	#[command(about = "List unspent cardinal outputs in wallet")]
@@ -128,6 +131,7 @@ impl WalletCommand {
 			Subcommand::Addresses => addresses::run(wallet),
 			Subcommand::Balance => balance::run(wallet),
 			Subcommand::Batch(batch) => batch.run(wallet),
+			Subcommand::Brc721(brc721) => brc721.run(wallet),
 			Subcommand::Burn(burn) => burn.run(wallet),
 			Subcommand::Cardinals => cardinals::run(wallet),
 			Subcommand::Create(_) | Subcommand::Restore(_) => unreachable!(),
