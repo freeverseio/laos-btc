@@ -1,6 +1,8 @@
 namespace: brc721
 chain: main
 bitcoind:
+  service:
+    type: ClusterIP
   storage:
     storageClassName: do-block-storage  
     size: 1500Gi

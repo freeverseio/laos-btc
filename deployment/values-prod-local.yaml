@@ -1,6 +1,8 @@
 namespace: brc721-local
 chain: main
 bitcoind:
+  service:
+    type: ClusterIP
   storage:
     storageClassName: local-path  # Default storage class
     size: 1500Gi

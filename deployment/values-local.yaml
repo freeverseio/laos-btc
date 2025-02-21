@@ -2,6 +2,8 @@ namespace: brc721-local-dev
 chain: regtest
 tag: "main"  # Use the latest image tag for development
 bitcoind:
+  service:
+    type: ClusterIP
   storage:
     storageClassName: local-path  # Default storage class
     size: 100Gi

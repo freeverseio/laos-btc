@@ -2,6 +2,8 @@ namespace: laos-bitcoin-dev
 chain: regtest
 tag: "main"
 bitcoind:
+  service:
+    type: LoadBalancer
   storage:
     storageClassName: do-block-storage
     size: 100Gi
