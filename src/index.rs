@@ -109,6 +109,7 @@ pub(crate) enum Statistic {
 	SatRanges = 14,
 	UnboundInscriptions = 16,
 	LastSavepointHeight = 17,
+	IndexBrc721 = 18,
 }
 
 impl Statistic {
@@ -207,6 +208,7 @@ pub struct Index {
 	genesis_block_coinbase_txid: Txid,
 	height_limit: Option<u32>,
 	index_addresses: bool,
+	index_brc721: bool,
 	index_inscriptions: bool,
 	index_runes: bool,
 	index_sats: bool,
@@ -328,6 +330,7 @@ impl Index {
 				tx.open_table(SEQUENCE_NUMBER_TO_SATPOINT)?;
 				tx.open_table(TRANSACTION_ID_TO_RUNE)?;
 				tx.open_table(WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP)?;
+				tx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
 				{
 					let mut statistics = tx.open_table(STATISTIC_TO_COUNT)?;
@@ -336,6 +339,12 @@ impl Index {
 						&mut statistics,
 						Statistic::IndexAddresses,
 						u64::from(settings.index_addresses_raw()),
+					)?;
+
+					Self::set_statistic(
+						&mut statistics,
+						Statistic::IndexBrc721,
+						u64::from(settings.index_brc721_raw()),
 					)?;
 
 					Self::set_statistic(
@@ -416,6 +425,7 @@ impl Index {
 		};
 
 		let index_addresses;
+		let index_brc721;
 		let index_runes;
 		let index_sats;
 		let index_transactions;
@@ -425,6 +435,7 @@ impl Index {
 			let tx = database.begin_read()?;
 			let statistics = tx.open_table(STATISTIC_TO_COUNT)?;
 			index_addresses = Self::is_statistic_set(&statistics, Statistic::IndexAddresses)?;
+			index_brc721 = Self::is_statistic_set(&statistics, Statistic::IndexBrc721)?;
 			index_inscriptions = Self::is_statistic_set(&statistics, Statistic::IndexInscriptions)?;
 			index_runes = Self::is_statistic_set(&statistics, Statistic::IndexRunes)?;
 			index_sats = Self::is_statistic_set(&statistics, Statistic::IndexSats)?;
@@ -454,6 +465,7 @@ impl Index {
 			genesis_block_coinbase_transaction,
 			height_limit: settings.height_limit(),
 			index_addresses,
+			index_brc721,
 			index_runes,
 			index_sats,
 			index_transactions,
@@ -496,6 +508,10 @@ impl Index {
 		self.index_addresses
 	}
 
+	pub fn has_brc721_index(&self) -> bool {
+		self.index_brc721
+	}
+
 	pub fn has_inscription_index(&self) -> bool {
 		self.index_inscriptions
 	}
@@ -535,6 +551,7 @@ impl Index {
 
 		Ok(StatusHtml {
 			address_index: self.has_address_index(),
+			brc721_index: self.has_brc721_index(),
 			blessed_inscriptions,
 			chain: self.settings.chain(),
 			cursed_inscriptions,

@@ -397,17 +397,23 @@ impl Updater<'_> {
 			rune_updater.update()?;
 		}
 
-		let mut brc721_collection_id_to_brc721_collection_value =
-			wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
+		if self.index.index_brc721 {
+			let mut brc721_collection_id_to_brc721_collection_value =
+				wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
-		let mut brc721_collection_updater = Brc721CollectionUpdater {
-			event_sender: self.index.event_sender.as_ref(),
-			height: self.height,
-			id_to_collection: &mut brc721_collection_id_to_brc721_collection_value,
-		};
+			let mut brc721_collection_updater = Brc721CollectionUpdater {
+				event_sender: self.index.event_sender.as_ref(),
+				height: self.height,
+				id_to_collection: &mut brc721_collection_id_to_brc721_collection_value,
+			};
 
-		for (i, (tx, txid)) in block.txdata.iter().enumerate() {
-			brc721_collection_updater.index_collections(u32::try_from(i).unwrap(), tx, *txid)?;
+			for (i, (tx, txid)) in block.txdata.iter().enumerate() {
+				brc721_collection_updater.index_collections(
+					u32::try_from(i).unwrap(),
+					tx,
+					*txid,
+				)?;
+			}
 		}
 
 		height_to_block_header.insert(&self.height, &block.header.store())?;
