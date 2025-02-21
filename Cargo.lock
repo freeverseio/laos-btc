@@ -2855,6 +2855,7 @@ dependencies = [
  "serde_yaml",
  "sha3",
  "snafu",
+ "sp-core",
  "sysinfo",
  "tempfile",
  "tokio",
