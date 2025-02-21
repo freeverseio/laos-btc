@@ -16,8 +16,9 @@
 
 use self::{
 	entry::{
-		Entry, HeaderValue, InscriptionEntry, InscriptionEntryValue, InscriptionIdValue,
-		OutPointValue, RuneEntryValue, RuneIdValue, SatPointValue, SatRange, TxidValue,
+		Brc721CollectionIdValue, Entry, HeaderValue, InscriptionEntry, InscriptionEntryValue,
+		InscriptionIdValue, OutPointValue, RuneEntryValue, RuneIdValue, SatPointValue, SatRange,
+		TxidValue,
 	},
 	event::Event,
 	lot::Lot,
@@ -87,7 +88,7 @@ define_table! { STATISTIC_TO_COUNT, u64, u64 }
 define_table! { TRANSACTION_ID_TO_RUNE, &TxidValue, u128 }
 define_table! { TRANSACTION_ID_TO_TRANSACTION, &TxidValue, &[u8] }
 define_table! { WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP, u32, u128 }
-define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, RuneIdValue, RegisterCollectionValue }
+define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, Brc721CollectionIdValue, RegisterCollectionValue }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
@@ -1055,7 +1056,7 @@ impl Index {
 		&self,
 		page_size: usize,
 		page_index: usize,
-	) -> Result<(Vec<(RuneId, RegisterCollection)>, bool)> {
+	) -> Result<(Vec<(Brc721CollectionId, RegisterCollection)>, bool)> {
 		let mut entries = Vec::new();
 
 		for result in self
@@ -1069,7 +1070,7 @@ impl Index {
 		{
 			let (id, entry) = result?;
 			entries.push((
-				RuneId::load(id.value()),
+				Brc721CollectionId::load(id.value()),
 				RegisterCollection {
 					address: H160::from_slice(&entry.value().0),
 					rebaseable: entry.value().1,

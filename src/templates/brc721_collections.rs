@@ -20,7 +20,7 @@ type DisplayableAddress = String;
 
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721CollectionsHtml {
-	pub entries: Vec<(RuneId, DisplayableAddress)>,
+	pub entries: Vec<(Brc721CollectionId, DisplayableAddress)>,
 	pub more: bool,
 	pub prev: Option<usize>,
 	pub next: Option<usize>,
@@ -42,7 +42,7 @@ mod tests {
 	fn display() {
 		assert_eq!(
 			Brc721CollectionsHtml {
-				entries: vec![(RuneId::default(), format!("{:?}", H160::default()))],
+				entries: vec![(Brc721CollectionId::default(), format!("{:?}", H160::default()))],
 				more: false,
 				prev: None,
 				next: None,
@@ -64,8 +64,14 @@ mod tests {
 		assert_eq!(
 			Brc721CollectionsHtml {
 				entries: vec![
-					(RuneId::default(), String::from("0x0000000000000000000000000000000000000000"),),
-					(RuneId { block: 1, tx: 1 }, format!("{:?}", H160::from_low_u64_be(1)))
+					(
+						Brc721CollectionId::default(),
+						String::from("0x0000000000000000000000000000000000000000"),
+					),
+					(
+						Brc721CollectionId { block: 1, tx: 1 },
+						format!("{:?}", H160::from_low_u64_be(1))
+					)
 				],
 				prev: Some(1),
 				next: Some(2),
