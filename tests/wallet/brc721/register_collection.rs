@@ -87,7 +87,7 @@ fn register_collection_command_indexer_integration() {
 		Chain::Regtest,
 		Brc721CollectionsHtml {
 			entries: vec![(
-				RuneId { block: 2, tx: 1 },
+				Brc721CollectionId { block: 2, tx: 1 },
 				"0x0000000000000000000000000000000000000000".to_owned(),
 			)],
 			more: false,
