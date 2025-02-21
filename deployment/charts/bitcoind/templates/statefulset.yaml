@@ -33,7 +33,7 @@ spec:
   - metadata:
       name: data
     spec:
-      storageClassName: {{ .Values.bitcoind.storage.storageClassName }}
+      storageClassName: {{ .Values.storageClassName }}
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:

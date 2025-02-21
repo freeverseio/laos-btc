@@ -9,5 +9,5 @@ bitcoind:
 laosbtc:
   host: "localhost"  # Localhost for testing
   storage:
-    size: 800Gi
+    size: 1500Gi
 

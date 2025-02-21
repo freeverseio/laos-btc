@@ -9,5 +9,5 @@ bitcoind:
 laosbtc:
   host: brc721.gorengine.com  
   storage:
-    size: 800Gi
+    size: 1500Gi
 
