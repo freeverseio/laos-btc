@@ -18,7 +18,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: laos-btc
-        image: freeverseio/laos-btc:{{ .Values.laosbtc.tag }}
+        image: freeverseio/laos-btc:{{ .Values.tag }}
         imagePullPolicy: Always
         args:
           - --data-dir

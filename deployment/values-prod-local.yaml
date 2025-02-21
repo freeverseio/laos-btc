@@ -5,7 +5,6 @@ bitcoind:
     storageClassName: local-path  # Default storage class
     size: 1500Gi
 laosbtc:
-  tag: "main"  # Use the latest image tag for development
   host: "localhost"  # Localhost for testing
   storage:
     storageClassName: local-path  # Default storage class
