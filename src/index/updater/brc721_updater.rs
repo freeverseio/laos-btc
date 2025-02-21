@@ -22,10 +22,14 @@ pub(super) trait Insertable<K, V> {
 	fn insert(&mut self, key: K, value: V) -> redb::Result;
 }
 
-impl Insertable<RuneIdValue, RegisterCollectionValue>
-	for Table<'_, RuneIdValue, RegisterCollectionValue>
+impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
+	for Table<'_, Brc721CollectionIdValue, RegisterCollectionValue>
 {
-	fn insert(&mut self, key: RuneIdValue, value: RegisterCollectionValue) -> redb::Result {
+	fn insert(
+		&mut self,
+		key: Brc721CollectionIdValue,
+		value: RegisterCollectionValue,
+	) -> redb::Result {
 		self.insert(key, value).map(|_| ())
 	}
 }
@@ -40,7 +44,7 @@ pub(super) struct Brc721CollectionUpdater<'a, T> {
 
 impl<T> Brc721CollectionUpdater<'_, T>
 where
-	T: Insertable<RuneIdValue, RegisterCollectionValue>,
+	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
 	pub(super) fn index_collections(
 		&mut self,
@@ -57,7 +61,7 @@ where
 			if let Some(sender) = self.event_sender {
 				sender.blocking_send(Event::Brc721CollectionCreated {
 					txid,
-					collection_id: RuneId { block: self.height.into(), tx: tx_index },
+					collection_id: Brc721CollectionId { block: self.height.into(), tx: tx_index },
 				})?;
 			}
 		}
@@ -74,10 +78,14 @@ mod tests {
 	use std::collections::HashMap;
 	use tokio::sync::mpsc;
 
-	impl Insertable<RuneIdValue, RegisterCollectionValue>
-		for HashMap<RuneIdValue, RegisterCollectionValue>
+	impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
+		for HashMap<Brc721CollectionIdValue, RegisterCollectionValue>
 	{
-		fn insert(&mut self, key: RuneIdValue, value: RegisterCollectionValue) -> redb::Result<()> {
+		fn insert(
+			&mut self,
+			key: Brc721CollectionIdValue,
+			value: RegisterCollectionValue,
+		) -> redb::Result<()> {
 			HashMap::insert(self, key, value);
 			Ok(())
 		}

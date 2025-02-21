@@ -6909,7 +6909,6 @@ next
 		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
 
 		server.mine_blocks(1);
-
 		server.assert_html(
 			"/brc721/collections",
 			Brc721CollectionsHtml { entries: Vec::new(), more: false, prev: None, next: None },
@@ -6951,7 +6950,7 @@ next
 			"/brc721/collections",
 			Brc721CollectionsHtml {
 				entries: vec![(
-					RuneId { block: 2, tx: 1 },
+					Brc721CollectionId { block: 2, tx: 1 },
 					"0x0000000000000000000000000000000000000000".to_owned(),
 				)],
 				more: false,
@@ -6984,7 +6983,7 @@ next
 			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
 
 			Brc721CollectionsHtml {
-				entries: vec![(RuneId { block: 2, tx: 1 }, "0x0000000000000000000000000000000000000000".to_owned())],
+				entries: vec![(Brc721CollectionId { block: 2, tx: 1 }, "0x0000000000000000000000000000000000000000".to_owned())],
 				more: false,
 			  prev: None,
 				next: None

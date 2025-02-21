@@ -34,7 +34,7 @@ pub enum Event {
 		sequence_number: u32,
 	},
 	Brc721CollectionCreated {
-		collection_id: RuneId,
+		collection_id: Brc721CollectionId,
 		txid: Txid,
 	},
 	RuneBurned {
