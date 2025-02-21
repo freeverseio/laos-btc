@@ -1875,6 +1875,9 @@ impl Server {
 
 			let next = more.then_some(page_index + 1);
 
+			let entries =
+				entries.iter().map(|e| (e.0, format!("{:?}", e.1.address))).collect::<Vec<_>>();
+
 			Ok(if accept_json {
 				Json(Brc721CollectionsHtml { entries, more, prev, next }).into_response()
 			} else {
@@ -6902,10 +6905,59 @@ next
 	}
 
 	#[test]
-	fn test_brc721_collections() {
-		// Create a test server with necessary setup.
-		let server = TestServer::builder().chain(Chain::Regtest).index_sats().build();
+	fn brc721_no_collections_html() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
 
-		server.assert_response("/brc721/collections", StatusCode::NOT_IMPLEMENTED, "");
+		server.mine_blocks(1);
+
+		server.assert_html(
+			"/brc721/collections",
+			Brc721CollectionsHtml { entries: Vec::new(), more: false, prev: None, next: None },
+		);
+	}
+
+	#[test]
+	fn brc721_no_collections_json() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+
+		server.mine_blocks(1);
+
+		pretty_assert_eq!(
+			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
+			Brc721CollectionsHtml { entries: Vec::new(), more: false, prev: None, next: None }
+		);
+	}
+
+	#[test]
+	fn brc721_collection_html() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.encipher()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_html(
+			"/brc721/collections",
+			Brc721CollectionsHtml {
+				entries: vec![(
+					RuneId { block: 2, tx: 1 },
+					"0x0000000000000000000000000000000000000000".to_owned(),
+				)],
+				more: false,
+				prev: None,
+				next: None,
+			},
+		);
 	}
 }

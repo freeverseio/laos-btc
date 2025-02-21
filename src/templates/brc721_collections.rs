@@ -18,7 +18,7 @@ use super::*;
 
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721CollectionsHtml {
-	pub entries: Vec<(RuneId, RegisterCollection)>,
+	pub entries: Vec<(RuneId, String)>,
 	pub more: bool,
 	pub prev: Option<usize>,
 	pub next: Option<usize>,
@@ -32,7 +32,6 @@ impl PageContent for Brc721CollectionsHtml {
 
 #[cfg(test)]
 mod tests {
-
 	use sp_core::H160;
 
 	use super::*;
@@ -41,7 +40,7 @@ mod tests {
 	fn display() {
 		assert_eq!(
 			Brc721CollectionsHtml {
-				entries: vec![(RuneId::default(), RegisterCollection::default())],
+				entries: vec![(RuneId::default(), format!("{:?}", H160::default()))],
 				more: false,
 				prev: None,
 				next: None,
@@ -49,7 +48,7 @@ mod tests {
 			.to_string(),
 			"<h1>Brc721 Collections</h1>
 <ul>
-  <li>0:0 - 0x0000…0000</li>
+  <li>0:0 - 0x0000000000000000000000000000000000000000</li>
 </ul>
 <div class=center>
     prev
@@ -63,14 +62,8 @@ mod tests {
 		assert_eq!(
 			Brc721CollectionsHtml {
 				entries: vec![
-					(RuneId::default(), RegisterCollection::default(),),
-					(
-						RuneId { block: 1, tx: 1 },
-						RegisterCollection {
-							address: H160::from_low_u64_be(1),
-							..Default::default()
-						}
-					)
+					(RuneId::default(), String::from("0x0000000000000000000000000000000000000000"),),
+					(RuneId { block: 1, tx: 1 }, format!("{:?}", H160::from_low_u64_be(1)))
 				],
 				prev: Some(1),
 				next: Some(2),
@@ -79,8 +72,8 @@ mod tests {
 			.to_string(),
 			"<h1>Brc721 Collections</h1>
 <ul>
-  <li>0:0 - 0x0000…0000</li>
-  <li>1:1 - 0x0000…0001</li>
+  <li>0:0 - 0x0000000000000000000000000000000000000000</li>
+  <li>1:1 - 0x0000000000000000000000000000000000000001</li>
 </ul>
 <div class=center>
     <a class=prev href=/brc721/collections/1>prev</a>
