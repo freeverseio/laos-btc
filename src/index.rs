@@ -330,7 +330,6 @@ impl Index {
 				tx.open_table(SEQUENCE_NUMBER_TO_SATPOINT)?;
 				tx.open_table(TRANSACTION_ID_TO_RUNE)?;
 				tx.open_table(WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP)?;
-				tx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
 				{
 					let mut statistics = tx.open_table(STATISTIC_TO_COUNT)?;
