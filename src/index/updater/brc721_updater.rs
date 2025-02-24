@@ -207,7 +207,9 @@ mod tests {
 		assert!(!id_to_collection.contains_key(&(expected_height.into(), 2)));
 
 		assert!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().1);
+		assert_eq!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().0, COLLECTION_ADDRESS);
 		assert!(!id_to_collection.get(&(expected_height.into(), 1)).unwrap().1);
+		assert_eq!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().0, COLLECTION_ADDRESS);
 
 		let event = receiver.try_recv().unwrap();
 		match event {
