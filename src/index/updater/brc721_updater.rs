@@ -36,34 +36,21 @@ impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
 
 pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
 
-pub(super) struct Brc721CollectionUpdater<'a, T> {
-	pub(super) event_sender: Option<&'a mpsc::Sender<Event>>,
+pub(super) struct Brc721Updater<'a, T> {
 	pub(super) height: u32,
-	pub(super) id_to_collection: &'a mut T,
+	pub(super) collection_table: &'a mut T,
 }
 
-impl<T> Brc721CollectionUpdater<'_, T>
+impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
-	pub(super) fn index_collections(
-		&mut self,
-		tx_index: u32,
-		tx: &Transaction,
-		txid: Txid,
-	) -> Result<()> {
+	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		if let Some(register_collection) = RegisterCollection::decipher(tx) {
-			self.id_to_collection.insert(
+			self.collection_table.insert(
 				(self.height.into(), tx_index),
 				(register_collection.address.into(), register_collection.rebaseable),
 			)?;
-
-			if let Some(sender) = self.event_sender {
-				sender.blocking_send(Event::Brc721CollectionCreated {
-					txid,
-					collection_id: Brc721CollectionId { block: self.height.into(), tx: tx_index },
-				})?;
-			}
 		}
 
 		Ok(())
@@ -73,10 +60,9 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bitcoin::{Transaction, Txid};
+	use bitcoin::Transaction;
 	use sp_core::H160;
 	use std::collections::HashMap;
-	use tokio::sync::mpsc;
 
 	impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
 		for HashMap<Brc721CollectionIdValue, RegisterCollectionValue>
@@ -123,20 +109,15 @@ mod tests {
 		let expected_height = 100u32;
 		let expected_rebaseable = true;
 		let expected_tx_index = 5;
-		let expected_txid = Txid::all_zeros();
 
-		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
-			event_sender: Some(&sender),
-			height: expected_height,
-			id_to_collection: &mut id_to_collection,
-		};
+		let mut updater =
+			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
 		let tx = brc721_collection_tx(expected_rebaseable);
 
-		updater.index_collections(expected_tx_index, &tx, expected_txid).unwrap();
+		updater.index_collections(expected_tx_index, &tx).unwrap();
 
 		assert_eq!(id_to_collection.len(), 1);
 		let key = (expected_height.into(), expected_tx_index);
@@ -145,60 +126,37 @@ mod tests {
 		let (address, rebaseable) = id_to_collection.get(&key).unwrap();
 		assert_eq!(*address, COLLECTION_ADDRESS);
 		assert_eq!(*rebaseable, expected_rebaseable);
-
-		let event = receiver.try_recv().unwrap();
-		match event {
-			Event::Brc721CollectionCreated { txid: event_txid, collection_id } => {
-				assert_eq!(event_txid, expected_txid);
-				assert_eq!(collection_id.block, u64::from(expected_height));
-				assert_eq!(collection_id.tx, expected_tx_index);
-			},
-			_ => panic!("Unexpected event type"),
-		}
 	}
 
 	#[test]
 	fn test_no_collections() {
 		let expected_height = 100u32;
-
-		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
-			event_sender: Some(&sender),
-			height: expected_height,
-			id_to_collection: &mut id_to_collection,
-		};
+		let mut updater =
+			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
 		let tx_index = 5;
 		let tx = empty_tx();
-		let txid = Txid::all_zeros();
 
-		updater.index_collections(tx_index, &tx, txid).unwrap();
+		updater.index_collections(tx_index, &tx).unwrap();
 
 		assert_eq!(id_to_collection.len(), 0);
-
-		assert!(receiver.try_recv().is_err());
 	}
 
 	#[test]
 	fn test_multiple_transactions() {
 		let expected_height = 100u32;
-		let expected_txid = Txid::all_zeros();
-		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
-			event_sender: Some(&sender),
-			height: expected_height,
-			id_to_collection: &mut id_to_collection,
-		};
+		let mut updater =
+			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
 		let transactions =
 			[(0, brc721_collection_tx(true)), (1, brc721_collection_tx(false)), (2, empty_tx())];
 
 		for (tx_index, tx) in transactions.iter() {
-			updater.index_collections(*tx_index, tx, expected_txid).unwrap();
+			updater.index_collections(*tx_index, tx).unwrap();
 		}
 
 		assert_eq!(id_to_collection.len(), 2);
@@ -207,47 +165,14 @@ mod tests {
 		assert!(!id_to_collection.contains_key(&(expected_height.into(), 2)));
 
 		assert!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().1);
+		assert_eq!(
+			id_to_collection.get(&(expected_height.into(), 0)).unwrap().0,
+			COLLECTION_ADDRESS
+		);
 		assert!(!id_to_collection.get(&(expected_height.into(), 1)).unwrap().1);
-
-		let event = receiver.try_recv().unwrap();
-		match event {
-			Event::Brc721CollectionCreated { txid: event_txid, collection_id } => {
-				assert_eq!(event_txid, expected_txid);
-				assert_eq!(collection_id.block, u64::from(expected_height));
-				assert_eq!(collection_id.tx, 0);
-			},
-			_ => panic!("Unexpected event type"),
-		}
-		let event = receiver.try_recv().unwrap();
-		match event {
-			Event::Brc721CollectionCreated { txid: event_txid, collection_id } => {
-				assert_eq!(event_txid, expected_txid);
-				assert_eq!(collection_id.block, u64::from(expected_height));
-				assert_eq!(collection_id.tx, 1);
-			},
-			_ => panic!("Unexpected event type"),
-		}
-	}
-
-	#[test]
-	fn test_event_sending_failure() {
-		// receiver dropped to simulate sending failure
-		let (sender, _) = mpsc::channel::<Event>(1000);
-		let mut id_to_collection = HashMap::new();
-
-		let mut updater = Brc721CollectionUpdater {
-			event_sender: Some(&sender),
-			height: 100,
-			id_to_collection: &mut id_to_collection,
-		};
-
-		let tx_index = 5;
-		let tx = brc721_collection_tx(true);
-		let txid = Txid::all_zeros();
-
-		let result = updater.index_collections(tx_index, &tx, txid);
-
-		assert!(result.is_err());
-		assert_eq!(id_to_collection.len(), 1);
+		assert_eq!(
+			id_to_collection.get(&(expected_height.into(), 0)).unwrap().0,
+			COLLECTION_ADDRESS
+		);
 	}
 }

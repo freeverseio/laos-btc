@@ -1853,6 +1853,10 @@ impl Server {
 		Extension(index): Extension<Arc<Index>>,
 		accept_json: AcceptJson,
 	) -> ServerResult {
+		if !index.has_brc721_index() {
+			return Err(ServerError::BadRequest("this server has no brc721 index".to_string()));
+		}
+
 		Self::brc721_collections_paginated(
 			Extension(server_config),
 			Extension(index),
@@ -2245,6 +2249,10 @@ mod tests {
 
 		fn https(self) -> Self {
 			self.server_flag("--https")
+		}
+
+		fn index_brc721(self) -> Self {
+			self.ord_flag("--index-brc721")
 		}
 
 		fn index_runes(self) -> Self {
@@ -3472,6 +3480,8 @@ mod tests {
   <dt>unrecoverably reorged</dt>
   <dd>false</dd>
   <dt>address index</dt>
+  <dd>false</dd>
+  <dt>brc721 index</dt>
   <dd>false</dd>
   <dt>inscription index</dt>
   <dd>true</dd>
@@ -6906,7 +6916,7 @@ next
 
 	#[test]
 	fn brc721_no_collections_html() {
-		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
 
 		server.mine_blocks(1);
 		server.assert_html(
@@ -6917,7 +6927,7 @@ next
 
 	#[test]
 	fn brc721_no_collections_json() {
-		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
 
 		server.mine_blocks(1);
 
@@ -6929,7 +6939,7 @@ next
 
 	#[test]
 	fn brc721_collection_html() {
-		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
 
 		server.mine_blocks(1);
 
@@ -6962,7 +6972,7 @@ next
 
 	#[test]
 	fn brc721_collection_json() {
-		let server = TestServer::builder().chain(Chain::Regtest).index_runes().build();
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
 
 		server.mine_blocks(1);
 
@@ -6989,5 +6999,31 @@ next
 				next: None
 		  },
 		}
+	}
+
+	#[test]
+	fn brc721_collections_no_index_error() {
+		let server = TestServer::builder().chain(Chain::Regtest).build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.encipher()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_response(
+			"/brc721/collections",
+			StatusCode::BAD_REQUEST,
+			"this server has no brc721 index",
+		);
 	}
 }

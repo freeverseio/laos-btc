@@ -538,7 +538,7 @@ fn get_status() {
 
 	let ord = TestServer::spawn_with_server_args(
 		&core,
-		&["--regtest", "--index-sats", "--index-runes"],
+		&["--regtest", "--index-brc721", "--index-sats", "--index-runes"],
 		&[],
 	);
 
@@ -565,6 +565,7 @@ fn get_status() {
 		status_json,
 		api::Status {
 			address_index: false,
+			brc721_index: true,
 			blessed_inscriptions: 1,
 			chain: Chain::Regtest,
 			cursed_inscriptions: 0,
