@@ -33,10 +33,6 @@ pub enum Event {
 		old_location: SatPoint,
 		sequence_number: u32,
 	},
-	Brc721CollectionCreated {
-		collection_id: Brc721CollectionId,
-		txid: Txid,
-	},
 	RuneBurned {
 		amount: u128,
 		block_height: u32,

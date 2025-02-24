@@ -64,7 +64,7 @@ fn rebaseable_is_false_by_default() {
 fn register_collection_command_indexer_integration() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
-	let ord = TestServer::spawn_with_server_args(&core, &["--regtest"], &[]);
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
 
 	core.mine_blocks(1);
 
