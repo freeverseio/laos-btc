@@ -260,9 +260,22 @@ impl Entry for RuneEntry {
 }
 
 pub(super) type RuneIdValue = (u64, u32);
+pub(super) type Brc721CollectionIdValue = (u64, u32);
 
 impl Entry for RuneId {
 	type Value = RuneIdValue;
+
+	fn load((block, tx): Self::Value) -> Self {
+		Self { block, tx }
+	}
+
+	fn store(self) -> Self::Value {
+		(self.block, self.tx)
+	}
+}
+
+impl Entry for Brc721CollectionId {
+	type Value = Brc721CollectionIdValue;
 
 	fn load((block, tx): Self::Value) -> Self {
 		Self { block, tx }

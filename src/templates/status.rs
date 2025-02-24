@@ -19,6 +19,7 @@ use super::*;
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StatusHtml {
 	pub address_index: bool,
+	pub brc721_index: bool,
 	pub blessed_inscriptions: u64,
 	pub chain: Chain,
 	pub cursed_inscriptions: u64,

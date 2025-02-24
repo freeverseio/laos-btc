@@ -1,0 +1,18 @@
+<h1>Brc721 Collections</h1>
+<ul>
+%% for (id, entry) in &self.entries {
+  <li>{{id}} - {{ entry }}</li>
+%% }
+</ul>
+<div class=center>
+  %% if let Some(prev) = self.prev {
+  <a class=prev href=/brc721/collections/{{prev}}>prev</a>
+  %% } else {
+  prev
+  %% }
+  %% if let Some(next) = self.next {
+  <a class=next href=/brc721/collections/{{next}}>next</a>
+  %% } else {
+  next
+  %% }
+</div>

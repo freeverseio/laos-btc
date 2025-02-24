@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use self::{inscription_updater::InscriptionUpdater, rune_updater::RuneUpdater};
+use self::{
+	brc721_updater::Brc721Updater, inscription_updater::InscriptionUpdater,
+	rune_updater::RuneUpdater,
+};
 use super::{fetcher::Fetcher, *};
 use futures::future::try_join_all;
 use tokio::sync::{
@@ -22,6 +25,9 @@ use tokio::sync::{
 	mpsc::{self},
 };
 
+pub(crate) use brc721_updater::RegisterCollectionValue;
+
+mod brc721_updater;
 mod inscription_updater;
 mod rune_updater;
 
@@ -389,6 +395,20 @@ impl Updater<'_> {
 			}
 
 			rune_updater.update()?;
+		}
+
+		if self.index.index_brc721 {
+			let mut brc721_collection_id_to_brc721_collection_value =
+				wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
+
+			let mut brc721_collection_updater = Brc721Updater {
+				height: self.height,
+				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
+			};
+
+			for (i, (tx, _)) in block.txdata.iter().enumerate() {
+				brc721_collection_updater.index_collections(u32::try_from(i).unwrap(), tx)?;
+			}
 		}
 
 		height_to_block_header.insert(&self.height, &block.header.store())?;

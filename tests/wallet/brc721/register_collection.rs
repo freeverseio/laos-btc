@@ -6,7 +6,7 @@ use sp_core::H160;
 fn register_collection_returns_tx_id() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
-	let ord = TestServer::spawn_with_server_args(&core, &["--regtest"], &[]);
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
 
 	core.mine_blocks(1);
 
@@ -36,7 +36,7 @@ fn register_collection_returns_tx_id() {
 fn rebaseable_is_false_by_default() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
-	let ord = TestServer::spawn_with_server_args(&core, &["--regtest"], &[]);
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
 
 	core.mine_blocks(1);
 

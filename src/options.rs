@@ -51,6 +51,8 @@ pub struct Options {
 	pub(crate) index: Option<PathBuf>,
 	#[arg(long, help = "Track unspent output addresses.")]
 	pub(crate) index_addresses: bool,
+	#[arg(long, help = "Track location of brc721.")]
+	pub(crate) index_brc721: bool,
 	#[arg(
 		long,
 		help = "Set index cache size to <INDEX_CACHE_SIZE> bytes. [default: 1/4 available RAM]"
