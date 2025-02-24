@@ -402,17 +402,12 @@ impl Updater<'_> {
 				wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
 			let mut brc721_collection_updater = Brc721Updater {
-				event_sender: self.index.event_sender.as_ref(),
 				height: self.height,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
 			};
 
-			for (i, (tx, txid)) in block.txdata.iter().enumerate() {
-				brc721_collection_updater.index_collections(
-					u32::try_from(i).unwrap(),
-					tx,
-					*txid,
-				)?;
+			for (i, (tx, _)) in block.txdata.iter().enumerate() {
+				brc721_collection_updater.index_collections(u32::try_from(i).unwrap(), tx)?;
 			}
 		}
 
