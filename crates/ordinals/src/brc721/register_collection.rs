@@ -222,6 +222,39 @@ mod tests {
 	}
 
 	#[test]
+	fn payload_second_output_is_ignored() {
+		let address_first_output = [0xCC; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable_first_output = [0x00; REBASEABLE_LENGTH];
+		let first_output = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address_first_output).into())
+			.push_slice::<&script::PushBytes>((&rebaseable_first_output).into())
+			.into_script();
+		let address_second_output = [0xDD; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable_second_output = [0x01; REBASEABLE_LENGTH];
+		let second_output = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address_second_output).into())
+			.push_slice::<&script::PushBytes>((&rebaseable_second_output).into())
+			.into_script();
+		let tx = Transaction {
+			version: Version(2),
+			lock_time: LockTime::ZERO,
+			input: vec![],
+			output: vec![
+				TxOut { value: Amount::ZERO, script_pubkey: first_output },
+				TxOut { value: Amount::ZERO, script_pubkey: second_output },
+			],
+		};
+
+		let payload = RegisterCollection::payload(&tx).unwrap();
+		assert_eq!(payload[..COLLECTION_ADDRESS_LENGTH], address_first_output);
+		assert_eq!(payload[COLLECTION_ADDRESS_LENGTH], rebaseable_first_output[0]);
+	}
+
+	#[test]
 	fn from_payload() {
 		let address = [0xEE; COLLECTION_ADDRESS_LENGTH];
 		let rebaseable_flag = 0x10;
