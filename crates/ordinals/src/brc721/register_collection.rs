@@ -1,11 +1,15 @@
-#![allow(dead_code)] // TODO remove when it is used
+#![allow(dead_code)]
+use super::*;
+// TODO remove when it is used
 use bitcoin::{
 	opcodes,
-	script::{self, Instruction},
-	ScriptBuf, Transaction,
+	script::{self, Instruction, Instructions},
+	transaction::{self, Version},
+	Amount, ScriptBuf, Transaction, TxOut,
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
+use thiserror::Error;
 
 const COLLECTION_ADDRESS_LENGTH: usize = 20;
 const REBASEABLE_LENGTH: usize = 1;
@@ -20,27 +24,132 @@ pub struct RegisterCollection {
 
 type Payload = [u8; PAYLOAD_LENGTH];
 
-impl RegisterCollection {
-	pub fn encipher(&self) -> ScriptBuf {
+// transaction includes script
+// script buf includes payload (and register)
+
+// tx => register collection, test from and into
+// register collection => script, test from and into
+
+// ENCODING
+
+impl From<RegisterCollection> for ScriptBuf {
+	fn from(register_collection: RegisterCollection) -> Self {
 		let mut builder = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE);
 
 		let address: &script::PushBytes =
-			self.address.as_bytes().try_into().expect("Conversion failed");
-		let rebaseable: [u8; 1] = if self.rebaseable { [1] } else { [0] };
+			register_collection.address.as_bytes().try_into().expect("Conversion failed");
+		let rebaseable: [u8; 1] = if register_collection.rebaseable { [1] } else { [0] };
 
 		builder = builder.push_slice(address);
 		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
 
 		builder.into_script()
 	}
+}
 
-	pub fn decipher(transaction: &Transaction) -> Option<RegisterCollection> {
-		let payload = RegisterCollection::payload(transaction)?;
-		Some(Self::from_payload(payload))
+// DECODING
+
+#[derive(Debug, Error)]
+pub enum RegisterCollectionError {
+	#[error("Instruction expected")]
+	NoInstruction,
+	#[error("Invalid output")]
+	InvalidOutput,
+	#[error("Unexpected instruction")]
+	UnexpectedIntruction,
+	#[error("Invalid lenght")]
+	InvalidLength,
+	// Add other error variants as needed.
+}
+
+pub struct RegisterCollectionPayload(ScriptBuf);
+
+// TODO se pueden unificar los dels TryFrom?
+impl TryFrom<Transaction> for RegisterCollectionPayload {
+	type Error = RegisterCollectionError;
+	fn try_from(transaction: Transaction) -> Result<Self, Self::Error> {
+		let output = transaction
+			.output
+			.first()
+			.ok_or(RegisterCollectionError::NoInstruction)
+			.unwrap();
+		// TODO check length manually
+		// let payload: Vec<u8> = output.clone().script_pubkey.clone().into();
+		// let payload: [u8; PAYLOAD_LENGTH] = payload
+		// 	.as_slice()
+		// 	.try_into()
+		// 	.map_err(|_| RegisterCollectionError::NoInstruction)?;
+
+		Ok(RegisterCollectionPayload(output.script_pubkey.clone()))
+	}
+}
+
+impl TryFrom<RegisterCollectionPayload> for RegisterCollection {
+	type Error = RegisterCollectionError;
+
+	fn try_from(payload: RegisterCollectionPayload) -> Result<Self, Self::Error> {
+		let mut instructions = payload.0.instructions();
+		match instructions.next().ok_or(RegisterCollectionError::NoInstruction)? {
+			// TODO print what isntruction was expected
+			Ok(Instruction::Op(opcodes::all::OP_RETURN)) => {},
+			_ => return Err(RegisterCollectionError::UnexpectedIntruction), // // TODO print the unexpected instruction
+		}
+
+		match instructions.next().ok_or(RegisterCollectionError::NoInstruction)? {
+			Ok(Instruction::Op(REGISTER_COLLECTION_CODE)) => {},
+			_ => return Err(RegisterCollectionError::UnexpectedIntruction), // // TODO print the unexpected instruction
+		}
+
+		// Construct the payload by concatenating remaining data pushes
+		let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
+
+		match instructions.next().ok_or(RegisterCollectionError::NoInstruction)? {
+			// TODO print what isntruction was expected
+			Ok(Instruction::PushBytes(push)) if push.len() == COLLECTION_ADDRESS_LENGTH => {
+				payload.extend_from_slice(push.as_bytes());
+			},
+			Ok(Instruction::PushBytes(_)) => {
+				return Err(RegisterCollectionError::InvalidLength); // TODO use expected lenght
+			},
+			_ => return Err(RegisterCollectionError::UnexpectedIntruction), // // TODO print the unexpected instruction
+		}
+
+		match instructions.next().ok_or(RegisterCollectionError::NoInstruction)? {
+			// TODO print what isntruction was expected
+			Ok(Instruction::PushBytes(push)) if push.len() == REBASEABLE_LENGTH => {
+				payload.extend_from_slice(push.as_bytes());
+			},
+			Ok(Instruction::PushBytes(_)) => {
+				return Err(RegisterCollectionError::InvalidLength); // TODO use expected lenght
+			},
+			_ => return Err(RegisterCollectionError::UnexpectedIntruction), // // TODO print the unexpected instruction
+		}
+
+		Ok(Self {
+			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
+			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
+		})
+	}
+}
+
+impl RegisterCollection {
+	pub fn encipher(self) -> RegisterCollectionPayload {
+		RegisterCollectionPayload((self).into())
 	}
 
+	pub fn decipher(payload: RegisterCollectionPayload) -> Option<RegisterCollection> {
+		match payload.try_into() {
+			Ok(register_collection) => Some(register_collection),
+			Err(e) => {
+				log::warn!("Failed to decipher register collection payload: {:?}", e);
+				None
+			},
+		}
+	}
+
+	/// legacy
 	fn payload(transaction: &Transaction) -> Option<Payload> {
 		let output = transaction.output.first()?;
 		let mut instructions = output.script_pubkey.instructions();
@@ -84,6 +193,7 @@ impl RegisterCollection {
 		payload.try_into().ok()
 	}
 
+	/// legacy
 	fn from_payload(payload: Payload) -> Self {
 		Self {
 			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
@@ -247,5 +357,29 @@ mod tests {
 			H160::from_str("0x7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a").unwrap()
 		);
 		assert!(register_collection.rebaseable);
+	}
+
+	#[test]
+	fn from_transaction_to_script() {
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable = [0x00; REBASEABLE_LENGTH];
+		let alice = H160::from([0; 20]);
+		let register_collection = RegisterCollection { address: alice, rebaseable: false };
+		let script_buf = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address).into())
+			.push_slice::<&script::PushBytes>((&rebaseable).into())
+			.into_script();
+		let tx = Transaction {
+			version: Version(2),
+			lock_time: LockTime::ZERO,
+			input: vec![],
+			output: vec![TxOut { value: Amount::ZERO, script_pubkey: register_collection.into() }],
+		};
+
+		// from script to tx
+		let payload: RegisterCollectionPayload = tx.try_into().expect("msg");
+		let register_collection: RegisterCollection = payload.try_into().expect("msg");
 	}
 }
