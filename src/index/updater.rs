@@ -15,7 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use self::{
-	brc721_updater::Brc721CollectionUpdater, inscription_updater::InscriptionUpdater,
+	brc721_updater::Brc721Updater, inscription_updater::InscriptionUpdater,
 	rune_updater::RuneUpdater,
 };
 use super::{fetcher::Fetcher, *};
@@ -401,7 +401,7 @@ impl Updater<'_> {
 			let mut brc721_collection_id_to_brc721_collection_value =
 				wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
-			let mut brc721_collection_updater = Brc721CollectionUpdater {
+			let mut brc721_collection_updater = Brc721Updater {
 				event_sender: self.index.event_sender.as_ref(),
 				height: self.height,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,

@@ -36,13 +36,13 @@ impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
 
 pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
 
-pub(super) struct Brc721CollectionUpdater<'a, T> {
+pub(super) struct Brc721Updater<'a, T> {
 	pub(super) event_sender: Option<&'a mpsc::Sender<Event>>,
 	pub(super) height: u32,
 	pub(super) collection_table: &'a mut T,
 }
 
-impl<T> Brc721CollectionUpdater<'_, T>
+impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
@@ -128,7 +128,7 @@ mod tests {
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
+		let mut updater = Brc721Updater {
 			event_sender: Some(&sender),
 			height: expected_height,
 			collection_table: &mut id_to_collection,
@@ -164,7 +164,7 @@ mod tests {
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
+		let mut updater = Brc721Updater {
 			event_sender: Some(&sender),
 			height: expected_height,
 			collection_table: &mut id_to_collection,
@@ -188,7 +188,7 @@ mod tests {
 		let (sender, mut receiver) = mpsc::channel(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
+		let mut updater = Brc721Updater {
 			event_sender: Some(&sender),
 			height: expected_height,
 			collection_table: &mut id_to_collection,
@@ -243,7 +243,7 @@ mod tests {
 		let (sender, _) = mpsc::channel::<Event>(1000);
 		let mut id_to_collection = HashMap::new();
 
-		let mut updater = Brc721CollectionUpdater {
+		let mut updater = Brc721Updater {
 			event_sender: Some(&sender),
 			height: 100,
 			collection_table: &mut id_to_collection,
