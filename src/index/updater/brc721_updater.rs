@@ -39,7 +39,7 @@ pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool
 pub(super) struct Brc721CollectionUpdater<'a, T> {
 	pub(super) event_sender: Option<&'a mpsc::Sender<Event>>,
 	pub(super) height: u32,
-	pub(super) id_to_collection: &'a mut T,
+	pub(super) collection_table: &'a mut T,
 }
 
 impl<T> Brc721CollectionUpdater<'_, T>
@@ -53,7 +53,7 @@ where
 		txid: Txid,
 	) -> Result<()> {
 		if let Some(register_collection) = RegisterCollection::decipher(tx) {
-			self.id_to_collection.insert(
+			self.collection_table.insert(
 				(self.height.into(), tx_index),
 				(register_collection.address.into(), register_collection.rebaseable),
 			)?;
@@ -131,7 +131,7 @@ mod tests {
 		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: expected_height,
-			id_to_collection: &mut id_to_collection,
+			collection_table: &mut id_to_collection,
 		};
 
 		let tx = brc721_collection_tx(expected_rebaseable);
@@ -167,7 +167,7 @@ mod tests {
 		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: expected_height,
-			id_to_collection: &mut id_to_collection,
+			collection_table: &mut id_to_collection,
 		};
 
 		let tx_index = 5;
@@ -191,7 +191,7 @@ mod tests {
 		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: expected_height,
-			id_to_collection: &mut id_to_collection,
+			collection_table: &mut id_to_collection,
 		};
 
 		let transactions =
@@ -207,9 +207,15 @@ mod tests {
 		assert!(!id_to_collection.contains_key(&(expected_height.into(), 2)));
 
 		assert!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().1);
-		assert_eq!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().0, COLLECTION_ADDRESS);
+		assert_eq!(
+			id_to_collection.get(&(expected_height.into(), 0)).unwrap().0,
+			COLLECTION_ADDRESS
+		);
 		assert!(!id_to_collection.get(&(expected_height.into(), 1)).unwrap().1);
-		assert_eq!(id_to_collection.get(&(expected_height.into(), 0)).unwrap().0, COLLECTION_ADDRESS);
+		assert_eq!(
+			id_to_collection.get(&(expected_height.into(), 0)).unwrap().0,
+			COLLECTION_ADDRESS
+		);
 
 		let event = receiver.try_recv().unwrap();
 		match event {
@@ -240,7 +246,7 @@ mod tests {
 		let mut updater = Brc721CollectionUpdater {
 			event_sender: Some(&sender),
 			height: 100,
-			id_to_collection: &mut id_to_collection,
+			collection_table: &mut id_to_collection,
 		};
 
 		let tx_index = 5;

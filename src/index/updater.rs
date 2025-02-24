@@ -404,7 +404,7 @@ impl Updater<'_> {
 			let mut brc721_collection_updater = Brc721CollectionUpdater {
 				event_sender: self.index.event_sender.as_ref(),
 				height: self.height,
-				id_to_collection: &mut brc721_collection_id_to_brc721_collection_value,
+				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
 			};
 
 			for (i, (tx, txid)) in block.txdata.iter().enumerate() {
