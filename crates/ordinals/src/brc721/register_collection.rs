@@ -228,7 +228,7 @@ mod tests {
 
 		let register_collection_decoded: RegisterCollection = tx.try_into().unwrap();
 		assert_eq!(register_collection_decoded.address, address.into());
-		assert_eq!(register_collection_decoded.rebaseable, false);
+		assert!(!register_collection_decoded.rebaseable);
 	}
 
 	#[test]
