@@ -3845,7 +3845,7 @@ mod tests {
 		TestServer::builder().chain(Chain::Regtest).build().assert_response_regex(
 			"/",
 			StatusCode::OK,
-			".*<a href=/ title=home>Ordinals<sup>regtest</sup></a>.*",
+			".*<a href=/ title=home>Ordinals⊕LAOS<sup>regtest</sup></a>.*",
 		);
 	}
 
