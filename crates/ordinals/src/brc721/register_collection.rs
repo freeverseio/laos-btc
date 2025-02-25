@@ -87,23 +87,6 @@ impl RegisterCollection {
 	}
 }
 
-impl From<RegisterCollection> for ScriptBuf {
-	fn from(register_collection: RegisterCollection) -> Self {
-		let mut builder = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE);
-
-		let address: &script::PushBytes =
-			register_collection.address.as_bytes().try_into().expect("Conversion failed");
-		let rebaseable: [u8; 1] = if register_collection.rebaseable { [1] } else { [0] };
-
-		builder = builder.push_slice(address);
-		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
-
-		builder.into_script()
-	}
-}
-
 #[derive(Debug, Error, PartialEq)]
 pub enum RegisterCollectionError {
 	#[error("Instruction not found: `{0}`")]
@@ -314,7 +297,7 @@ mod tests {
 			input: vec![],
 			output: vec![TxOut {
 				value: Amount::ZERO,
-				script_pubkey: register_collection.clone().into(),
+				script_pubkey: register_collection.clone().encode(),
 			}],
 		};
 

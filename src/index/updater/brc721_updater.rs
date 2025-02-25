@@ -87,7 +87,7 @@ mod tests {
 		let collection =
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
-		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().into() };
+		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().encode() };
 
 		Transaction {
 			version: Version(1),
