@@ -15,7 +15,6 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use ordinals::RegisterCollection;
-use thiserror::Error;
 
 use super::*;
 
@@ -42,12 +41,6 @@ pub(super) struct Brc721Updater<'a, T> {
 	pub(super) collection_table: &'a mut T,
 }
 
-#[derive(Debug, Error, PartialEq)]
-pub enum Brc721UpdaterError {
-	#[error("Output not found")]
-	OutputNotFound,
-}
-
 impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
@@ -60,7 +53,8 @@ where
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		// Ensure the transaction has at least one output.
 		if tx.output.is_empty() {
-			return Err(Brc721UpdaterError::OutputNotFound.into());
+			log::warn!("Failed to decode register collection: Output not found");
+			return Ok(());
 		}
 
 		// TODO what if the output.let() > 1 ???? we just skip the others ?
