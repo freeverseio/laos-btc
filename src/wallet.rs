@@ -29,7 +29,6 @@ use index::entry::Entry;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
 use miniscript::descriptor::{DescriptorSecretKey, DescriptorXKey, Wildcard};
-use ordinals::brc721::register_collection::RegisterCollection;
 use redb::{Database, DatabaseError, ReadableTable, RepairSession, StorageError, TableDefinition};
 use reqwest::header;
 use std::sync::Once;
@@ -325,8 +324,8 @@ impl Wallet {
 	}
 
 	fn is_above_minimum_at_height(&self, rune: Rune) -> Result<bool> {
-		Ok(rune
-			>= Rune::minimum_at_height(
+		Ok(rune >=
+			Rune::minimum_at_height(
 				self.chain().network(),
 				Height(u32::try_from(self.bitcoin_client().get_block_count()? + 1).unwrap()),
 			))
@@ -392,12 +391,11 @@ impl Wallet {
 					progress.finish_with_message("Rune matured, submitting...");
 					break;
 				},
-				Maturity::ConfirmationsPending(remaining) => {
+				Maturity::ConfirmationsPending(remaining) =>
 					if remaining < pending_confirmations {
 						pending_confirmations = remaining;
 						progress.inc(1);
-					}
-				},
+					},
 				Maturity::CommitSpent(txid) => {
 					self.clear_etching(rune)?;
 					bail!("rune commitment {} spent, can't send reveal tx", txid);
@@ -416,12 +414,11 @@ impl Wallet {
 	pub(crate) fn send_etching(&self, rune: Rune, entry: &EtchingEntry) -> Result<batch::Output> {
 		match self.bitcoin_client().send_raw_transaction(&entry.reveal) {
 			Ok(txid) => txid,
-			Err(err) => {
+			Err(err) =>
 				return Err(anyhow!(
           "Failed to send reveal transaction: {err}\nCommit tx {} will be recovered once mined",
           entry.commit.compute_txid()
-        ))
-			},
+        )),
 		};
 
 		self.clear_etching(rune)?;
@@ -921,8 +918,8 @@ impl Wallet {
 
 					inputs.push(output);
 
-					if input_rune_balances.get(&spaced_rune.rune).cloned().unwrap_or_default()
-						>= amount
+					if input_rune_balances.get(&spaced_rune.rune).cloned().unwrap_or_default() >=
+						amount
 					{
 						break;
 					}
