@@ -1,7 +1,7 @@
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
-	ScriptBuf, Transaction,
+	ScriptBuf,
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
@@ -45,14 +45,9 @@ impl RegisterCollection {
 
 		Ok(Self {
 			address: H160::from_slice(&address_bytes),
-			rebaseable: rebaseable_bytes[0] > 0, // any nonzero value is `true` TODO check the whitepaper
+			rebaseable: rebaseable_bytes[0] > 0, /* any nonzero value is `true` TODO check the
+			                                      * whitepaper */
 		})
-	}
-
-	pub fn from_tx(transaction: Transaction) -> Result<Self, RegisterCollectionError> {
-		let output = transaction.output.first().ok_or(RegisterCollectionError::OutputNotFound)?;
-
-		RegisterCollection::decode(&output.script_pubkey)
 	}
 }
 

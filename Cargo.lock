@@ -2859,6 +2859,7 @@ dependencies = [
  "sp-core",
  "sysinfo",
  "tempfile",
+ "thiserror 2.0.11",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.13",

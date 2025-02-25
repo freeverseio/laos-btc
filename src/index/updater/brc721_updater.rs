@@ -15,6 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use ordinals::RegisterCollection;
+use thiserror::Error;
 
 use super::*;
 
@@ -41,12 +42,26 @@ pub(super) struct Brc721Updater<'a, T> {
 	pub(super) collection_table: &'a mut T,
 }
 
+#[derive(Debug, Error, PartialEq)]
+pub enum Brc721UpdaterError {
+	#[error("Output not found")]
+	OutputNotFound,
+}
+
 impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		match RegisterCollection::from_tx(tx.clone()) {
+		// TODO this is strange it seems that here we expect 1 only output of the tx
+		// Ensure the transaction has at least one output.
+		let Some(output) = tx.output.first() else {
+			return Err(Brc721UpdaterError::OutputNotFound.into());
+		};
+
+		// TODO what if the output.let() > 1 ????
+
+		match RegisterCollection::decode(&output.script_pubkey) {
 			Ok(register_collection) => {
 				self.collection_table.insert(
 					(self.height.into(), tx_index),
