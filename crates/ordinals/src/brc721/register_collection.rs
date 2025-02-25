@@ -195,6 +195,38 @@ mod tests {
 	}
 
 	#[test]
+	fn test_decode_script_with_op_return_correct_opcode_and_short_address() {
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH-1];
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address).into())
+			.into_script();
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InvalidLength("collection address".to_string())
+		);
+	}
+
+	#[test]
+	fn test_decode_script_with_op_return_correct_opcode_and_long_address() {
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH+1];
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address).into())
+			.into_script();
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InvalidLength("collection address".to_string())
+		);
+	}
+
+	#[test]
 	fn test_decode_script_with_op_return_correct_opcode_and_address_but_no_rebaseable() {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
 		let script = script::Builder::new()
