@@ -40,7 +40,7 @@ impl RegisterCollection {
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE)
 			.push_slice(address)
-			.push_slice(&rebaseable)
+			.push_slice(rebaseable)
 			.into_script()
 	}
 

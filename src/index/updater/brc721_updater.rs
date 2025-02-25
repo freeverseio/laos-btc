@@ -59,7 +59,7 @@ where
 	/// * `tx` - The transaction to process.
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		// Ensure the transaction has at least one output.
-		if tx.output.len() == 0 {
+		if tx.output.is_empty() {
 			return Err(Brc721UpdaterError::OutputNotFound.into());
 		}
 
