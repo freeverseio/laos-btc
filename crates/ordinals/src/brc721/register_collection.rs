@@ -49,22 +49,12 @@ pub enum RegisterCollectionError {
 	OutputNotFound,
 }
 
-#[derive(Debug, Clone)]
-pub struct RegisterCollectionPayload(ScriptBuf);
-
-impl TryFrom<Transaction> for RegisterCollectionPayload {
+impl TryFrom<Transaction> for RegisterCollection {
 	type Error = RegisterCollectionError;
 	fn try_from(transaction: Transaction) -> Result<Self, Self::Error> {
 		let output = transaction.output.first().ok_or(RegisterCollectionError::OutputNotFound)?;
-		Ok(RegisterCollectionPayload(output.script_pubkey.clone()))
-	}
-}
 
-impl TryFrom<RegisterCollectionPayload> for RegisterCollection {
-	type Error = RegisterCollectionError;
-
-	fn try_from(payload: RegisterCollectionPayload) -> Result<Self, Self::Error> {
-		let mut instructions = payload.0.instructions();
+		let mut instructions = output.script_pubkey.instructions();
 		match instructions
 			.next()
 			.ok_or(RegisterCollectionError::InstructionNotFound("OP_RETURN".into()))?
@@ -116,22 +106,6 @@ impl TryFrom<RegisterCollectionPayload> for RegisterCollection {
 	}
 }
 
-impl RegisterCollection {
-	pub fn encipher(self) -> RegisterCollectionPayload {
-		RegisterCollectionPayload((self).into())
-	}
-
-	pub fn decipher(payload: RegisterCollectionPayload) -> Option<RegisterCollection> {
-		match payload.try_into() {
-			Ok(register_collection) => Some(register_collection),
-			Err(e) => {
-				log::warn!("Failed to decipher register collection payload: {:?}", e);
-				None
-			},
-		}
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use bitcoin::{absolute::LockTime, transaction::Version, Amount, TxOut};
@@ -148,7 +122,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			RegisterCollectionPayload::try_from(tx).unwrap_err(),
+			RegisterCollection::try_from(tx).unwrap_err(),
 			RegisterCollectionError::OutputNotFound
 		);
 	}
@@ -164,9 +138,8 @@ mod tests {
 			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
 		};
 
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
 		assert_eq!(
-			RegisterCollection::try_from(payload).unwrap_err().to_string(),
+			RegisterCollection::try_from(tx).unwrap_err().to_string(),
 			"Unexpected instruction"
 		);
 	}
@@ -184,9 +157,8 @@ mod tests {
 			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
 		};
 
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
 		assert_eq!(
-			RegisterCollection::try_from(payload).unwrap_err().to_string(),
+			RegisterCollection::try_from(tx).unwrap_err().to_string(),
 			"Unexpected instruction"
 		);
 	}
@@ -208,9 +180,8 @@ mod tests {
 			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
 		};
 
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
 		assert_eq!(
-			RegisterCollection::try_from(payload).unwrap_err().to_string(),
+			RegisterCollection::try_from(tx).unwrap_err().to_string(),
 			"Invalid lenght: `collection address`"
 		);
 	}
@@ -230,9 +201,8 @@ mod tests {
 			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
 		};
 
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
 		assert_eq!(
-			RegisterCollection::try_from(payload).unwrap_err().to_string(),
+			RegisterCollection::try_from(tx).unwrap_err().to_string(),
 			"Instruction not found: `rebaseable`"
 		);
 	}
@@ -256,8 +226,7 @@ mod tests {
 			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
 		};
 
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
-		let register_collection_decoded: RegisterCollection = payload.try_into().unwrap();
+		let register_collection_decoded: RegisterCollection = tx.try_into().unwrap();
 		assert_eq!(register_collection_decoded.address, address.into());
 		assert_eq!(register_collection_decoded.rebaseable, false);
 	}
@@ -278,46 +247,8 @@ mod tests {
 			}],
 		};
 
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
-		let register_collection_decoded: RegisterCollection = payload.try_into().unwrap();
+		let register_collection_decoded: RegisterCollection = tx.try_into().unwrap();
 
 		assert_eq!(register_collection, register_collection_decoded);
-	}
-
-	#[test]
-	fn encipher_decipher_register_collection_transaction() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
-		let register_collection =
-			RegisterCollection { address: H160::from(address), rebaseable: false };
-
-		let enciphered = register_collection.clone().encipher();
-
-		let deciphered = RegisterCollection::decipher(enciphered).unwrap();
-
-		assert_eq!(register_collection, deciphered);
-	}
-
-	#[test]
-	fn decipher_returns_none_when_payload_is_invalid() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
-		let script_buf = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
-			.push_slice::<&script::PushBytes>((&address).into())
-			.into_script();
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
-		};
-
-		let payload: RegisterCollectionPayload = tx.try_into().unwrap();
-		assert_eq!(
-			RegisterCollection::try_from(payload.clone()).unwrap_err().to_string(),
-			"Instruction not found: `rebaseable`"
-		);
-
-		assert!(RegisterCollection::decipher(payload).is_none());
 	}
 }

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::{RegisterCollection, RegisterCollectionPayload};
+use ordinals::RegisterCollection;
 
 use super::*;
 
@@ -46,21 +46,17 @@ where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		let payload: RegisterCollectionPayload = match tx.clone().try_into() {
-			Ok(payload) => payload,
-			Err(err) => {
-				log::warn!("Error converting transaction to RegisterCollectionPayload: {:?}", err);
-				return Ok(());
+		match <Transaction as TryInto<RegisterCollection>>::try_into(tx.clone()) {
+			Ok(register_collection) => {
+				self.collection_table.insert(
+					(self.height.into(), tx_index),
+					(register_collection.address.into(), register_collection.rebaseable),
+				)?;
 			},
-		};
-
-		if let Some(register_collection) = RegisterCollection::decipher(payload) {
-			self.collection_table.insert(
-				(self.height.into(), tx_index),
-				(register_collection.address.into(), register_collection.rebaseable),
-			)?;
+			Err(e) => {
+				log::warn!("Failed to decode register collection: {:?}", e);
+			},
 		}
-
 		Ok(())
 	}
 }
