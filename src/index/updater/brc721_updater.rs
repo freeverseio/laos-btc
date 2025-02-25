@@ -46,13 +46,17 @@ where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		if let Some(register_collection) = RegisterCollection::decipher(tx) {
-			self.collection_table.insert(
-				(self.height.into(), tx_index),
-				(register_collection.address.into(), register_collection.rebaseable),
-			)?;
+		match <Transaction as TryInto<RegisterCollection>>::try_into(tx.clone()) {
+			Ok(register_collection) => {
+				self.collection_table.insert(
+					(self.height.into(), tx_index),
+					(register_collection.address.into(), register_collection.rebaseable),
+				)?;
+			},
+			Err(e) => {
+				log::warn!("Failed to decode register collection: {:?}", e);
+			},
 		}
-
 		Ok(())
 	}
 }
@@ -83,9 +87,7 @@ mod tests {
 		let collection =
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
-		let script_buf = collection.encipher();
-
-		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: script_buf };
+		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().into() };
 
 		Transaction {
 			version: Version(1),

@@ -29,7 +29,6 @@ use index::entry::Entry;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
 use miniscript::descriptor::{DescriptorSecretKey, DescriptorXKey, Wildcard};
-use ordinals::brc721::register_collection::RegisterCollection;
 use redb::{Database, DatabaseError, ReadableTable, RepairSession, StorageError, TableDefinition};
 use reqwest::header;
 use std::sync::Once;
@@ -1025,9 +1024,9 @@ impl Wallet {
 		Ok(unsigned_transaction)
 	}
 
-	pub(crate) fn build_brc721_register_collection_tx(
+	pub(crate) fn build_brc721_tx<T: Into<ScriptBuf>>(
 		&self,
-		tx: RegisterCollection,
+		tx: T,
 		fee_rate: FeeRate,
 		postage: Postage,
 	) -> Result<Transaction> {
@@ -1043,7 +1042,7 @@ impl Wallet {
 			lock_time: LockTime::ZERO,
 			input: vec![],
 			output: vec![
-				TxOut { value: Amount::from_sat(0), script_pubkey: tx.encipher() },
+				TxOut { value: Amount::from_sat(0), script_pubkey: tx.into() },
 				TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() },
 			],
 		};
