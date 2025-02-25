@@ -46,7 +46,7 @@ where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		match <Transaction as TryInto<RegisterCollection>>::try_into(tx.clone()) {
+		match RegisterCollection::from_tx(tx.clone()) {
 			Ok(register_collection) => {
 				self.collection_table.insert(
 					(self.height.into(), tx_index),

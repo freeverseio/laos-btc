@@ -85,6 +85,12 @@ impl RegisterCollection {
 			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
 		})
 	}
+
+	pub fn from_tx(transaction: Transaction) -> Result<Self, RegisterCollectionError> {
+		let output = transaction.output.first().ok_or(RegisterCollectionError::OutputNotFound)?;
+
+		RegisterCollection::decode(&output.script_pubkey)
+	}
 }
 
 #[derive(Debug, Error, PartialEq)]
@@ -99,63 +105,6 @@ pub enum RegisterCollectionError {
 	InvalidLength(String),
 	#[error("Output not found")]
 	OutputNotFound,
-}
-
-impl TryFrom<Transaction> for RegisterCollection {
-	type Error = RegisterCollectionError;
-	fn try_from(transaction: Transaction) -> Result<Self, Self::Error> {
-		let output = transaction.output.first().ok_or(RegisterCollectionError::OutputNotFound)?;
-
-		let mut instructions = output.script_pubkey.instructions();
-		match instructions
-			.next()
-			.ok_or(RegisterCollectionError::InstructionNotFound("OP_RETURN".into()))?
-		{
-			Ok(Instruction::Op(opcodes::all::OP_RETURN)) => {},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
-
-		match instructions.next().ok_or(RegisterCollectionError::InstructionNotFound(
-			"REGISTER_COLLECTION_CODE".into(),
-		))? {
-			Ok(Instruction::Op(REGISTER_COLLECTION_CODE)) => {},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
-
-		// Construct the payload by concatenating remaining data pushes
-		let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
-
-		match instructions
-			.next()
-			.ok_or(RegisterCollectionError::InstructionNotFound("collection address".into()))?
-		{
-			Ok(Instruction::PushBytes(push)) if push.len() == COLLECTION_ADDRESS_LENGTH => {
-				payload.extend_from_slice(push.as_bytes());
-			},
-			Ok(Instruction::PushBytes(_)) => {
-				return Err(RegisterCollectionError::InvalidLength("collection address".into()));
-			},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
-
-		match instructions
-			.next()
-			.ok_or(RegisterCollectionError::InstructionNotFound("rebaseable".into()))?
-		{
-			Ok(Instruction::PushBytes(push)) if push.len() == REBASEABLE_LENGTH => {
-				payload.extend_from_slice(push.as_bytes());
-			},
-			Ok(Instruction::PushBytes(_)) => {
-				return Err(RegisterCollectionError::InvalidLength("rebaseable".into()));
-			},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
-
-		Ok(Self {
-			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
-			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
-		})
-	}
 }
 
 #[cfg(test)]
@@ -176,7 +125,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			RegisterCollection::try_from(tx).unwrap_err(),
+			RegisterCollection::from_tx(tx).unwrap_err(),
 			RegisterCollectionError::OutputNotFound
 		);
 	}
@@ -193,7 +142,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			RegisterCollection::try_from(tx).unwrap_err().to_string(),
+			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
 			"Unexpected instruction"
 		);
 	}
@@ -212,7 +161,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			RegisterCollection::try_from(tx).unwrap_err().to_string(),
+			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
 			"Unexpected instruction"
 		);
 	}
@@ -235,7 +184,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			RegisterCollection::try_from(tx).unwrap_err().to_string(),
+			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
 			"Invalid lenght: `collection address`"
 		);
 	}
@@ -256,7 +205,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			RegisterCollection::try_from(tx).unwrap_err().to_string(),
+			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
 			"Instruction not found: `rebaseable`"
 		);
 	}
@@ -280,7 +229,7 @@ mod tests {
 			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
 		};
 
-		let register_collection_decoded: RegisterCollection = tx.try_into().unwrap();
+		let register_collection_decoded = RegisterCollection::from_tx(tx).unwrap();
 		assert_eq!(register_collection_decoded.address, address.into());
 		assert!(!register_collection_decoded.rebaseable);
 	}
@@ -301,7 +250,7 @@ mod tests {
 			}],
 		};
 
-		let register_collection_decoded: RegisterCollection = tx.try_into().unwrap();
+		let register_collection_decoded = RegisterCollection::from_tx(tx).unwrap();
 
 		assert_eq!(register_collection, register_collection_decoded);
 	}
