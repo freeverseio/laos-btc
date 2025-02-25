@@ -20,18 +20,16 @@ pub struct RegisterCollection {
 
 impl RegisterCollection {
 	pub fn encode(&self) -> ScriptBuf {
-		let mut builder = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE);
-
 		let address: &script::PushBytes =
 			self.address.as_bytes().try_into().expect("Conversion failed");
-		let rebaseable: [u8; 1] = if self.rebaseable { [1] } else { [0] };
+		let rebaseable = [self.rebaseable as u8];
 
-		builder = builder.push_slice(address);
-		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
-
-		builder.into_script()
+		script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice(address)
+			.push_slice(&rebaseable)
+			.into_script()
 	}
 
 	pub fn decode(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
