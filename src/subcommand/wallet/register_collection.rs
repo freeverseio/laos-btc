@@ -54,7 +54,7 @@ impl Register {
 		let register_collection_tx =
 			RegisterCollection { address: self.collection_address, rebaseable: self.rebaseable };
 
-		let bitcoin_tx = wallet.build_tx(register_collection_tx, self.fee_rate, postage)?;
+		let bitcoin_tx = wallet.build_brc721_tx(register_collection_tx, self.fee_rate, postage)?;
 
 		let tx_id = wallet.bitcoin_client().send_raw_transaction(&bitcoin_tx)?;
 

@@ -1,5 +1,6 @@
 use super::*;
-use ord::subcommand::wallet::register_collection;
+use ord::subcommand::wallet::brc721::register_collection;
+use ordinals::brc721::register_collection::RegisterCollectionPayload;
 use sp_core::H160;
 
 #[test]
@@ -27,7 +28,8 @@ fn register_collection_returns_tx_id() {
 	core.mine_blocks(1);
 
 	let tx = core.tx_by_id(output.tx_id);
-	let register_collection = RegisterCollection::decipher(&tx).unwrap();
+	let payload: RegisterCollectionPayload = tx.try_into().unwrap();
+	let register_collection = RegisterCollection::decipher(payload).unwrap();
 	assert!(register_collection.rebaseable);
 	assert_eq!(register_collection.address, alice);
 }
@@ -56,6 +58,7 @@ fn rebaseable_is_false_by_default() {
 	core.mine_blocks(1);
 
 	let tx = core.tx_by_id(output.tx_id);
-	let register_collection = RegisterCollection::decipher(&tx).unwrap();
+	let payload: RegisterCollectionPayload = tx.try_into().unwrap();
+	let register_collection = RegisterCollection::decipher(payload).unwrap();
 	assert!(!register_collection.rebaseable);
 }

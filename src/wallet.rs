@@ -1022,7 +1022,7 @@ impl Wallet {
 		Ok(unsigned_transaction)
 	}
 
-	pub(crate) fn build_tx<T: Into<ScriptBuf>>(
+	pub(crate) fn build_brc721_tx<T: Into<ScriptBuf>>(
 		&self,
 		tx: T,
 		fee_rate: FeeRate,
