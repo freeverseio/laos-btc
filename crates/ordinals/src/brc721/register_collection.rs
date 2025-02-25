@@ -9,7 +9,6 @@ use thiserror::Error;
 
 pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 const REBASEABLE_LENGTH: usize = 1;
-const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
@@ -34,53 +33,19 @@ impl RegisterCollection {
 
 	pub fn decode(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
 		let mut instructions = script.instructions();
-		match instructions
-			.next()
-			.ok_or(RegisterCollectionError::InstructionNotFound("OP_RETURN".into()))?
-		{
-			Ok(Instruction::Op(opcodes::all::OP_RETURN)) => {},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
 
-		match instructions.next().ok_or(RegisterCollectionError::InstructionNotFound(
-			"REGISTER_COLLECTION_CODE".into(),
-		))? {
-			Ok(Instruction::Op(REGISTER_COLLECTION_CODE)) => {},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
-
-		// Construct the payload by concatenating remaining data pushes
-		let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
-
-		match instructions
-			.next()
-			.ok_or(RegisterCollectionError::InstructionNotFound("collection address".into()))?
-		{
-			Ok(Instruction::PushBytes(push)) if push.len() == COLLECTION_ADDRESS_LENGTH => {
-				payload.extend_from_slice(push.as_bytes());
-			},
-			Ok(Instruction::PushBytes(_)) => {
-				return Err(RegisterCollectionError::InvalidLength("collection address".into()));
-			},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
-
-		match instructions
-			.next()
-			.ok_or(RegisterCollectionError::InstructionNotFound("rebaseable".into()))?
-		{
-			Ok(Instruction::PushBytes(push)) if push.len() == REBASEABLE_LENGTH => {
-				payload.extend_from_slice(push.as_bytes());
-			},
-			Ok(Instruction::PushBytes(_)) => {
-				return Err(RegisterCollectionError::InvalidLength("rebaseable".into()));
-			},
-			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
-		}
+		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
+		expect_opcode(&mut instructions, REGISTER_COLLECTION_CODE, "REGISTER_COLLECTION_CODE")?;
+		// Expect the collection address (20 bytes)
+		let address_bytes =
+			expect_push_bytes(&mut instructions, COLLECTION_ADDRESS_LENGTH, "collection address")?;
+		// Expect the rebaseable flag (1 byte)
+		let rebaseable_bytes =
+			expect_push_bytes(&mut instructions, REBASEABLE_LENGTH, "rebaseable")?;
 
 		Ok(Self {
-			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
-			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
+			address: H160::from_slice(&address_bytes),
+			rebaseable: rebaseable_bytes[0] > 0, // any nonzero value is `true` TODO check the whitepaper
 		})
 	}
 
@@ -103,6 +68,37 @@ pub enum RegisterCollectionError {
 	InvalidLength(String),
 	#[error("Output not found")]
 	OutputNotFound,
+}
+
+/// Helper to ensure the next instruction is a specific opcode.
+fn expect_opcode<'a>(
+	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
+	expected_op: opcodes::Opcode,
+	desc: &str,
+) -> Result<(), RegisterCollectionError> {
+	match instructions
+		.next()
+		.ok_or_else(|| RegisterCollectionError::InstructionNotFound(desc.into()))?
+	{
+		Ok(Instruction::Op(op)) if op == expected_op => Ok(()),
+		_ => Err(RegisterCollectionError::UnexpectedInstruction),
+	}
+}
+
+fn expect_push_bytes<'a>(
+	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
+	expected_len: usize,
+	desc: &str,
+) -> Result<Vec<u8>, RegisterCollectionError> {
+	match instructions
+		.next()
+		.ok_or_else(|| RegisterCollectionError::InstructionNotFound(desc.into()))?
+	{
+		Ok(Instruction::PushBytes(bytes)) if bytes.len() == expected_len =>
+			Ok(bytes.as_bytes().into()),
+		Ok(Instruction::PushBytes(_)) => Err(RegisterCollectionError::InvalidLength(desc.into())),
+		_ => Err(RegisterCollectionError::UnexpectedInstruction),
+	}
 }
 
 #[cfg(test)]
@@ -196,7 +192,7 @@ mod tests {
 
 	#[test]
 	fn test_decode_script_with_op_return_correct_opcode_and_short_address() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH-1];
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH - 1];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE)
@@ -212,7 +208,7 @@ mod tests {
 
 	#[test]
 	fn test_decode_script_with_op_return_correct_opcode_and_long_address() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH+1];
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH + 1];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE)
