@@ -7,17 +7,30 @@ use serde::{Deserialize, Serialize};
 use sp_core::H160;
 use thiserror::Error;
 
+/// Constant representing the length of a collection address in bytes.
 pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
+
+/// Constant representing the length of the rebaseable flag in bytes.
 const REBASEABLE_LENGTH: usize = 1;
+
+/// The opcode used to identify register collection operations.
 const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
 
+/// Struct to represent a register collection with an address and rebaseability status.
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct RegisterCollection {
+	/// The 20-byte Ethereum-style address of the collection.
 	pub address: H160,
+
+	/// A boolean flag indicating whether the collection is rebaseable.
 	pub rebaseable: bool,
 }
 
 impl RegisterCollection {
+	/// Encodes a `RegisterCollection` instance into a Bitcoin script.
+	///
+	/// The encoded script includes an OP_RETURN opcode, the REGISTER_COLLECTION_CODE,
+	/// the collection address, and the rebaseable flag.
 	pub fn encode(&self) -> ScriptBuf {
 		let address: &script::PushBytes =
 			self.address.as_bytes().try_into().expect("Conversion failed");
@@ -31,41 +44,58 @@ impl RegisterCollection {
 			.into_script()
 	}
 
+	/// Decodes a Bitcoin script into a `RegisterCollection` instance.
+	///
+	/// The function checks for the presence of OP_RETURN, REGISTER_COLLECTION_CODE,
+	/// a 20-byte collection address, and a 1-byte rebaseable flag in the script.
 	pub fn decode(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
 		let mut instructions = script.instructions();
 
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
 		expect_opcode(&mut instructions, REGISTER_COLLECTION_CODE, "REGISTER_COLLECTION_CODE")?;
+
 		// Expect the collection address (20 bytes)
 		let address_bytes =
 			expect_push_bytes(&mut instructions, COLLECTION_ADDRESS_LENGTH, "collection address")?;
+
 		// Expect the rebaseable flag (1 byte)
 		let rebaseable_bytes =
 			expect_push_bytes(&mut instructions, REBASEABLE_LENGTH, "rebaseable")?;
 
 		Ok(Self {
 			address: H160::from_slice(&address_bytes),
-			rebaseable: rebaseable_bytes[0] > 0, /* any nonzero value is `true` TODO check the
-			                                      * whitepaper */
+			rebaseable: rebaseable_bytes[0] > 0, /* any nonzero value is `true` */
 		})
 	}
 }
 
+/// Custom error type for errors related to register collection operations.
 #[derive(Debug, Error, PartialEq)]
 pub enum RegisterCollectionError {
+	/// An instruction of the expected type was not found in the script.
 	#[error("Instruction not found: `{0}`")]
 	InstructionNotFound(String),
+
+	/// The output does not match the expected format or content.
 	#[error("Invalid output")]
 	InvalidOutput,
+
+	/// An unexpected instruction was encountered during decoding.
 	#[error("Unexpected instruction")]
 	UnexpectedInstruction,
-	#[error("Invalid lenght: `{0}`")]
+
+	/// The length of a push operation in the script does not match the expected size.
+	#[error("Invalid length: `{0}`")]
 	InvalidLength(String),
+
+	/// No output was found where one was expected.
 	#[error("Output not found")]
 	OutputNotFound,
 }
 
-/// Helper to ensure the next instruction is a specific opcode.
+/// Helper function to ensure the next instruction is a specific opcode.
+///
+/// Returns an error if the expected opcode is not found or if there are no more instructions.
 fn expect_opcode<'a>(
 	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
 	expected_op: opcodes::Opcode,
@@ -80,6 +110,9 @@ fn expect_opcode<'a>(
 	}
 }
 
+/// Helper function to ensure the next instruction is a push operation of the expected length.
+///
+/// Returns an error if the expected length is not met or if there are no more instructions.
 fn expect_push_bytes<'a>(
 	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
 	expected_len: usize,
