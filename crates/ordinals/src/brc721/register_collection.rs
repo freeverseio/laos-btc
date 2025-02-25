@@ -19,7 +19,7 @@ pub struct RegisterCollection {
 }
 
 impl RegisterCollection {
-	fn encode(&self) -> ScriptBuf {
+	pub fn encode(&self) -> ScriptBuf {
 		let mut builder = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE);
@@ -32,6 +32,58 @@ impl RegisterCollection {
 		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
 
 		builder.into_script()
+	}
+
+	pub fn decode(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
+		let mut instructions = script.instructions();
+		match instructions
+			.next()
+			.ok_or(RegisterCollectionError::InstructionNotFound("OP_RETURN".into()))?
+		{
+			Ok(Instruction::Op(opcodes::all::OP_RETURN)) => {},
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
+		}
+
+		match instructions.next().ok_or(RegisterCollectionError::InstructionNotFound(
+			"REGISTER_COLLECTION_CODE".into(),
+		))? {
+			Ok(Instruction::Op(REGISTER_COLLECTION_CODE)) => {},
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
+		}
+
+		// Construct the payload by concatenating remaining data pushes
+		let mut payload = Vec::with_capacity(PAYLOAD_LENGTH);
+
+		match instructions
+			.next()
+			.ok_or(RegisterCollectionError::InstructionNotFound("collection address".into()))?
+		{
+			Ok(Instruction::PushBytes(push)) if push.len() == COLLECTION_ADDRESS_LENGTH => {
+				payload.extend_from_slice(push.as_bytes());
+			},
+			Ok(Instruction::PushBytes(_)) => {
+				return Err(RegisterCollectionError::InvalidLength("collection address".into()));
+			},
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
+		}
+
+		match instructions
+			.next()
+			.ok_or(RegisterCollectionError::InstructionNotFound("rebaseable".into()))?
+		{
+			Ok(Instruction::PushBytes(push)) if push.len() == REBASEABLE_LENGTH => {
+				payload.extend_from_slice(push.as_bytes());
+			},
+			Ok(Instruction::PushBytes(_)) => {
+				return Err(RegisterCollectionError::InvalidLength("rebaseable".into()));
+			},
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
+		}
+
+		Ok(Self {
+			address: H160::from_slice(&payload[..COLLECTION_ADDRESS_LENGTH]),
+			rebaseable: payload[COLLECTION_ADDRESS_LENGTH] > 0, // any value > 0 indicates `true`
+		})
 	}
 }
 
@@ -295,5 +347,14 @@ mod tests {
 			hex::encode(buf.into_bytes()),
 			"6a5f14abcffffffffffffffffffffffffffffffffffcba0101"
 		);
+	}
+
+	#[test]
+	fn test_register_collection_decode() {
+		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
+		let cmd = RegisterCollection { address, rebaseable: true };
+		let buf = cmd.encode();
+		let result = RegisterCollection::decode(&buf).unwrap();
+		assert_eq!(cmd, result);
 	}
 }
