@@ -42,7 +42,7 @@ pub enum RegisterCollectionError {
 	#[error("Invalid output")]
 	InvalidOutput,
 	#[error("Unexpected instruction")]
-	UnexpectedIntruction,
+	UnexpectedInstruction,
 	#[error("Invalid lenght: `{0}`")]
 	InvalidLength(String),
 	#[error("Output not found")]
@@ -60,14 +60,14 @@ impl TryFrom<Transaction> for RegisterCollection {
 			.ok_or(RegisterCollectionError::InstructionNotFound("OP_RETURN".into()))?
 		{
 			Ok(Instruction::Op(opcodes::all::OP_RETURN)) => {},
-			_ => return Err(RegisterCollectionError::UnexpectedIntruction),
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
 		}
 
 		match instructions.next().ok_or(RegisterCollectionError::InstructionNotFound(
 			"REGISTER_COLLECTION_CODE".into(),
 		))? {
 			Ok(Instruction::Op(REGISTER_COLLECTION_CODE)) => {},
-			_ => return Err(RegisterCollectionError::UnexpectedIntruction),
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
 		}
 
 		// Construct the payload by concatenating remaining data pushes
@@ -83,7 +83,7 @@ impl TryFrom<Transaction> for RegisterCollection {
 			Ok(Instruction::PushBytes(_)) => {
 				return Err(RegisterCollectionError::InvalidLength("collection address".into()));
 			},
-			_ => return Err(RegisterCollectionError::UnexpectedIntruction),
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
 		}
 
 		match instructions
@@ -96,7 +96,7 @@ impl TryFrom<Transaction> for RegisterCollection {
 			Ok(Instruction::PushBytes(_)) => {
 				return Err(RegisterCollectionError::InvalidLength("rebaseable".into()));
 			},
-			_ => return Err(RegisterCollectionError::UnexpectedIntruction),
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
 		}
 
 		Ok(Self {
