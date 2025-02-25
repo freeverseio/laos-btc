@@ -18,6 +18,23 @@ pub struct RegisterCollection {
 	pub rebaseable: bool,
 }
 
+impl RegisterCollection {
+	fn encode(&self) -> ScriptBuf {
+		let mut builder = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE);
+
+		let address: &script::PushBytes =
+			self.address.as_bytes().try_into().expect("Conversion failed");
+		let rebaseable: [u8; 1] = if self.rebaseable { [1] } else { [0] };
+
+		builder = builder.push_slice(address);
+		builder = builder.push_slice::<&script::PushBytes>((&rebaseable).into());
+
+		builder.into_script()
+	}
+}
+
 impl From<RegisterCollection> for ScriptBuf {
 	fn from(register_collection: RegisterCollection) -> Self {
 		let mut builder = script::Builder::new()
@@ -108,6 +125,8 @@ impl TryFrom<Transaction> for RegisterCollection {
 
 #[cfg(test)]
 mod tests {
+	use std::str::FromStr;
+
 	use bitcoin::{absolute::LockTime, transaction::Version, Amount, TxOut};
 
 	use super::*;
@@ -250,5 +269,31 @@ mod tests {
 		let register_collection_decoded: RegisterCollection = tx.try_into().unwrap();
 
 		assert_eq!(register_collection, register_collection_decoded);
+	}
+
+	#[test]
+	fn test_register_collection_encode() {
+		let cmd = RegisterCollection::default();
+		let buf = cmd.encode();
+		assert_eq!(
+			hex::encode(buf.into_bytes()),
+			"6a5f1400000000000000000000000000000000000000000100"
+		);
+
+		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
+		let cmd = RegisterCollection { address, rebaseable: false };
+		let buf = cmd.encode();
+		assert_eq!(
+			hex::encode(buf.into_bytes()),
+			"6a5f14abcffffffffffffffffffffffffffffffffffcba0100"
+		);
+
+		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
+		let cmd = RegisterCollection { address, rebaseable: true };
+		let buf = cmd.encode();
+		assert_eq!(
+			hex::encode(buf.into_bytes()),
+			"6a5f14abcffffffffffffffffffffffffffffffffffcba0101"
+		);
 	}
 }
