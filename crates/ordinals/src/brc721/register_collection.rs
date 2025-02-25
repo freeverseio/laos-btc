@@ -107,151 +107,8 @@ pub enum RegisterCollectionError {
 
 #[cfg(test)]
 mod tests {
-	use std::str::FromStr;
-
-	use bitcoin::{absolute::LockTime, transaction::Version, Amount, TxOut};
-
 	use super::*;
-
-	#[test]
-	fn decode_transaction_no_output() {
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![],
-		};
-
-		assert_eq!(
-			RegisterCollection::from_tx(tx).unwrap_err(),
-			RegisterCollectionError::OutputNotFound
-		);
-	}
-
-	#[test]
-	fn decode_transaction_with_output_but_no_op_return() {
-		let script_buf =
-			script::Builder::new().push_opcode(opcodes::all::OP_PUSHNUM_15).into_script();
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
-		};
-
-		assert_eq!(
-			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
-			"Unexpected instruction"
-		);
-	}
-
-	#[test]
-	fn decode_transaction_with_op_return_but_wrong_op_code() {
-		let script_buf = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(opcodes::all::OP_PUSHNUM_13)
-			.into_script();
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
-		};
-
-		assert_eq!(
-			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
-			"Unexpected instruction"
-		);
-	}
-
-	#[test]
-	fn decode_transaction_incorrect_address_length() {
-		let wrong_address = [0xBB; COLLECTION_ADDRESS_LENGTH + 10];
-		let rebaseable = [0x00; REBASEABLE_LENGTH];
-		let script_buf = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
-			.push_slice::<&script::PushBytes>((&wrong_address).into())
-			.push_slice::<&script::PushBytes>((&rebaseable).into())
-			.into_script();
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
-		};
-
-		assert_eq!(
-			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
-			"Invalid lenght: `collection address`"
-		);
-	}
-
-	#[test]
-	fn decode_transaction_missing_rebasable() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
-		let script_buf = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
-			.push_slice::<&script::PushBytes>((&address).into())
-			.into_script();
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
-		};
-
-		assert_eq!(
-			RegisterCollection::from_tx(tx).unwrap_err().to_string(),
-			"Instruction not found: `rebaseable`"
-		);
-	}
-
-	#[test]
-	fn decode_transaction_extra_push_is_ignored() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
-		let rebaseable = [0x00; REBASEABLE_LENGTH];
-		let extra = [0xFF; 1];
-		let script_buf = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
-			.push_slice::<&script::PushBytes>((&address).into())
-			.push_slice::<&script::PushBytes>((&rebaseable).into())
-			.push_slice::<&script::PushBytes>((&extra).into())
-			.into_script();
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut { value: Amount::ZERO, script_pubkey: script_buf }],
-		};
-
-		let register_collection_decoded = RegisterCollection::from_tx(tx).unwrap();
-		assert_eq!(register_collection_decoded.address, address.into());
-		assert!(!register_collection_decoded.rebaseable);
-	}
-
-	#[test]
-	fn encode_decode_register_collection_transaction() {
-		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
-		let register_collection =
-			RegisterCollection { address: H160::from(address), rebaseable: false };
-
-		let tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![TxOut {
-				value: Amount::ZERO,
-				script_pubkey: register_collection.clone().encode(),
-			}],
-		};
-
-		let register_collection_decoded = RegisterCollection::from_tx(tx).unwrap();
-
-		assert_eq!(register_collection, register_collection_decoded);
-	}
+	use std::str::FromStr;
 
 	#[test]
 	fn test_register_collection_encode() {
@@ -286,5 +143,104 @@ mod tests {
 		let buf = cmd.encode();
 		let result = RegisterCollection::decode(&buf).unwrap();
 		assert_eq!(cmd, result);
+	}
+
+	#[test]
+	fn test_decode_empty_script() {
+		let script = script::Builder::new().into_script();
+
+		assert_eq!(script.len(), 0);
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InstructionNotFound("OP_RETURN".to_string())
+		);
+	}
+
+	#[test]
+	fn test_decode_script_with_only_op_return() {
+		let script = script::Builder::new().push_opcode(opcodes::all::OP_RETURN).into_script();
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InstructionNotFound("REGISTER_COLLECTION_CODE".to_string())
+		);
+	}
+
+	#[test]
+	fn test_decode_script_with_op_return_and_wrong_opcode() {
+		let script = script::Builder::new()
+        .push_opcode(opcodes::all::OP_RETURN)
+        .push_opcode(opcodes::all::OP_PUSHNUM_13) // Wrong opcode
+        .into_script();
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction);
+	}
+
+	#[test]
+	fn test_decode_script_with_op_return_and_correct_opcode_but_no_address() {
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.into_script();
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InstructionNotFound("collection address".to_string())
+		);
+	}
+
+	#[test]
+	fn test_decode_script_with_op_return_correct_opcode_and_address_but_no_rebaseable() {
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address).into())
+			.into_script();
+
+		let result = RegisterCollection::decode(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InstructionNotFound("rebaseable".to_string())
+		);
+	}
+
+	#[test]
+	fn test_decode_script_with_op_return_correct_opcode_address_and_rebaseable() {
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable = [0x01; REBASEABLE_LENGTH];
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address).into())
+			.push_slice::<&script::PushBytes>((&rebaseable).into())
+			.into_script();
+
+		let result = RegisterCollection::decode(&script).unwrap();
+		assert_eq!(result.address, H160::from(address));
+		assert!(result.rebaseable);
+	}
+
+	#[test]
+	fn test_decode_script_with_op_return_correct_opcode_address_and_rebaseable_extra_data() {
+		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
+		let rebaseable = [0x01; REBASEABLE_LENGTH];
+		let extra_data = [0xFF; 10]; // Extra data that should be ignored
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_slice::<&script::PushBytes>((&address).into())
+			.push_slice::<&script::PushBytes>((&rebaseable).into())
+			.push_slice::<&script::PushBytes>((&extra_data).into())
+			.into_script();
+
+		let result = RegisterCollection::decode(&script).unwrap();
+		assert_eq!(result.address, H160::from(address));
+		assert!(result.rebaseable);
 	}
 }
