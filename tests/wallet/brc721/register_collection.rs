@@ -16,7 +16,7 @@ fn register_collection_returns_tx_id() {
 	let alice = H160::from_slice(&[0; 20]);
 
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet register --fee-rate 1 --collection-address {:x} --rebaseable",
+		"--regtest wallet brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
 		alice
 	))
 	.core(&core)
@@ -47,7 +47,7 @@ fn rebaseable_is_false_by_default() {
 	let alice = format!("{:x}", H160::from_slice(&[0; 20]));
 
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet register --fee-rate 1 --collection-address {}",
+		"--regtest wallet brc721 register-collection --fee-rate 1 --address {}",
 		alice
 	))
 	.core(&core)
