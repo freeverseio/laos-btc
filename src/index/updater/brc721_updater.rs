@@ -52,16 +52,22 @@ impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
+	/// Indexes collections from a transaction.
+	///
+	/// # Arguments
+	/// * `tx_index` - The index of the transaction within its block.
+	/// * `tx` - The transaction to process.
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		// TODO this is strange it seems that here we expect 1 only output of the tx
 		// Ensure the transaction has at least one output.
-		let Some(output) = tx.output.first() else {
+		if tx.output.len() == 0 {
 			return Err(Brc721UpdaterError::OutputNotFound.into());
-		};
+		}
 
-		// TODO what if the output.let() > 1 ????
+		// TODO what if the output.let() > 1 ???? we just skip the others ?
+		let first_output = tx.output[0].clone();
 
-		match RegisterCollection::decode(&output.script_pubkey) {
+		// Decode the register collection from the first output's script public key.
+		match RegisterCollection::decode(&first_output.script_pubkey) {
 			Ok(register_collection) => {
 				self.collection_table.insert(
 					(self.height.into(), tx_index),
