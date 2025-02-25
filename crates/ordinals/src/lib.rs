@@ -37,6 +37,12 @@ use std::{
 use thiserror::Error;
 
 pub use artifact::Artifact;
+pub use brc721::{
+	collection_id::Brc721CollectionId,
+	register_collection::{
+		RegisterCollection, RegisterCollectionPayload, COLLECTION_ADDRESS_LENGTH,
+	},
+};
 pub use cenotaph::Cenotaph;
 pub use charm::Charm;
 pub use decimal_sat::DecimalSat;

@@ -20,7 +20,8 @@ spec:
         args: [
           "--datadir=/data",
           "--txindex",
-          "-chain=regtest",
+          "-chain={{ .Values.chain }}",
+          "-rpcport=18443",
           "-rpcallowip=0.0.0.0/0",
           "-rpcbind=0.0.0.0",
           "-rpcauth=test:2c14712fc3137a12f4bd7d0c8ae1b895$990a2ebe5f7eb7893a68299c5a09bc22258855704aa8d74a21e4e01e35a777c0"
@@ -36,4 +37,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 100Gi
+          storage: {{ .Values.bitcoind.storage.size }}

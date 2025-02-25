@@ -21,11 +21,12 @@ use self::{
 };
 use super::*;
 use crate::templates::{
-	AddressHtml, BlockHtml, BlocksHtml, ChildrenHtml, ClockSvg, CollectionsHtml, HomeHtml,
-	InputHtml, InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml, OutputHtml, PageContent,
-	PageHtml, ParentsHtml, PreviewAudioHtml, PreviewCodeHtml, PreviewFontHtml, PreviewImageHtml,
-	PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml,
-	PreviewVideoHtml, RareTxt, RuneHtml, RuneNotFoundHtml, RunesHtml, SatHtml, TransactionHtml,
+	AddressHtml, BlockHtml, BlocksHtml, Brc721CollectionsHtml, ChildrenHtml, ClockSvg,
+	CollectionsHtml, HomeHtml, InputHtml, InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml,
+	OutputHtml, PageContent, PageHtml, ParentsHtml, PreviewAudioHtml, PreviewCodeHtml,
+	PreviewFontHtml, PreviewImageHtml, PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml,
+	PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RareTxt, RuneHtml, RuneNotFoundHtml,
+	RunesHtml, SatHtml, TransactionHtml,
 };
 use axum::{
 	body,
@@ -257,6 +258,7 @@ impl Server {
 				.route("/tx/:txid", get(Self::transaction))
 				.route("/decode/:txid", get(Self::decode))
 				.route("/update", get(Self::update))
+				.route("/brc721/collections", get(Self::brc721_collections))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1846,6 +1848,50 @@ impl Server {
 		.await
 	}
 
+	async fn brc721_collections(
+		Extension(server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		accept_json: AcceptJson,
+	) -> ServerResult {
+		if !index.has_brc721_index() {
+			return Err(ServerError::BadRequest("this server has no brc721 index".to_string()));
+		}
+
+		Self::brc721_collections_paginated(
+			Extension(server_config),
+			Extension(index),
+			Path(0),
+			accept_json,
+		)
+		.await
+	}
+
+	async fn brc721_collections_paginated(
+		Extension(server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		Path(page_index): Path<usize>,
+		AcceptJson(accept_json): AcceptJson,
+	) -> ServerResult {
+		task::block_in_place(|| {
+			let (entries, more) = index.brc721_collections_paginated(100, page_index)?;
+
+			let prev = page_index.checked_sub(1);
+
+			let next = more.then_some(page_index + 1);
+
+			let entries =
+				entries.iter().map(|e| (e.0, format!("{:?}", e.1.address))).collect::<Vec<_>>();
+
+			Ok(if accept_json {
+				Json(Brc721CollectionsHtml { entries, more, prev, next }).into_response()
+			} else {
+				Brc721CollectionsHtml { entries, more, prev, next }
+					.page(server_config)
+					.into_response()
+			})
+		})
+	}
+
 	async fn inscriptions_paginated(
 		Extension(server_config): Extension<Arc<ServerConfig>>,
 		Extension(index): Extension<Arc<Index>>,
@@ -2203,6 +2249,10 @@ mod tests {
 
 		fn https(self) -> Self {
 			self.server_flag("--https")
+		}
+
+		fn index_brc721(self) -> Self {
+			self.ord_flag("--index-brc721")
 		}
 
 		fn index_runes(self) -> Self {
@@ -3431,6 +3481,8 @@ mod tests {
   <dd>false</dd>
   <dt>address index</dt>
   <dd>false</dd>
+  <dt>brc721 index</dt>
+  <dd>false</dd>
   <dt>inscription index</dt>
   <dd>true</dd>
   <dt>rune index</dt>
@@ -3793,7 +3845,7 @@ mod tests {
 		TestServer::builder().chain(Chain::Regtest).build().assert_response_regex(
 			"/",
 			StatusCode::OK,
-			".*<a href=/ title=home>Ordinals<sup>regtest</sup></a>.*",
+			".*<a href=/ title=home>Ordinals⊕LAOS<sup>regtest</sup></a>.*",
 		);
 	}
 
@@ -6859,6 +6911,119 @@ next
 			"/output/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:123",
 			StatusCode::NOT_FOUND,
 			"output 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:123 not found",
+		);
+	}
+
+	#[test]
+	fn brc721_no_collections_html() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+		server.assert_html(
+			"/brc721/collections",
+			Brc721CollectionsHtml { entries: Vec::new(), more: false, prev: None, next: None },
+		);
+	}
+
+	#[test]
+	fn brc721_no_collections_json() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		pretty_assert_eq!(
+			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
+			Brc721CollectionsHtml { entries: Vec::new(), more: false, prev: None, next: None }
+		);
+	}
+
+	#[test]
+	fn brc721_collection_html() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_html(
+			"/brc721/collections",
+			Brc721CollectionsHtml {
+				entries: vec![(
+					Brc721CollectionId { block: 2, tx: 1 },
+					"0x0000000000000000000000000000000000000000".to_owned(),
+				)],
+				more: false,
+				prev: None,
+				next: None,
+			},
+		);
+	}
+
+	#[test]
+	fn brc721_collection_json() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		pretty_assert_eq! {
+			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
+
+			Brc721CollectionsHtml {
+				entries: vec![(Brc721CollectionId { block: 2, tx: 1 }, "0x0000000000000000000000000000000000000000".to_owned())],
+				more: false,
+			  prev: None,
+				next: None
+		  },
+		}
+	}
+
+	#[test]
+	fn brc721_collections_no_index_error() {
+		let server = TestServer::builder().chain(Chain::Regtest).build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_response(
+			"/brc721/collections",
+			StatusCode::BAD_REQUEST,
+			"this server has no brc721 index",
 		);
 	}
 }

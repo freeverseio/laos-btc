@@ -9,46 +9,45 @@ spec:
     matchLabels:
       app: laos-btc
   serviceName: "laos-btc-headless"
-  replicas: 1
   template:
     metadata:
       labels:
         app: laos-btc
     spec:
       securityContext:
-        fsGroup: 65534
+        fsGroup: 1000
       containers:
       - name: laos-btc
-        image: freeverseio/laos-btc:{{ .Values.laosbtc.tag }}
+        image: freeverseio/laos-btc:{{ .Values.tag }}
         imagePullPolicy: Always
         args:
           - --data-dir
           - /data
           - --index-runes
+          - --index-brc721
           - --bitcoin-rpc-url
-          - http://bitcoind:{{ .Values.bitcoind.rpcPort }}
+          - http://bitcoind:18443
           - --bitcoin-rpc-username
           - test
           - --bitcoin-rpc-password
           - test
+          - --chain={{ .Values.chain }} 
           - server
-          - --http-port
-          - {{ .Values.laosbtc.httpPort | quote }}
-        ports:
-        - containerPort: {{ .Values.laosbtc.httpPort }}
-          name: http
-        volumeMounts:
-        - name: data
-          mountPath: /data
+          - --http-port=8080
         env:
         - name: RUST_LOG
           value: "debug"
+{{- if .Values.laosbtc.storage }}
+        volumeMounts:
+        - mountPath: /data
+          name: data
   volumeClaimTemplates:
   - metadata:
       name: data
     spec:
-      storageClassName: do-block-storage
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: {{ .Values.laosbtc.storage.storageClassName }}
       resources:
         requests:
-          storage: {{ .Values.laosbtc.storageSize }}
+          storage: {{ .Values.laosbtc.storage.size }}
+{{- end }}

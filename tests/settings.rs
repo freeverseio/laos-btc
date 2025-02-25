@@ -38,6 +38,7 @@ fn default() {
   "http_port": null,
   "index": ".*index\.redb",
   "index_addresses": false,
+  "index_brc721": false,
   "index_cache_size": \d+,
   "index_runes": false,
   "index_sats": false,

@@ -17,7 +17,7 @@ jobs:
       - name: Setup helmfile and deploy
         uses: helmfile/helmfile-action@v2.0.2
         with:
-          helmfile-args: sync --set laosbtc.tag=${{ github.event.workflow_run.head_sha }} --environment digitalocean
+          helmfile-args: sync --set tag=${{ github.event.workflow_run.head_sha }} --environment digitalocean
           helmfile-version: v0.170.0
-          helmfile-workdirectory: deployment/dev
+          helmfile-workdirectory: deployment
           helmfile-kubeconfig-context: ${{ secrets.KUBECONFIG }}

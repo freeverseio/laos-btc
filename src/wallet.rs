@@ -89,6 +89,7 @@ pub(crate) enum Maturity {
 pub(crate) struct Wallet {
 	bitcoin_client: Client,
 	database: Database,
+	has_brc721_index: bool,
 	has_rune_index: bool,
 	has_sat_index: bool,
 	rpc_url: Url,
@@ -305,6 +306,10 @@ impl Wallet {
 			.call::<Address<NetworkUnchecked>>("getrawchangeaddress", &["bech32m".into()])
 			.context("could not get change addresses from wallet")?
 			.require_network(self.chain().network())?)
+	}
+
+	pub(crate) fn has_brc721_index(&self) -> bool {
+		self.has_brc721_index
 	}
 
 	pub(crate) fn has_sat_index(&self) -> bool {
@@ -1025,6 +1030,11 @@ impl Wallet {
 		fee_rate: FeeRate,
 		postage: Postage,
 	) -> Result<Transaction> {
+		ensure!(
+			self.has_brc721_index(),
+			"creating brc721 collections with `laos-btc wallet brc721 rc` requires index created with `--index-brc721` flag",
+		);
+
 		self.lock_non_cardinal_outputs()?;
 
 		let unfunded_tx = Transaction {

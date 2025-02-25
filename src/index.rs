@@ -16,13 +16,14 @@
 
 use self::{
 	entry::{
-		Entry, HeaderValue, InscriptionEntry, InscriptionEntryValue, InscriptionIdValue,
-		OutPointValue, RuneEntryValue, RuneIdValue, SatPointValue, SatRange, TxidValue,
+		Brc721CollectionIdValue, Entry, HeaderValue, InscriptionEntry, InscriptionEntryValue,
+		InscriptionIdValue, OutPointValue, RuneEntryValue, RuneIdValue, SatPointValue, SatRange,
+		TxidValue,
 	},
 	event::Event,
 	lot::Lot,
 	reorg::Reorg,
-	updater::Updater,
+	updater::{RegisterCollectionValue, Updater},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
 use super::*;
@@ -44,6 +45,7 @@ use redb::{
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
 	StorageError, Table, TableDefinition, TableHandle, TableStats, WriteTransaction,
 };
+use sp_core::H160;
 use std::{
 	collections::HashMap,
 	io::{BufWriter, Write},
@@ -64,7 +66,7 @@ mod utxo_entry;
 #[cfg(test)]
 pub(crate) mod testing;
 
-const SCHEMA_VERSION: u64 = 30;
+const SCHEMA_VERSION: u64 = 31;
 
 define_multimap_table! { SAT_TO_SEQUENCE_NUMBER, u64, u32 }
 define_multimap_table! { SEQUENCE_NUMBER_TO_CHILDREN, u32, u32 }
@@ -86,6 +88,7 @@ define_table! { STATISTIC_TO_COUNT, u64, u64 }
 define_table! { TRANSACTION_ID_TO_RUNE, &TxidValue, u128 }
 define_table! { TRANSACTION_ID_TO_TRANSACTION, &TxidValue, &[u8] }
 define_table! { WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP, u32, u128 }
+define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, Brc721CollectionIdValue, RegisterCollectionValue }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
@@ -106,6 +109,7 @@ pub(crate) enum Statistic {
 	SatRanges = 14,
 	UnboundInscriptions = 16,
 	LastSavepointHeight = 17,
+	IndexBrc721 = 18,
 }
 
 impl Statistic {
@@ -204,6 +208,7 @@ pub struct Index {
 	genesis_block_coinbase_txid: Txid,
 	height_limit: Option<u32>,
 	index_addresses: bool,
+	index_brc721: bool,
 	index_inscriptions: bool,
 	index_runes: bool,
 	index_sats: bool,
@@ -337,6 +342,12 @@ impl Index {
 
 					Self::set_statistic(
 						&mut statistics,
+						Statistic::IndexBrc721,
+						u64::from(settings.index_brc721_raw()),
+					)?;
+
+					Self::set_statistic(
+						&mut statistics,
 						Statistic::IndexInscriptions,
 						u64::from(settings.index_inscriptions_raw()),
 					)?;
@@ -413,6 +424,7 @@ impl Index {
 		};
 
 		let index_addresses;
+		let index_brc721;
 		let index_runes;
 		let index_sats;
 		let index_transactions;
@@ -422,6 +434,7 @@ impl Index {
 			let tx = database.begin_read()?;
 			let statistics = tx.open_table(STATISTIC_TO_COUNT)?;
 			index_addresses = Self::is_statistic_set(&statistics, Statistic::IndexAddresses)?;
+			index_brc721 = Self::is_statistic_set(&statistics, Statistic::IndexBrc721)?;
 			index_inscriptions = Self::is_statistic_set(&statistics, Statistic::IndexInscriptions)?;
 			index_runes = Self::is_statistic_set(&statistics, Statistic::IndexRunes)?;
 			index_sats = Self::is_statistic_set(&statistics, Statistic::IndexSats)?;
@@ -451,6 +464,7 @@ impl Index {
 			genesis_block_coinbase_transaction,
 			height_limit: settings.height_limit(),
 			index_addresses,
+			index_brc721,
 			index_runes,
 			index_sats,
 			index_transactions,
@@ -493,6 +507,10 @@ impl Index {
 		self.index_addresses
 	}
 
+	pub fn has_brc721_index(&self) -> bool {
+		self.index_brc721
+	}
+
 	pub fn has_inscription_index(&self) -> bool {
 		self.index_inscriptions
 	}
@@ -532,6 +550,7 @@ impl Index {
 
 		Ok(StatusHtml {
 			address_index: self.has_address_index(),
+			brc721_index: self.has_brc721_index(),
 			blessed_inscriptions,
 			chain: self.settings.chain(),
 			cursed_inscriptions,
@@ -1047,6 +1066,37 @@ impl Index {
 		}
 
 		Ok(result)
+	}
+
+	pub fn brc721_collections_paginated(
+		&self,
+		page_size: usize,
+		page_index: usize,
+	) -> Result<(Vec<(Brc721CollectionId, RegisterCollection)>, bool)> {
+		let mut entries = Vec::new();
+
+		for result in self
+			.database
+			.begin_read()?
+			.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?
+			.iter()?
+			.rev()
+			.skip(page_index.saturating_mul(page_size))
+			.take(page_size.saturating_add(1))
+		{
+			let (id, entry) = result?;
+			entries.push((
+				Brc721CollectionId::load(id.value()),
+				RegisterCollection {
+					address: H160::from_slice(&entry.value().0),
+					rebaseable: entry.value().1,
+				},
+			));
+		}
+
+		let more = entries.len() > page_size;
+
+		Ok((entries, more))
 	}
 
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {

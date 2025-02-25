@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-// TODO remove when it is used
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
@@ -9,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::H160;
 use thiserror::Error;
 
-const COLLECTION_ADDRESS_LENGTH: usize = 20;
+pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 const REBASEABLE_LENGTH: usize = 1;
 const PAYLOAD_LENGTH: usize = COLLECTION_ADDRESS_LENGTH + REBASEABLE_LENGTH;
 const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
