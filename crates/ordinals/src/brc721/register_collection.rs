@@ -170,6 +170,22 @@ mod tests {
 	}
 
 	#[test]
+	fn test_register_collection_decode_0() {
+		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
+		let cmd = RegisterCollection { address, rebaseable: true };
+		let buf = cmd.encode();
+
+		let mut  buf_bytes = buf.clone().as_mut_bytes().to_vec();
+		buf_bytes.push(0xff);
+
+		let extra_buf = ScriptBuf::from_bytes(buf_bytes);
+
+		let result = RegisterCollection::decode(&extra_buf).unwrap();
+		assert_eq!(cmd, result);
+	}
+	
+
+	#[test]
 	fn test_decode_empty_script() {
 		let script = script::Builder::new().into_script();
 
