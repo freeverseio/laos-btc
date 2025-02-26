@@ -32,8 +32,7 @@ impl RegisterCollection {
 	/// The encoded script includes an OP_RETURN opcode, the REGISTER_COLLECTION_CODE,
 	/// the collection address, and the rebaseable flag.
 	pub fn to_script(&self) -> ScriptBuf {
-		let address: &script::PushBytes =
-			self.address.as_bytes().try_into().expect("Conversion failed");
+		let address = self.address.as_fixed_bytes();
 		let rebaseable = [self.rebaseable as u8];
 
 		script::Builder::new()
