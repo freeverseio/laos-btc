@@ -1,12 +1,13 @@
 namespace: brc721-local
+storageClassName: local-path  # Default storage class
 chain: main
 bitcoind:
+  service:
+    type: ClusterIP
   storage:
-    storageClassName: local-path  # Default storage class
     size: 1500Gi
 laosbtc:
   host: "localhost"  # Localhost for testing
   storage:
-    storageClassName: local-path  # Default storage class
-    size: 800Gi
+    size: 1500Gi
 

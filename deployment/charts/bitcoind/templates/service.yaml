@@ -5,7 +5,7 @@ metadata:
 labels:
   app: bitcoind
 spec:
-  type: LoadBalancer
+  type: {{ .Values.bitcoind.service.type }}
   ports:
   - port: 18443
     protocol: TCP

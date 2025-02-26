@@ -1,9 +1,11 @@
 namespace: brc721-local-dev
+storageClassName: local-path
 chain: regtest
 tag: "main"  # Use the latest image tag for development
 bitcoind:
+  service:
+    type: LoadBalancer
   storage:
-    storageClassName: local-path  # Default storage class
     size: 100Gi
 laosbtc:
   host: "localhost"  # Localhost for testing

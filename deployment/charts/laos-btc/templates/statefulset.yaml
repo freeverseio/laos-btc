@@ -46,7 +46,7 @@ spec:
       name: data
     spec:
       accessModes: ["ReadWriteOnce"]
-      storageClassName: {{ .Values.laosbtc.storage.storageClassName }}
+      storageClassName: {{ .Values.storageClassName }}
       resources:
         requests:
           storage: {{ .Values.laosbtc.storage.size }}
