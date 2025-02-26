@@ -61,9 +61,13 @@ impl RegisterCollection {
 		let rebaseable_bytes =
 			expect_push_bytes(&mut instructions, REBASEABLE_LENGTH, "rebaseable")?;
 
+		if rebaseable_bytes[0] != 0x00 && rebaseable_bytes[0] != 0x01 {
+			return Err(RegisterCollectionError::UnexpectedInstruction)
+		}
+
 		Ok(Self {
 			address: H160::from_slice(&address_bytes),
-			rebaseable: rebaseable_bytes[0] > 0, /* any nonzero value is `true` */
+			rebaseable: rebaseable_bytes[0] == 0x01,
 		})
 	}
 }
@@ -75,10 +79,6 @@ pub enum RegisterCollectionError {
 	#[error("Instruction not found: `{0}`")]
 	InstructionNotFound(String),
 
-	/// The output does not match the expected format or content.
-	#[error("Invalid output")]
-	InvalidOutput,
-
 	/// An unexpected instruction was encountered during decoding.
 	#[error("Unexpected instruction")]
 	UnexpectedInstruction,
@@ -86,10 +86,6 @@ pub enum RegisterCollectionError {
 	/// The length of a push operation in the script does not match the expected size.
 	#[error("Invalid length: `{0}`")]
 	InvalidLength(String),
-
-	/// No output was found where one was expected.
-	#[error("Output not found")]
-	OutputNotFound,
 }
 
 /// Helper function to ensure the next instruction is a specific opcode.
@@ -192,14 +188,14 @@ mod tests {
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
 		);
-		let rc = RegisterCollection::from_script(&buf).unwrap();
-		assert!(rc.rebaseable);
+		let result = RegisterCollection::from_script(&buf);
+		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction,);
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
 		);
-		let rc = RegisterCollection::from_script(&buf).unwrap();
-		assert!(rc.rebaseable);
+		let result = RegisterCollection::from_script(&buf);
+		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction,);
 	}
 
 	#[test]
