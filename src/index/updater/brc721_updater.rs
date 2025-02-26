@@ -57,8 +57,8 @@ where
 			return Ok(());
 		}
 
-		// TODO what if the output.let() > 1 ???? we just skip the others ?
-		let first_output = tx.output[0].clone();
+		// the protocol specify the first output has to be the register collection
+		let first_output: TxOut = tx.output[0].clone();
 
 		// Decode the register collection from the first output's script public key.
 		match RegisterCollection::from_script(&first_output.script_pubkey) {
