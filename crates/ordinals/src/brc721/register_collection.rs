@@ -135,7 +135,7 @@ mod tests {
 	use std::str::FromStr;
 
 	#[test]
-	fn test_register_collection_encode() {
+	fn register_collection_encode_encodes_correctly() {
 		let cmd = RegisterCollection::default();
 		let buf = cmd.encode();
 		assert_eq!(
@@ -161,7 +161,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_register_collection_decode() {
+	fn register_collection_decode_decodes_correctly() {
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
 		let cmd = RegisterCollection { address, rebaseable: true };
 		let buf = cmd.encode();
@@ -170,33 +170,42 @@ mod tests {
 	}
 
 	#[test]
-	fn test_register_collection_decode_ignores_extra_bytes() {
-		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap());
+	fn register_collection_decode_ignores_extra_bytes() {
+		let buf = ScriptBuf::from_bytes(
+			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
+		);
 		RegisterCollection::decode(&buf).unwrap();
-		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101FFFFFF").unwrap());
+
+		let buf = ScriptBuf::from_bytes(
+			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101FFFFFF").unwrap(),
+		);
 		RegisterCollection::decode(&buf).unwrap();
 	}
 
 	#[test]
-	fn test_rebasable_byte_can_be_whatever() {
-		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap());
+	fn register_collection_decode_treats_nonzero_as_true() {
+		let buf = ScriptBuf::from_bytes(
+			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
+		);
 		let rc = RegisterCollection::decode(&buf).unwrap();
 		assert_eq!(rc.rebaseable, true);
 
-		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap());
+		let buf = ScriptBuf::from_bytes(
+			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
+		);
 		let rc = RegisterCollection::decode(&buf).unwrap();
 		assert_eq!(rc.rebaseable, true);
 
-		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap());
+		let buf = ScriptBuf::from_bytes(
+			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
+		);
 		let rc = RegisterCollection::decode(&buf).unwrap();
 		assert_eq!(rc.rebaseable, true);
 	}
-	
 
 	#[test]
-	fn test_decode_empty_script() {
+	fn register_collection_decode_empty_script_returns_error() {
 		let script = script::Builder::new().into_script();
-
 		assert_eq!(script.len(), 0);
 
 		let result = RegisterCollection::decode(&script);
@@ -207,7 +216,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_only_op_return() {
+	fn register_collection_decode_only_op_return_returns_error() {
 		let script = script::Builder::new().push_opcode(opcodes::all::OP_RETURN).into_script();
 
 		let result = RegisterCollection::decode(&script);
@@ -218,18 +227,18 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_and_wrong_opcode() {
+	fn register_collection_decode_wrong_opcode_returns_error() {
 		let script = script::Builder::new()
-        .push_opcode(opcodes::all::OP_RETURN)
-        .push_opcode(opcodes::all::OP_PUSHNUM_13) // Wrong opcode
-        .into_script();
+            .push_opcode(opcodes::all::OP_RETURN)
+            .push_opcode(opcodes::all::OP_PUSHNUM_13) // Wrong opcode
+            .into_script();
 
 		let result = RegisterCollection::decode(&script);
 		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction);
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_and_correct_opcode_but_no_address() {
+	fn register_collection_decode_missing_address_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_COLLECTION_CODE)
@@ -243,7 +252,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_correct_opcode_and_short_address() {
+	fn register_collection_decode_short_address_returns_error() {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH - 1];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
@@ -259,7 +268,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_correct_opcode_and_long_address() {
+	fn register_collection_decode_long_address_returns_error() {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH + 1];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
@@ -275,7 +284,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_correct_opcode_and_address_but_no_rebaseable() {
+	fn register_collection_decode_missing_rebaseable_returns_error() {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
@@ -291,7 +300,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_correct_opcode_address_and_rebaseable() {
+	fn register_collection_decode_valid_script_decodes_correctly() {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
 		let rebaseable = [0x01; REBASEABLE_LENGTH];
 		let script = script::Builder::new()
@@ -307,7 +316,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_decode_script_with_op_return_correct_opcode_address_and_rebaseable_extra_data() {
+	fn register_collection_decode_ignores_extra_data_after_valid_fields() {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
 		let rebaseable = [0x01; REBASEABLE_LENGTH];
 		let extra_data = [0xFF; 10]; // Extra data that should be ignored
