@@ -170,18 +170,26 @@ mod tests {
 	}
 
 	#[test]
-	fn test_register_collection_decode_0() {
-		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
-		let cmd = RegisterCollection { address, rebaseable: true };
-		let buf = cmd.encode();
+	fn test_register_collection_decode_ignores_extra_bytes() {
+		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap());
+		RegisterCollection::decode(&buf).unwrap();
+		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101FFFFFF").unwrap());
+		RegisterCollection::decode(&buf).unwrap();
+	}
 
-		let mut  buf_bytes = buf.clone().as_mut_bytes().to_vec();
-		buf_bytes.push(0xff);
+	#[test]
+	fn test_rebasable_byte_can_be_whatever() {
+		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap());
+		let rc = RegisterCollection::decode(&buf).unwrap();
+		assert_eq!(rc.rebaseable, true);
 
-		let extra_buf = ScriptBuf::from_bytes(buf_bytes);
+		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap());
+		let rc = RegisterCollection::decode(&buf).unwrap();
+		assert_eq!(rc.rebaseable, true);
 
-		let result = RegisterCollection::decode(&extra_buf).unwrap();
-		assert_eq!(cmd, result);
+		let buf= ScriptBuf::from_bytes(hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap());
+		let rc = RegisterCollection::decode(&buf).unwrap();
+		assert_eq!(rc.rebaseable, true);
 	}
 	
 
