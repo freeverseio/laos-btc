@@ -29,7 +29,7 @@ fn register_collection_returns_tx_id() {
 	let tx = core.tx_by_id(output.tx_id);
 	assert_eq!(tx.output.len(), 3);
 	// TODO and the other 2 outputs ?
-	let register_collection = RegisterCollection::decode(&tx.output[0].script_pubkey).unwrap();
+	let register_collection = RegisterCollection::from_script(&tx.output[0].script_pubkey).unwrap();
 	assert!(register_collection.rebaseable);
 	assert_eq!(register_collection.address, alice);
 }
@@ -60,7 +60,7 @@ fn rebaseable_is_false_by_default() {
 	let tx = core.tx_by_id(output.tx_id);
 	assert_eq!(tx.output.len(), 3);
 	// TODO and the other 2 outputs ?
-	let register_collection = RegisterCollection::decode(&tx.output[0].script_pubkey).unwrap();
+	let register_collection = RegisterCollection::from_script(&tx.output[0].script_pubkey).unwrap();
 	assert!(!register_collection.rebaseable);
 }
 

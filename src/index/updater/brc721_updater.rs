@@ -61,7 +61,7 @@ where
 		let first_output = tx.output[0].clone();
 
 		// Decode the register collection from the first output's script public key.
-		match RegisterCollection::decode(&first_output.script_pubkey) {
+		match RegisterCollection::from_script(&first_output.script_pubkey) {
 			Ok(register_collection) => {
 				self.collection_table.insert(
 					(self.height.into(), tx_index),
@@ -102,7 +102,7 @@ mod tests {
 		let collection =
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
-		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().encode() };
+		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().to_script() };
 
 		Transaction {
 			version: Version(1),

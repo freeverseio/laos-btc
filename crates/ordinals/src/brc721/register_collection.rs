@@ -31,7 +31,7 @@ impl RegisterCollection {
 	///
 	/// The encoded script includes an OP_RETURN opcode, the REGISTER_COLLECTION_CODE,
 	/// the collection address, and the rebaseable flag.
-	pub fn encode(&self) -> ScriptBuf {
+	pub fn to_script(&self) -> ScriptBuf {
 		let address: &script::PushBytes =
 			self.address.as_bytes().try_into().expect("Conversion failed");
 		let rebaseable = [self.rebaseable as u8];
@@ -48,7 +48,7 @@ impl RegisterCollection {
 	///
 	/// The function checks for the presence of OP_RETURN, REGISTER_COLLECTION_CODE,
 	/// a 20-byte collection address, and a 1-byte rebaseable flag in the script.
-	pub fn decode(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
+	pub fn from_script(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
 		let mut instructions = script.instructions();
 
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
@@ -137,7 +137,7 @@ mod tests {
 	#[test]
 	fn register_collection_encode_encodes_correctly() {
 		let cmd = RegisterCollection::default();
-		let buf = cmd.encode();
+		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
 			"6a5f1400000000000000000000000000000000000000000100"
@@ -145,7 +145,7 @@ mod tests {
 
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
 		let cmd = RegisterCollection { address, rebaseable: false };
-		let buf = cmd.encode();
+		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
 			"6a5f14abcffffffffffffffffffffffffffffffffffcba0100"
@@ -153,7 +153,7 @@ mod tests {
 
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
 		let cmd = RegisterCollection { address, rebaseable: true };
-		let buf = cmd.encode();
+		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
 			"6a5f14abcffffffffffffffffffffffffffffffffffcba0101"
@@ -164,8 +164,8 @@ mod tests {
 	fn register_collection_decode_decodes_correctly() {
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
 		let cmd = RegisterCollection { address, rebaseable: true };
-		let buf = cmd.encode();
-		let result = RegisterCollection::decode(&buf).unwrap();
+		let buf = cmd.to_script();
+		let result = RegisterCollection::from_script(&buf).unwrap();
 		assert_eq!(cmd, result);
 	}
 
@@ -174,12 +174,12 @@ mod tests {
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
 		);
-		RegisterCollection::decode(&buf).unwrap();
+		RegisterCollection::from_script(&buf).unwrap();
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101FFFFFF").unwrap(),
 		);
-		RegisterCollection::decode(&buf).unwrap();
+		RegisterCollection::from_script(&buf).unwrap();
 	}
 
 	#[test]
@@ -187,19 +187,19 @@ mod tests {
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
 		);
-		let rc = RegisterCollection::decode(&buf).unwrap();
+		let rc = RegisterCollection::from_script(&buf).unwrap();
 		assert_eq!(rc.rebaseable, true);
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
 		);
-		let rc = RegisterCollection::decode(&buf).unwrap();
+		let rc = RegisterCollection::from_script(&buf).unwrap();
 		assert_eq!(rc.rebaseable, true);
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
 		);
-		let rc = RegisterCollection::decode(&buf).unwrap();
+		let rc = RegisterCollection::from_script(&buf).unwrap();
 		assert_eq!(rc.rebaseable, true);
 	}
 
@@ -208,7 +208,7 @@ mod tests {
 		let script = script::Builder::new().into_script();
 		assert_eq!(script.len(), 0);
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
 			RegisterCollectionError::InstructionNotFound("OP_RETURN".to_string())
@@ -219,7 +219,7 @@ mod tests {
 	fn register_collection_decode_only_op_return_returns_error() {
 		let script = script::Builder::new().push_opcode(opcodes::all::OP_RETURN).into_script();
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
 			RegisterCollectionError::InstructionNotFound("REGISTER_COLLECTION_CODE".to_string())
@@ -233,7 +233,7 @@ mod tests {
             .push_opcode(opcodes::all::OP_PUSHNUM_13) // Wrong opcode
             .into_script();
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction);
 	}
 
@@ -244,7 +244,7 @@ mod tests {
 			.push_opcode(REGISTER_COLLECTION_CODE)
 			.into_script();
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
 			RegisterCollectionError::InstructionNotFound("collection address".to_string())
@@ -260,7 +260,7 @@ mod tests {
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
 			RegisterCollectionError::InvalidLength("collection address".to_string())
@@ -276,7 +276,7 @@ mod tests {
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
 			RegisterCollectionError::InvalidLength("collection address".to_string())
@@ -292,7 +292,7 @@ mod tests {
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
-		let result = RegisterCollection::decode(&script);
+		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
 			RegisterCollectionError::InstructionNotFound("rebaseable".to_string())
@@ -310,7 +310,7 @@ mod tests {
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.into_script();
 
-		let result = RegisterCollection::decode(&script).unwrap();
+		let result = RegisterCollection::from_script(&script).unwrap();
 		assert_eq!(result.address, H160::from(address));
 		assert!(result.rebaseable);
 	}
@@ -328,7 +328,7 @@ mod tests {
 			.push_slice::<&script::PushBytes>((&extra_data).into())
 			.into_script();
 
-		let result = RegisterCollection::decode(&script).unwrap();
+		let result = RegisterCollection::from_script(&script).unwrap();
 		assert_eq!(result.address, H160::from(address));
 		assert!(result.rebaseable);
 	}
