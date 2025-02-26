@@ -61,14 +61,11 @@ impl RegisterCollection {
 		let rebaseable_bytes =
 			expect_push_bytes(&mut instructions, REBASEABLE_LENGTH, "rebaseable")?;
 
-		if rebaseable_bytes[0] != 0x00 && rebaseable_bytes[0] != 0x01 {
+		if rebaseable_bytes[0] > 1 {
 			return Err(RegisterCollectionError::UnexpectedInstruction)
 		}
 
-		Ok(Self {
-			address: H160::from_slice(&address_bytes),
-			rebaseable: rebaseable_bytes[0] == 0x01,
-		})
+		Ok(Self { address: H160::from_slice(&address_bytes), rebaseable: rebaseable_bytes[0] == 1 })
 	}
 }
 
