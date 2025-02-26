@@ -187,19 +187,19 @@ mod tests {
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
 		);
 		let rc = RegisterCollection::from_script(&buf).unwrap();
-		assert_eq!(rc.rebaseable, true);
+		assert!(rc.rebaseable);
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
 		);
 		let rc = RegisterCollection::from_script(&buf).unwrap();
-		assert_eq!(rc.rebaseable, true);
+		assert!(rc.rebaseable);
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
 		);
 		let rc = RegisterCollection::from_script(&buf).unwrap();
-		assert_eq!(rc.rebaseable, true);
+		assert!(rc.rebaseable);
 	}
 
 	#[test]
