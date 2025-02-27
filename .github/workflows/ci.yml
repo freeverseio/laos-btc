@@ -73,3 +73,19 @@ jobs:
       - name: Test
         run: |
           cargo test --locked --workspace -- --test-threads=1
+  
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [docker, lint, test, check] # Run deployment after Docker, lint, and test jobs succeed
+    if: github.ref == 'refs/heads/main' # Only run on the main branch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kube folder to avoid permission issues
+        run: mkdir -p $HOME/.kube
+      - name: Setup helmfile and deploy
+        uses: helmfile/helmfile-action@v2.0.2
+        with:
+          helmfile-args: sync --set tag=${{ github.sha }} --environment digitalocean
+          helmfile-version: v0.170.0
+          helmfile-workdirectory: deployment
+          helmfile-kubeconfig-context: ${{ secrets.KUBECONFIG }}
