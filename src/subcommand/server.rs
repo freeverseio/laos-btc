@@ -1898,7 +1898,7 @@ impl Server {
 		Extension(_index): Extension<Arc<Index>>,
 		_accept_json: AcceptJson,
 	) -> ServerResult {
-		unimplemented!();
+		Err(ServerError::NotFound("brc721 collection not found".to_string()))
 	}
 
 	async fn inscriptions_paginated(
@@ -7033,6 +7033,18 @@ next
 			"/brc721/collections",
 			StatusCode::BAD_REQUEST,
 			"this server has no brc721 index",
+		);
+	}
+
+	#[test]
+	fn brc721_collection_not_found() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		// Try to fetch a collection that does not exist
+		server.assert_response(
+			"/brc721/collection/impossible",
+			StatusCode::NOT_FOUND,
+			"brc721 collection not found",
 		);
 	}
 }
