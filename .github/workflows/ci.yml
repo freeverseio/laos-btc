@@ -76,7 +76,7 @@ jobs:
   
   deploy:
     runs-on: ubuntu-latest
-    needs: [docker, lint, test] # Run deployment after Docker, lint, and test jobs succeed
+    needs: [docker, lint, test, check] # Run deployment after Docker, lint, and test jobs succeed
     if: github.ref == 'refs/heads/main' # Only run on the main branch
     steps:
       - uses: actions/checkout@v4
