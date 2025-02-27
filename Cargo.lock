@@ -3381,6 +3381,7 @@ version = "0.0.14"
 dependencies = [
  "bitcoin",
  "derive_more",
+ "hex",
  "pretty_assertions",
  "serde",
  "serde_json",

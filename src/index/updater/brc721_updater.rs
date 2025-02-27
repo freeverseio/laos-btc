@@ -45,8 +45,23 @@ impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
+	/// Indexes collections from a transaction.
+	///
+	/// # Arguments
+	/// * `tx_index` - The index of the transaction within its block.
+	/// * `tx` - The transaction to process.
 	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		match <Transaction as TryInto<RegisterCollection>>::try_into(tx.clone()) {
+		// Ensure the transaction has at least one output.
+		if tx.output.is_empty() {
+			log::warn!("Failed to decode register collection: Output not found");
+			return Ok(());
+		}
+
+		// the protocol specify the first output has to be the register collection
+		let first_output: TxOut = tx.output[0].clone();
+
+		// Decode the register collection from the first output's script public key.
+		match RegisterCollection::from_script(&first_output.script_pubkey) {
 			Ok(register_collection) => {
 				self.collection_table.insert(
 					(self.height.into(), tx_index),
@@ -87,7 +102,8 @@ mod tests {
 		let collection =
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
-		let output = TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().into() };
+		let output =
+			TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().to_script() };
 
 		Transaction {
 			version: Version(1),

@@ -27,7 +27,8 @@ fn register_collection_returns_tx_id() {
 	core.mine_blocks(1);
 
 	let tx = core.tx_by_id(output.tx_id);
-	let register_collection: RegisterCollection = tx.try_into().unwrap();
+	assert_eq!(tx.output.len(), 3);
+	let register_collection = RegisterCollection::from_script(&tx.output[0].script_pubkey).unwrap();
 	assert!(register_collection.rebaseable);
 	assert_eq!(register_collection.address, alice);
 }
@@ -56,7 +57,8 @@ fn rebaseable_is_false_by_default() {
 	core.mine_blocks(1);
 
 	let tx = core.tx_by_id(output.tx_id);
-	let register_collection: RegisterCollection = tx.try_into().unwrap();
+	assert_eq!(tx.output.len(), 3);
+	let register_collection = RegisterCollection::from_script(&tx.output[0].script_pubkey).unwrap();
 	assert!(!register_collection.rebaseable);
 }
 
