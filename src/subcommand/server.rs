@@ -259,6 +259,7 @@ impl Server {
 				.route("/decode/:txid", get(Self::decode))
 				.route("/update", get(Self::update))
 				.route("/brc721/collections", get(Self::brc721_collections))
+				.route("/brc721/collection/:collection_id", get(Self::brc721_collection))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1890,6 +1891,14 @@ impl Server {
 					.into_response()
 			})
 		})
+	}
+
+	async fn brc721_collection(
+		Extension(_server_config): Extension<Arc<ServerConfig>>,
+		Extension(_index): Extension<Arc<Index>>,
+		_accept_json: AcceptJson,
+	) -> ServerResult {
+		unimplemented!();
 	}
 
 	async fn inscriptions_paginated(
