@@ -1099,6 +1099,17 @@ impl Index {
 		Ok((entries, more))
 	}
 
+	pub fn get_brc721_collection_by_id(
+		&self,
+		collection_id: Brc721CollectionId,
+	) -> Result<Option<(H160, bool)>> {
+		if !self.brc721_collection_exists(collection_id)? {
+			return Ok(None);
+		}
+
+		Ok(Some((H160::default(), true)))
+	}
+
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {
 		self.client.get_block_header(&hash).into_option()
 	}
@@ -1478,6 +1489,15 @@ impl Index {
 			.begin_read()?
 			.open_table(INSCRIPTION_ID_TO_SEQUENCE_NUMBER)?
 			.get(&inscription_id.store())?
+			.is_some())
+	}
+
+	pub fn brc721_collection_exists(&self, collection_id: Brc721CollectionId) -> Result<bool> {
+		Ok(self
+			.database
+			.begin_read()?
+			.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?
+			.get(&collection_id.store())?
 			.is_some())
 	}
 

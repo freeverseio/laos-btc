@@ -1895,11 +1895,19 @@ impl Server {
 
 	async fn brc721_collection(
 		Extension(_server_config): Extension<Arc<ServerConfig>>,
-		Extension(_index): Extension<Arc<Index>>,
-		Path(_collection_id): Path<Brc721CollectionId>,
-		_accept_json: AcceptJson,
+		Extension(index): Extension<Arc<Index>>,
+		Path(collection_id): Path<Brc721CollectionId>,
+		accept_json: AcceptJson,
 	) -> ServerResult {
-		Err(ServerError::NotFound("unexistent collection".to_string()))
+		let data = match index.get_brc721_collection_by_id(collection_id)? {
+			Some(data) => data,
+			None => return Err(ServerError::NotFound("unexistent collection".to_string())),
+		};
+
+		let owner = data.0;
+		let rebaseable = data.1;
+
+		Ok(Json("ciao".to_string()).into_response())
 	}
 
 	async fn inscriptions_paginated(
@@ -2097,6 +2105,7 @@ mod tests {
 	use super::*;
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
+	use sp_core::H160;
 	use std::net::TcpListener;
 	use tempfile::TempDir;
 
@@ -7059,5 +7068,28 @@ next
 			StatusCode::NOT_FOUND,
 			"unexistent collection",
 		);
+	}
+
+	#[test]
+	fn brc721_collection_found() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
+		let rc = RegisterCollection { address, ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.to_script()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_response("/brc721/collection/2:1", StatusCode::OK, "\"ciao\"");
 	}
 }
