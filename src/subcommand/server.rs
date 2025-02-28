@@ -7082,7 +7082,8 @@ next
 		server.mine_blocks(1);
 
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
-		let rc = RegisterCollection { address, ..Default::default() };
+		let rebaseable = false;
+		let rc = RegisterCollection { address, rebaseable };
 
 		let _ = server.core.broadcast_tx(TransactionTemplate {
 			inputs: &[],
@@ -7098,7 +7099,7 @@ next
 		server.assert_response(
 			"/brc721/collection/2:1",
 			StatusCode::OK,
-			r#"{"id":"2:1","owner":"0x0000000000000000000000000000000000000000","rebaseable":true}"#,
+			r#"{"id":"2:1","owner":"0xabcffffffffffffffffffffffffffffffffffcba","rebaseable":false}"#,
 		);
 	}
 }
