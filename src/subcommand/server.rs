@@ -1897,17 +1897,22 @@ impl Server {
 		Extension(_server_config): Extension<Arc<ServerConfig>>,
 		Extension(index): Extension<Arc<Index>>,
 		Path(collection_id): Path<Brc721CollectionId>,
-		accept_json: AcceptJson,
 	) -> ServerResult {
-		let data = match index.get_brc721_collection_by_id(collection_id)? {
-			Some(data) => data,
-			None => return Err(ServerError::NotFound("unexistent collection".to_string())),
-		};
+		// Attempt to fetch the BRC721 collection data by ID.
+		// If the collection does not exist, return a `NotFound` error.
+		let data = index
+			.get_brc721_collection_by_id(collection_id)?
+			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
 
-		let owner = data.0;
-		let rebaseable = data.1;
+		// Construct the JSON response with the collection details.
+		let response_data = serde_json::json!({
+			"id": collection_id,       // The ID of the collection.
+			"owner": data.0,           // The owner of the collection.
+			"rebaseable": data.1,      // Whether the collection is rebaseable.
+		});
 
-		Ok(Json("ciao".to_string()).into_response())
+		// Return the JSON response as an HTTP response.
+		Ok(Json(response_data).into_response())
 	}
 
 	async fn inscriptions_paginated(
