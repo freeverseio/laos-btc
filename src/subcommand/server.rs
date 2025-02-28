@@ -1896,9 +1896,10 @@ impl Server {
 	async fn brc721_collection(
 		Extension(_server_config): Extension<Arc<ServerConfig>>,
 		Extension(_index): Extension<Arc<Index>>,
+		Path(_collection_id): Path<Brc721CollectionId>,
 		_accept_json: AcceptJson,
 	) -> ServerResult {
-		Err(ServerError::NotFound("brc721 collection not found".to_string()))
+		Err(ServerError::NotFound("unexistent collection".to_string()))
 	}
 
 	async fn inscriptions_paginated(
@@ -7037,14 +7038,26 @@ next
 	}
 
 	#[test]
+	fn brc721_collection_bad_request() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		// Try to fetch a collection with malformed or invalid parameter
+		server.assert_response(
+			"/brc721/collection/impossible",
+			StatusCode::BAD_REQUEST,
+			"Invalid URL: missing separator",
+		);
+	}
+
+	#[test]
 	fn brc721_collection_not_found() {
 		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
 
 		// Try to fetch a collection that does not exist
 		server.assert_response(
-			"/brc721/collection/impossible",
+			"/brc721/collection/1020:1",
 			StatusCode::NOT_FOUND,
-			"brc721 collection not found",
+			"unexistent collection",
 		);
 	}
 }
