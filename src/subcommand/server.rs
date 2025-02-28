@@ -7095,6 +7095,10 @@ next
 
 		server.mine_blocks(1);
 
-		server.assert_response("/brc721/collection/2:1", StatusCode::OK, "\"ciao\"");
+		server.assert_response(
+			"/brc721/collection/2:1",
+			StatusCode::OK,
+			r#"{"id":"2:1","owner":"0x0000000000000000000000000000000000000000","rebaseable":true}"#,
+		);
 	}
 }
