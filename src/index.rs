@@ -1103,11 +1103,19 @@ impl Index {
 		&self,
 		collection_id: Brc721CollectionId,
 	) -> Result<Option<(H160, bool)>> {
-		if !self.brc721_collection_exists(collection_id)? {
-			return Ok(None);
-		}
+		let result = self
+			.database
+			.begin_read()?
+			.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?
+			.get(&collection_id.store())?;
 
-		Ok(Some((H160::default(), true)))
+		// Convert the AccessGuard to the expected tuple type
+		let converted_result = result.map(|guard| {
+			let (address, flag) = guard.value();
+			(H160::from_slice(&address), flag)
+		});
+
+		Ok(converted_result)
 	}
 
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {
@@ -1489,15 +1497,6 @@ impl Index {
 			.begin_read()?
 			.open_table(INSCRIPTION_ID_TO_SEQUENCE_NUMBER)?
 			.get(&inscription_id.store())?
-			.is_some())
-	}
-
-	pub fn brc721_collection_exists(&self, collection_id: Brc721CollectionId) -> Result<bool> {
-		Ok(self
-			.database
-			.begin_read()?
-			.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?
-			.get(&collection_id.store())?
 			.is_some())
 	}
 
