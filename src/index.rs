@@ -1102,7 +1102,7 @@ impl Index {
 	pub fn get_brc721_collection_by_id(
 		&self,
 		collection_id: Brc721CollectionId,
-	) -> Result<Option<(H160, bool)>> {
+	) -> Result<Option<(Brc721CollectionId, H160, bool)>> {
 		let result = self
 			.database
 			.begin_read()?
@@ -1112,7 +1112,7 @@ impl Index {
 		// Convert the AccessGuard to the expected tuple type
 		let converted_result = result.map(|guard| {
 			let (address, flag) = guard.value();
-			(H160::from_slice(&address), flag)
+			(collection_id, H160::from_slice(&address), flag)
 		});
 
 		Ok(converted_result)

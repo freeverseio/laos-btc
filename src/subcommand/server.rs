@@ -1906,9 +1906,9 @@ impl Server {
 
 		// Construct the JSON response with the collection details.
 		let response_data = serde_json::json!({
-			"id": collection_id,       // The ID of the collection.
-			"owner": data.0,           // The owner of the collection.
-			"rebaseable": data.1,      // Whether the collection is rebaseable.
+			"id": data.0,       // The ID of the collection.
+			"owner": data.1,           // The owner of the collection.
+			"rebaseable": data.2,      // Whether the collection is rebaseable.
 		});
 
 		// Return the JSON response as an HTTP response.
