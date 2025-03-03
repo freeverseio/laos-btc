@@ -56,7 +56,7 @@ impl RegisterOwnershipCmd {
 			);
 		}
 
-		return Err(anyhow::anyhow!("unimplemented"));
+		Err(anyhow::anyhow!("unimplemented"))
 	}
 }
 #[derive(Debug, Deserialize)]
