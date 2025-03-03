@@ -1907,7 +1907,7 @@ impl Server {
 		// Construct the JSON response with the collection details.
 		let response_data = serde_json::json!({
 			"id": data.0,       // The ID of the collection.
-			"owner": data.1,           // The owner of the collection.
+			"LAOS_address": data.1,           // The address of the collection in LAOS.
 			"rebaseable": data.2,      // Whether the collection is rebaseable.
 		});
 
@@ -7099,7 +7099,7 @@ next
 		server.assert_response(
 			"/brc721/collection/2:1",
 			StatusCode::OK,
-			r#"{"id":"2:1","owner":"0xabcffffffffffffffffffffffffffffffffffcba","rebaseable":false}"#,
+			r#"{"id":"2:1","LAOS_address":"0xabcffffffffffffffffffffffffffffffffffcba","rebaseable":false}"#,
 		);
 	}
 }
