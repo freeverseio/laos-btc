@@ -20,7 +20,7 @@ use ordinals::brc721::register_collection::RegisterCollection;
 use sp_core::H160;
 
 #[derive(Debug, Parser)]
-pub(crate) struct Register {
+pub(crate) struct RegisterCollectionCmd {
 	#[clap(
 		long,
 		short,
@@ -47,7 +47,7 @@ pub struct Output {
 	pub tx_id: Txid,
 }
 
-impl Register {
+impl RegisterCollectionCmd {
 	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
 		let destination = wallet.get_change_address()?;
 
