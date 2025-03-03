@@ -43,6 +43,7 @@ impl RegisterOwnershipCmd {
 	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
 		let file = File::load(&self.file)?;
 
+		log::debug!("Registering ownership for collection: {}", file.collection_id,);
 		for (i, output) in file.outputs.iter().enumerate() {
 			let owner_str = match &output.owner {
 				Some(addr) => addr.clone().assume_checked().to_string(),
@@ -59,8 +60,11 @@ impl RegisterOwnershipCmd {
 		Err(anyhow::anyhow!("unimplemented"))
 	}
 }
+
 #[derive(Debug, Deserialize)]
 pub struct File {
+	#[serde(deserialize_with = "deserialize_collection_id")]
+	pub collection_id: Brc721CollectionId,
 	pub outputs: Vec<SlotsOwnership>,
 }
 
@@ -138,6 +142,14 @@ where
 	}
 }
 
+fn deserialize_collection_id<'de, D>(deserializer: D) -> Result<Brc721CollectionId, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let collection_id = String::deserialize(deserializer)?;
+	Brc721CollectionId::from_str(&collection_id).map_err(D::Error::custom)
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -150,6 +162,7 @@ mod tests {
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
 "#,
 		)
@@ -168,6 +181,7 @@ outputs:
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
   - slots_bundle: [[0,0,0]]
 "#,
@@ -176,7 +190,7 @@ outputs:
 
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
-			"outputs[0]: range at index 0 must have 1 or 2 elements, got 3 at line 3 column 5"
+			"outputs[0]: range at index 0 must have 1 or 2 elements, got 3 at line 4 column 5"
 		);
 	}
 
@@ -187,6 +201,7 @@ outputs:
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
   - slots_bundle: [[1,0]]
 "#,
@@ -195,7 +210,7 @@ outputs:
 
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
-			"outputs[0]: range at index 0 has start 1 greater than end 0 at line 3 column 5"
+			"outputs[0]: range at index 0 has start 1 greater than end 0 at line 4 column 5"
 		);
 	}
 
@@ -206,6 +221,7 @@ outputs:
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
   - slots_bundle: [[0]]
 "#,
@@ -229,6 +245,7 @@ outputs:
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
   - slots_bundle: [[0]]
     owner: asd
@@ -238,7 +255,7 @@ outputs:
 
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
-			"outputs[0]: base58 error at line 3 column 5"
+			"outputs[0]: base58 error at line 4 column 5"
 		);
 	}
 
@@ -249,6 +266,7 @@ outputs:
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
   - slots_bundle: [[0]]
     owner: 1BitcoinEaterAddressDontSendf59kuE
@@ -277,6 +295,7 @@ outputs:
 		fs::write(
 			batch_file.clone(),
 			r#"
+collection_id: 1:1
 outputs:
   - slots_bundle: [[0]]
     owner: 1BitcoinEaterAddressDontSendf59kuE
