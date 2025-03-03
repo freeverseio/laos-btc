@@ -1880,11 +1880,6 @@ impl Server {
 
 			let next = more.then_some(page_index + 1);
 
-			// let entries = entries
-			// 	.iter()
-			// 	.map(|e| Brc721Collection(e.0, e.1, e.2))
-			// 	.collect::<Vec<_>>();
-
 			Ok(if accept_json {
 				Json(Brc721CollectionsHtml { entries, more, prev, next }).into_response()
 			} else {
