@@ -259,6 +259,7 @@ impl Server {
 				.route("/decode/:txid", get(Self::decode))
 				.route("/update", get(Self::update))
 				.route("/brc721/collections", get(Self::brc721_collections))
+				.route("/brc721/collection/:collection_id", get(Self::brc721_collection))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1892,6 +1893,28 @@ impl Server {
 		})
 	}
 
+	async fn brc721_collection(
+		Extension(_server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		Path(collection_id): Path<Brc721CollectionId>,
+	) -> ServerResult {
+		// Attempt to fetch the BRC721 collection data by ID.
+		// If the collection does not exist, return a `NotFound` error.
+		let data = index
+			.get_brc721_collection_by_id(collection_id)?
+			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
+
+		// Construct the JSON response with the collection details.
+		let response_data = serde_json::json!({
+			"id": data.0,       // The ID of the collection.
+			"LAOS_address": data.1,           // The address of the collection in LAOS.
+			"rebaseable": data.2,      // Whether the collection is rebaseable.
+		});
+
+		// Return the JSON response as an HTTP response.
+		Ok(Json(response_data).into_response())
+	}
+
 	async fn inscriptions_paginated(
 		Extension(server_config): Extension<Arc<ServerConfig>>,
 		Extension(index): Extension<Arc<Index>>,
@@ -2087,6 +2110,7 @@ mod tests {
 	use super::*;
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
+	use sp_core::H160;
 	use std::net::TcpListener;
 	use tempfile::TempDir;
 
@@ -7024,6 +7048,58 @@ next
 			"/brc721/collections",
 			StatusCode::BAD_REQUEST,
 			"this server has no brc721 index",
+		);
+	}
+
+	#[test]
+	fn brc721_collection_bad_request() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		// Try to fetch a collection with malformed or invalid parameter
+		server.assert_response(
+			"/brc721/collection/impossible",
+			StatusCode::BAD_REQUEST,
+			"Invalid URL: missing separator",
+		);
+	}
+
+	#[test]
+	fn brc721_collection_not_found() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		// Try to fetch a collection that does not exist
+		server.assert_response(
+			"/brc721/collection/1020:1",
+			StatusCode::NOT_FOUND,
+			"unexistent collection",
+		);
+	}
+
+	#[test]
+	fn brc721_collection_found() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
+		let rebaseable = false;
+		let rc = RegisterCollection { address, rebaseable };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.to_script()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_response(
+			"/brc721/collection/2:1",
+			StatusCode::OK,
+			r#"{"id":"2:1","LAOS_address":"0xabcffffffffffffffffffffffffffffffffffcba","rebaseable":false}"#,
 		);
 	}
 }

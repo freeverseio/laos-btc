@@ -1099,6 +1099,25 @@ impl Index {
 		Ok((entries, more))
 	}
 
+	pub fn get_brc721_collection_by_id(
+		&self,
+		collection_id: Brc721CollectionId,
+	) -> Result<Option<(Brc721CollectionId, H160, bool)>> {
+		let result = self
+			.database
+			.begin_read()?
+			.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?
+			.get(&collection_id.store())?;
+
+		// Convert the AccessGuard to the expected tuple type
+		let converted_result = result.map(|guard| {
+			let (address, flag) = guard.value();
+			(collection_id, H160::from_slice(&address), flag)
+		});
+
+		Ok(converted_result)
+	}
+
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {
 		self.client.get_block_header(&hash).into_option()
 	}
