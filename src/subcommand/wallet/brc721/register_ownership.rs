@@ -84,8 +84,28 @@ impl File {
 			!file.outputs.is_empty(),
 			"register ownership file must contain at least one output",
 		);
+
+		// Check overlapping ranges
+		for (index, output) in file.outputs.iter().enumerate() {
+			let mut sorted_ranges = output.slots_bundle.clone();
+			sorted_ranges.sort_by_key(|r| *r.start());
+
+			if sorted_ranges.windows(2).any(|pair| ranges_overlap(&pair[0], &pair[1])) {
+				return Err(anyhow::anyhow!(
+					"overlapping ranges detected in output {}: {:?}",
+					index,
+					sorted_ranges
+				));
+			}
+		}
 		Ok(file)
 	}
+}
+
+/// Returns true if the two ranges overlap. Two ranges overlap if they share any value.
+fn ranges_overlap(r1: &std::ops::RangeInclusive<u128>, r2: &std::ops::RangeInclusive<u128>) -> bool {
+	// They do not overlap if one finishes before the other starts.
+	!(r1.end() < r2.start() || r2.end() < r1.start())
 }
 
 fn deserialize_slots_bundle<'de, D>(deserializer: D) -> Result<Ranges, D::Error>
@@ -211,6 +231,26 @@ outputs:
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
 			"outputs[0]: range at index 0 has start 1 greater than end 0 at line 4 column 5"
+		);
+	}
+
+	#[test]
+	fn load_file_overlapping_slots() {
+		let tempdir = TempDir::new().unwrap();
+		let batch_file = tempdir.path().join("temp.yaml");
+		fs::write(
+			batch_file.clone(),
+			r#"
+collection_id: 1:1
+outputs:
+  - slots_bundle: [[0,20],[21],[20]]
+"#,
+		)
+		.unwrap();
+
+		assert_eq!(
+			File::load(batch_file.as_path()).unwrap_err().to_string(),
+			"overlapping ranges detected in output 0: 0..=20 and 20..=20"
 		);
 	}
 
