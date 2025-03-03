@@ -1072,7 +1072,7 @@ impl Index {
 		&self,
 		page_size: usize,
 		page_index: usize,
-	) -> Result<(Vec<(Brc721CollectionId, RegisterCollection)>, bool)> {
+	) -> Result<(Vec<Brc721Collection>, bool)> {
 		let mut entries = Vec::new();
 
 		for result in self
@@ -1085,12 +1085,10 @@ impl Index {
 			.take(page_size.saturating_add(1))
 		{
 			let (id, entry) = result?;
-			entries.push((
+			entries.push(Brc721Collection(
 				Brc721CollectionId::load(id.value()),
-				RegisterCollection {
-					address: H160::from_slice(&entry.value().0),
-					rebaseable: entry.value().1,
-				},
+				H160::from_slice(&entry.value().0),
+				entry.value().1,
 			));
 		}
 

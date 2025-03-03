@@ -1880,8 +1880,10 @@ impl Server {
 
 			let next = more.then_some(page_index + 1);
 
-			let entries =
-				entries.iter().map(|e| (e.0, format!("{:?}", e.1.address))).collect::<Vec<_>>();
+			// let entries = entries
+			// 	.iter()
+			// 	.map(|e| Brc721Collection(e.0, e.1, e.2))
+			// 	.collect::<Vec<_>>();
 
 			Ok(if accept_json {
 				Json(Brc721CollectionsHtml { entries, more, prev, next }).into_response()
@@ -6983,9 +6985,10 @@ next
 		server.assert_html(
 			"/brc721/collections",
 			Brc721CollectionsHtml {
-				entries: vec![(
+				entries: vec![Brc721Collection(
 					Brc721CollectionId { block: 2, tx: 1 },
-					"0x0000000000000000000000000000000000000000".to_owned(),
+					H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
+					false,
 				)],
 				more: false,
 				prev: None,
@@ -7017,7 +7020,7 @@ next
 			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
 
 			Brc721CollectionsHtml {
-				entries: vec![(Brc721CollectionId { block: 2, tx: 1 }, "0x0000000000000000000000000000000000000000".to_owned())],
+				entries: vec![Brc721Collection(Brc721CollectionId { block: 2, tx: 1 }, H160::from_str("0x0000000000000000000000000000000000000000").unwrap(), false)],
 				more: false,
 			  prev: None,
 				next: None
