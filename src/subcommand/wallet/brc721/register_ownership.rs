@@ -103,7 +103,10 @@ impl File {
 }
 
 /// Returns true if the two ranges overlap. Two ranges overlap if they share any value.
-fn ranges_overlap(r1: &std::ops::RangeInclusive<u128>, r2: &std::ops::RangeInclusive<u128>) -> bool {
+fn ranges_overlap(
+	r1: &std::ops::RangeInclusive<u128>,
+	r2: &std::ops::RangeInclusive<u128>,
+) -> bool {
 	// They do not overlap if one finishes before the other starts.
 	!(r1.end() < r2.start() || r2.end() < r1.start())
 }
