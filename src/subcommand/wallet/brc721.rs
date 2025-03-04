@@ -18,6 +18,7 @@ use super::*;
 use crate::wallet::Wallet;
 
 pub mod register_collection;
+pub mod register_ownership;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Brc721Command {
@@ -29,13 +30,16 @@ pub(crate) struct Brc721Command {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum Subcommand {
 	#[command(about = "Register Collection", visible_alias = "rc")]
-	RegisterCollection(register_collection::Register),
+	RegisterCollection(register_collection::RegisterCollectionCmd),
+	#[command(about = "Register Ownership", visible_alias = "ro")]
+	RegisterOwnership(register_ownership::RegisterOwnershipCmd),
 }
 
 impl Brc721Command {
 	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
 		match self.subcommand {
 			Subcommand::RegisterCollection(register) => register.run(wallet),
+			Subcommand::RegisterOwnership(cmd) => cmd.run(wallet),
 		}
 	}
 }
