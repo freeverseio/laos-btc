@@ -14,8 +14,7 @@ pub enum AddressMappingError {
 pub fn btc_address_to_h160(address: Address) -> Result<H160, AddressMappingError> {
 	if let Some(program) = address.witness_program() {
 		if program.is_p2wpkh() {
-			let h160_bytes: Vec<u8> =
-				program.program().as_bytes().iter().map(|&byte| byte).collect();
+			let h160_bytes: Vec<u8> = program.program().as_bytes().to_vec();
 			return Ok(H160::from_slice(&h160_bytes));
 		}
 	} else {
