@@ -253,7 +253,7 @@ outputs:
 
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
-			"overlapping ranges detected in output 0: 0..=20 and 20..=20"
+			"overlapping ranges detected in output 0: [0..=20, 20..=20, 21..=21]"
 		);
 	}
 
