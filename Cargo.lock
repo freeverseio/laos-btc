@@ -3380,6 +3380,7 @@ name = "ordinals"
 version = "0.0.14"
 dependencies = [
  "bitcoin",
+ "bitcoin_hashes 0.14.0",
  "derive_more",
  "hex",
  "pretty_assertions",
