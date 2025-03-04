@@ -41,7 +41,7 @@ mod tests {
 		assert_eq!(
 			Brc721CollectionsHtml {
 				entries: vec![
-					(Brc721Collection(Brc721CollectionId::default(), H160::default(), false))
+					(Brc721Collection::new(Brc721CollectionId::default(), H160::default(), false))
 				],
 				more: false,
 				prev: None,
@@ -64,12 +64,12 @@ mod tests {
 		assert_eq!(
 			Brc721CollectionsHtml {
 				entries: vec![
-					Brc721Collection(
+					Brc721Collection::new(
 						Brc721CollectionId::default(),
 						H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
 						false,
 					),
-					Brc721Collection(
+					Brc721Collection::new(
 						Brc721CollectionId { block: 1, tx: 1 },
 						H160::from_low_u64_be(1),
 						false

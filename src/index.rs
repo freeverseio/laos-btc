@@ -1085,7 +1085,7 @@ impl Index {
 			.take(page_size.saturating_add(1))
 		{
 			let (id, entry) = result?;
-			entries.push(Brc721Collection(
+			entries.push(Brc721Collection::new(
 				Brc721CollectionId::load(id.value()),
 				H160::from_slice(&entry.value().0),
 				entry.value().1,
@@ -1110,7 +1110,7 @@ impl Index {
 		// Convert the AccessGuard to the expected tuple type
 		let converted_result = result.map(|guard| {
 			let (address, flag) = guard.value();
-			Brc721Collection(collection_id, H160::from_slice(&address), flag)
+			Brc721Collection::new(collection_id, H160::from_slice(&address), flag)
 		});
 
 		Ok(converted_result)

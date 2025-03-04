@@ -89,7 +89,7 @@ fn register_collection_command_indexer_integration() {
 		"/brc721/collections",
 		Chain::Regtest,
 		Brc721CollectionsHtml {
-			entries: vec![Brc721Collection(
+			entries: vec![Brc721Collection::new(
 				Brc721CollectionId { block: 2, tx: 1 },
 				H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
 				true,

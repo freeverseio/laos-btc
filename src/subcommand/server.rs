@@ -1903,9 +1903,9 @@ impl Server {
 
 		// Construct the JSON response with the collection details.
 		let response_data = serde_json::json!({
-			"id": data.0,       // The ID of the collection.
-			"LAOS_address": data.1,           // The address of the collection in LAOS.
-			"rebaseable": data.2,      // Whether the collection is rebaseable.
+			"id": data.collection_id,
+			"LAOS_address": data.address,
+			"rebaseable": data.rebaseable,
 		});
 
 		// Return the JSON response as an HTTP response.
@@ -6980,7 +6980,7 @@ next
 		server.assert_html(
 			"/brc721/collections",
 			Brc721CollectionsHtml {
-				entries: vec![Brc721Collection(
+				entries: vec![Brc721Collection::new(
 					Brc721CollectionId { block: 2, tx: 1 },
 					H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
 					false,
@@ -7015,7 +7015,7 @@ next
 			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
 
 			Brc721CollectionsHtml {
-				entries: vec![Brc721Collection(Brc721CollectionId { block: 2, tx: 1 }, H160::from_str("0x0000000000000000000000000000000000000000").unwrap(), false)],
+				entries: vec![Brc721Collection::new(Brc721CollectionId { block: 2, tx: 1 }, H160::from_str("0x0000000000000000000000000000000000000000").unwrap(), false)],
 				more: false,
 			  prev: None,
 				next: None
