@@ -16,8 +16,6 @@
 
 use super::*;
 
-type DisplayableAddress = String;
-
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721CollectionsHtml {
 	pub entries: Vec<Brc721Collection>,
@@ -52,7 +50,7 @@ mod tests {
 			.to_string(),
 			"<h1>Brc721 Collections</h1>
 <ul>
-  <li>0:0 - 0x0000000000000000000000000000000000000000</li>
+  <li>0:0 - 0x0000…0000</li>
 </ul>
 <div class=center>
     prev
@@ -84,8 +82,8 @@ mod tests {
 			.to_string(),
 			"<h1>Brc721 Collections</h1>
 <ul>
-  <li>0:0 - 0x0000000000000000000000000000000000000000</li>
-  <li>1:1 - 0x0000000000000000000000000000000000000001</li>
+  <li>0:0 - 0x0000…0000</li>
+  <li>1:1 - 0x0000…0001</li>
 </ul>
 <div class=center>
     <a class=prev href=/brc721/collections/1>prev</a>
