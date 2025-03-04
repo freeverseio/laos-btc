@@ -15,6 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
+use ordinals::brc721::register_ownership::Ranges;
 use serde::{de::Error as DeError, Deserialize, Deserializer};
 
 #[derive(Debug, Parser)]
@@ -75,7 +76,6 @@ pub struct SlotsOwnership {
 	#[serde(default, deserialize_with = "deserialize_owner")]
 	owner: Option<Address<NetworkUnchecked>>,
 }
-pub type Ranges = Vec<std::ops::RangeInclusive<u128>>;
 
 impl File {
 	pub fn load(path: &Path) -> Result<Self> {
@@ -88,9 +88,9 @@ impl File {
 		// Check overlapping ranges
 		for (index, output) in file.outputs.iter().enumerate() {
 			let mut sorted_ranges = output.slots_bundle.clone();
-			sorted_ranges.sort_by_key(|r| *r.start());
+			sorted_ranges.0.sort_by_key(|r| *r.start());
 
-			if sorted_ranges.windows(2).any(|pair| ranges_overlap(&pair[0], &pair[1])) {
+			if sorted_ranges.0.windows(2).any(|pair| ranges_overlap(&pair[0], &pair[1])) {
 				return Err(anyhow::anyhow!(
 					"overlapping ranges detected in output {}: {:?}",
 					index,
@@ -121,7 +121,7 @@ where
 		return Err(D::Error::custom("slots_bundle cannot be empty"));
 	}
 
-	let mut ranges: Ranges = Vec::with_capacity(slots_bundle.len());
+	let mut ranges = Ranges(Vec::with_capacity(slots_bundle.len()));
 	for (i, range) in slots_bundle.into_iter().enumerate() {
 		let range = match range.len() {
 			0 => return Err(D::Error::custom(format!("range at index {} cannot be empty", i))),
@@ -147,7 +147,7 @@ where
 					i, other
 				))),
 		};
-		ranges.push(range);
+		ranges.0.push(range);
 	}
 	Ok(ranges)
 }
@@ -273,8 +273,8 @@ outputs:
 
 		let file = File::load(batch_file.as_path()).unwrap();
 		assert_eq!(file.outputs.len(), 1);
-		assert_eq!(file.outputs[0].slots_bundle.len(), 1);
-		let range = &file.outputs[0].slots_bundle[0];
+		assert_eq!(file.outputs[0].slots_bundle.0.len(), 1);
+		let range = &file.outputs[0].slots_bundle.0[0];
 		// For a one-element range, start == end.
 		assert_eq!(range.start(), range.end());
 		// And the only element is 0.
@@ -319,8 +319,8 @@ outputs:
 
 		let file = File::load(batch_file.as_path()).unwrap();
 		assert_eq!(file.outputs.len(), 1);
-		assert_eq!(file.outputs[0].slots_bundle.len(), 1);
-		let range = &file.outputs[0].slots_bundle[0];
+		assert_eq!(file.outputs[0].slots_bundle.0.len(), 1);
+		let range = &file.outputs[0].slots_bundle.0[0];
 		// For a one-element range, start == end.
 		assert_eq!(range.start(), range.end());
 		// And the only element is 0.
@@ -355,8 +355,8 @@ outputs:
 			"1BitcoinEaterAddressDontSendf59kuE"
 		);
 		// OUTPUT 0
-		assert_eq!(file.outputs[0].slots_bundle.len(), 1);
-		let bundle0 = &file.outputs[0].slots_bundle[0];
+		assert_eq!(file.outputs[0].slots_bundle.0.len(), 1);
+		let bundle0 = &file.outputs[0].slots_bundle.0[0];
 		// For a single-element slot, start should equal end and be 0.
 		assert_eq!(*bundle0.start(), 0);
 		assert_eq!(*bundle0.end(), 0);
@@ -365,14 +365,14 @@ outputs:
 			"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
 		);
 		// OUTPUT 1
-		assert_eq!(file.outputs[1].slots_bundle.len(), 3);
-		let bundle0 = &file.outputs[1].slots_bundle[0];
+		assert_eq!(file.outputs[1].slots_bundle.0.len(), 3);
+		let bundle0 = &file.outputs[1].slots_bundle.0[0];
 		assert_eq!(*bundle0.start(), 0);
 		assert_eq!(*bundle0.end(), 0);
-		let bundle1 = &file.outputs[1].slots_bundle[1];
+		let bundle1 = &file.outputs[1].slots_bundle.0[1];
 		assert_eq!(*bundle1.start(), 2);
 		assert_eq!(*bundle1.end(), 2);
-		let bundle3 = &file.outputs[1].slots_bundle[2];
+		let bundle3 = &file.outputs[1].slots_bundle.0[2];
 		assert_eq!(*bundle3.start(), 4);
 		assert_eq!(*bundle3.end(), 6);
 	}
