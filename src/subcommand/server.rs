@@ -1880,9 +1880,6 @@ impl Server {
 
 			let next = more.then_some(page_index + 1);
 
-			let entries =
-				entries.iter().map(|e| (e.0, format!("{:?}", e.1.address))).collect::<Vec<_>>();
-
 			Ok(if accept_json {
 				Json(Brc721CollectionsHtml { entries, more, prev, next }).into_response()
 			} else {
@@ -1900,15 +1897,15 @@ impl Server {
 	) -> ServerResult {
 		// Attempt to fetch the BRC721 collection data by ID.
 		// If the collection does not exist, return a `NotFound` error.
-		let data = index
+		let collection = index
 			.get_brc721_collection_by_id(collection_id)?
 			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
 
 		// Construct the JSON response with the collection details.
 		let response_data = serde_json::json!({
-			"id": data.0,       // The ID of the collection.
-			"LAOS_address": data.1,           // The address of the collection in LAOS.
-			"rebaseable": data.2,      // Whether the collection is rebaseable.
+			"id": collection.id,
+			"LAOS_address": collection.address,
+			"rebaseable": collection.rebaseable,
 		});
 
 		// Return the JSON response as an HTTP response.
@@ -2108,6 +2105,7 @@ impl Server {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use ordinals::RegisterCollection;
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
 	use sp_core::H160;
@@ -6983,9 +6981,10 @@ next
 		server.assert_html(
 			"/brc721/collections",
 			Brc721CollectionsHtml {
-				entries: vec![(
+				entries: vec![Brc721Collection::new(
 					Brc721CollectionId { block: 2, tx: 1 },
-					"0x0000000000000000000000000000000000000000".to_owned(),
+					H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
+					false,
 				)],
 				more: false,
 				prev: None,
@@ -7017,7 +7016,7 @@ next
 			server.get_json::<Brc721CollectionsHtml>("/brc721/collections"),
 
 			Brc721CollectionsHtml {
-				entries: vec![(Brc721CollectionId { block: 2, tx: 1 }, "0x0000000000000000000000000000000000000000".to_owned())],
+				entries: vec![Brc721Collection::new(Brc721CollectionId { block: 2, tx: 1 }, H160::from_str("0x0000000000000000000000000000000000000000").unwrap(), false)],
 				more: false,
 			  prev: None,
 				next: None

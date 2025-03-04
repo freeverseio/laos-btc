@@ -16,11 +16,9 @@
 
 use super::*;
 
-type DisplayableAddress = String;
-
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721CollectionsHtml {
-	pub entries: Vec<(Brc721CollectionId, DisplayableAddress)>,
+	pub entries: Vec<Brc721Collection>,
 	pub more: bool,
 	pub prev: Option<usize>,
 	pub next: Option<usize>,
@@ -42,7 +40,9 @@ mod tests {
 	fn display() {
 		assert_eq!(
 			Brc721CollectionsHtml {
-				entries: vec![(Brc721CollectionId::default(), format!("{:?}", H160::default()))],
+				entries: vec![
+					(Brc721Collection::new(Brc721CollectionId::default(), H160::default(), false))
+				],
 				more: false,
 				prev: None,
 				next: None,
@@ -50,7 +50,7 @@ mod tests {
 			.to_string(),
 			"<h1>Brc721 Collections</h1>
 <ul>
-  <li>0:0 - 0x0000000000000000000000000000000000000000</li>
+  <li>0:0 - 0x0000000000000000000000000000000000000000 - false</li>
 </ul>
 <div class=center>
     prev
@@ -64,13 +64,15 @@ mod tests {
 		assert_eq!(
 			Brc721CollectionsHtml {
 				entries: vec![
-					(
+					Brc721Collection::new(
 						Brc721CollectionId::default(),
-						String::from("0x0000000000000000000000000000000000000000"),
+						H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
+						false,
 					),
-					(
+					Brc721Collection::new(
 						Brc721CollectionId { block: 1, tx: 1 },
-						format!("{:?}", H160::from_low_u64_be(1))
+						H160::from_low_u64_be(1),
+						false
 					)
 				],
 				prev: Some(1),
@@ -80,8 +82,8 @@ mod tests {
 			.to_string(),
 			"<h1>Brc721 Collections</h1>
 <ul>
-  <li>0:0 - 0x0000000000000000000000000000000000000000</li>
-  <li>1:1 - 0x0000000000000000000000000000000000000001</li>
+  <li>0:0 - 0x0000000000000000000000000000000000000000 - false</li>
+  <li>1:1 - 0x0000000000000000000000000000000000000001 - false</li>
 </ul>
 <div class=center>
     <a class=prev href=/brc721/collections/1>prev</a>
