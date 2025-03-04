@@ -92,7 +92,7 @@ fn register_collection_command_indexer_integration() {
 			entries: vec![Brc721Collection(
 				Brc721CollectionId { block: 2, tx: 1 },
 				H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
-				false,
+				true,
 			)],
 			more: false,
 			prev: None,
