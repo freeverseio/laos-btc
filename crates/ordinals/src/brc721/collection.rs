@@ -25,17 +25,20 @@ impl fmt::Display for Brc721Collection {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use derive_more::FromStr;
+	use super::*;
+	use derive_more::FromStr;
 
-    #[test]
-    fn test_brc721_collection_display() {
-        let collection_id = Brc721CollectionId::default(); // Create a collection ID
-        let address = H160::from_str("0x0000000000000000000000000000000000000001").unwrap();
-        let rebaseable = false;
+	#[test]
+	fn test_brc721_collection_display() {
+		let collection_id = Brc721CollectionId::default(); // Create a collection ID
+		let address = H160::from_str("0x0000000000000000000000000000000000000001").unwrap();
+		let rebaseable = false;
 
-        let collection = Brc721Collection::new(collection_id.clone(), address, rebaseable);
+		let collection = Brc721Collection::new(collection_id, address, rebaseable);
 
-        assert_eq!(format!("{}", collection), "0:0 - 0x0000000000000000000000000000000000000001 - false");
-    }
+		assert_eq!(
+			format!("{}", collection),
+			"0:0 - 0x0000000000000000000000000000000000000001 - false"
+		);
+	}
 }

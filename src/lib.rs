@@ -73,7 +73,7 @@ use http::{HeaderMap, StatusCode};
 use lazy_static::lazy_static;
 use ordinals::{
 	varint, Artifact, Brc721Collection, Brc721CollectionId, Charm, Edict, Epoch, Etching, Height,
-	Pile, Rarity, RegisterCollection, Rune, RuneId, Runestone, Sat, SatPoint, SpacedRune, Terms,
+	Pile, Rarity, Rune, RuneId, Runestone, Sat, SatPoint, SpacedRune, Terms,
 	COLLECTION_ADDRESS_LENGTH,
 };
 use regex::Regex;

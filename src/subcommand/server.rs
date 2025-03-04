@@ -2105,6 +2105,7 @@ impl Server {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use ordinals::RegisterCollection;
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
 	use sp_core::H160;
