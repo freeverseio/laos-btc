@@ -6,20 +6,21 @@ use std::fmt;
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721Collection {
 	pub id: Brc721CollectionId,
-	pub address: H160,
+	#[serde(rename = "LAOS_address")]
+	pub laos_address: H160,
 	pub rebaseable: bool,
 }
 
 impl Brc721Collection {
 	// Constructor function
-	pub fn new(id: Brc721CollectionId, address: H160, rebaseable: bool) -> Self {
-		Brc721Collection { id, address, rebaseable }
+	pub fn new(id: Brc721CollectionId, laos_address: H160, rebaseable: bool) -> Self {
+		Brc721Collection { id, laos_address, rebaseable }
 	}
 }
 
 impl fmt::Display for Brc721Collection {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{} - {:?} - {}", self.id, self.address, self.rebaseable)
+		write!(f, "{} - {:?} - {}", self.id, self.laos_address, self.rebaseable)
 	}
 }
 
