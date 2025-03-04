@@ -1897,15 +1897,15 @@ impl Server {
 	) -> ServerResult {
 		// Attempt to fetch the BRC721 collection data by ID.
 		// If the collection does not exist, return a `NotFound` error.
-		let data = index
+		let collection = index
 			.get_brc721_collection_by_id(collection_id)?
 			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
 
 		// Construct the JSON response with the collection details.
 		let response_data = serde_json::json!({
-			"id": data.collection_id,
-			"LAOS_address": data.address,
-			"rebaseable": data.rebaseable,
+			"id": collection.id,
+			"LAOS_address": collection.address,
+			"rebaseable": collection.rebaseable,
 		});
 
 		// Return the JSON response as an HTTP response.
