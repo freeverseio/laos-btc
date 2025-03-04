@@ -1901,12 +1901,7 @@ impl Server {
 			.get_brc721_collection_by_id(collection_id)?
 			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
 
-		// Construct the JSON response with the collection details.
-		let response_data = serde_json::json!({
-			"id": collection.id,
-			"LAOS_address": collection.laos_address,
-			"rebaseable": collection.rebaseable,
-		});
+		let response_data = serde_json::to_value(collection).unwrap();
 
 		// Return the JSON response as an HTTP response.
 		Ok(Json(response_data).into_response())
