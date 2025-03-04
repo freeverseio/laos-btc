@@ -32,7 +32,6 @@ impl PageContent for Brc721CollectionsHtml {
 
 #[cfg(test)]
 mod tests {
-	use axum::{extract::Json, response::IntoResponse};
 	use sp_core::H160;
 
 	use super::*;
@@ -120,12 +119,12 @@ mod tests {
 			"entries": [
 				{
 					"id": "0:0",
-					"laos_address": "0x0000000000000000000000000000000000000000",
+					"LAOS_address": "0x0000000000000000000000000000000000000000",
 					"rebaseable": false
 				},
 				{
 					"id": "1:1",
-					"laos_address": "0x0000000000000000000000000000000000000001",
+					"LAOS_address": "0x0000000000000000000000000000000000000001",
 					"rebaseable": false
 				}
 			],

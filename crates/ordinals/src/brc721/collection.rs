@@ -6,6 +6,7 @@ use std::fmt;
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721Collection {
 	pub id: Brc721CollectionId,
+	#[serde(rename = "LAOS_address")]
 	pub laos_address: H160,
 	pub rebaseable: bool,
 }
