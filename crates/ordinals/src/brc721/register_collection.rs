@@ -54,15 +54,18 @@ impl RegisterCollection {
 		expect_opcode(&mut instructions, REGISTER_COLLECTION_CODE, "REGISTER_COLLECTION_CODE")?;
 
 		// Expect the collection address (20 bytes)
-		let address_bytes =
-			expect_push_bytes(&mut instructions, COLLECTION_ADDRESS_LENGTH, "collection address")?;
+		let address_bytes = expect_push_bytes(
+			&mut instructions,
+			Some(COLLECTION_ADDRESS_LENGTH),
+			"collection address",
+		)?;
 
 		// Expect the rebaseable flag (1 byte)
 		let rebaseable_bytes =
-			expect_push_bytes(&mut instructions, REBASEABLE_LENGTH, "rebaseable")?;
+			expect_push_bytes(&mut instructions, Some(REBASEABLE_LENGTH), "rebaseable")?;
 
 		if rebaseable_bytes[0] > 1 {
-			return Err(RegisterCollectionError::UnexpectedInstruction)
+			return Err(RegisterCollectionError::UnexpectedInstruction);
 		}
 
 		Ok(Self { address: H160::from_slice(&address_bytes), rebaseable: rebaseable_bytes[0] == 1 })
@@ -72,6 +75,7 @@ impl RegisterCollection {
 /// Custom error type for errors related to register collection operations.
 #[derive(Debug, Error, PartialEq)]
 pub enum RegisterCollectionError {
+	// TODO rename
 	/// An instruction of the expected type was not found in the script.
 	#[error("Instruction not found: `{0}`")]
 	InstructionNotFound(String),
@@ -88,7 +92,7 @@ pub enum RegisterCollectionError {
 /// Helper function to ensure the next instruction is a specific opcode.
 ///
 /// Returns an error if the expected opcode is not found or if there are no more instructions.
-fn expect_opcode<'a>(
+pub fn expect_opcode<'a>(
 	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
 	expected_op: opcodes::Opcode,
 	desc: &str,
@@ -105,18 +109,20 @@ fn expect_opcode<'a>(
 /// Helper function to ensure the next instruction is a push operation of the expected length.
 ///
 /// Returns an error if the expected length is not met or if there are no more instructions.
-fn expect_push_bytes<'a>(
+pub fn expect_push_bytes<'a>(
 	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
-	expected_len: usize,
+	expected_len: Option<usize>,
 	desc: &str,
 ) -> Result<Vec<u8>, RegisterCollectionError> {
-	match instructions
-		.next()
-		.ok_or_else(|| RegisterCollectionError::InstructionNotFound(desc.into()))?
-	{
-		Ok(Instruction::PushBytes(bytes)) if bytes.len() == expected_len =>
-			Ok(bytes.as_bytes().into()),
-		Ok(Instruction::PushBytes(_)) => Err(RegisterCollectionError::InvalidLength(desc.into())),
+	match (
+		instructions
+			.next()
+			.ok_or_else(|| RegisterCollectionError::InstructionNotFound(desc.into()))?,
+		expected_len,
+	) {
+		(Ok(Instruction::PushBytes(bytes)), Some(expected)) if bytes.len() != expected =>
+			Err(RegisterCollectionError::InvalidLength(desc.into())),
+		(Ok(Instruction::PushBytes(bytes)), _) => Ok(bytes.as_bytes().to_vec()),
 		_ => Err(RegisterCollectionError::UnexpectedInstruction),
 	}
 }
