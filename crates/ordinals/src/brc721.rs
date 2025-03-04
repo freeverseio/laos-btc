@@ -1,4 +1,5 @@
 pub mod address_mapping;
+pub mod collection;
 pub mod collection_id;
 pub mod register_collection;
 
