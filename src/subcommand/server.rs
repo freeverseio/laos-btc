@@ -1904,7 +1904,7 @@ impl Server {
 		// Construct the JSON response with the collection details.
 		let response_data = serde_json::json!({
 			"id": collection.id,
-			"LAOS_address": collection.address,
+			"LAOS_address": collection.laos_address,
 			"rebaseable": collection.rebaseable,
 		});
 

@@ -32,6 +32,7 @@ impl PageContent for Brc721CollectionsHtml {
 
 #[cfg(test)]
 mod tests {
+	use axum::{extract::Json, response::IntoResponse};
 	use sp_core::H160;
 
 	use super::*;
@@ -90,5 +91,49 @@ mod tests {
       <a class=next href=/brc721/collections/2>next</a>
   </div>"
 		);
+	}
+
+	#[test]
+	fn test_json() {
+		let something = Brc721CollectionsHtml {
+			entries: vec![
+				Brc721Collection::new(
+					Brc721CollectionId::default(),
+					H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
+					false,
+				),
+				Brc721Collection::new(
+					Brc721CollectionId { block: 1, tx: 1 },
+					H160::from_low_u64_be(1),
+					false,
+				),
+			],
+			prev: Some(1),
+			next: Some(2),
+			more: true,
+		};
+
+		// Serialize explicitly using `serde_json::to_value`
+		let serialized = serde_json::to_value(&something).unwrap();
+
+		let expected_json = serde_json::json!({
+			"entries": [
+				{
+					"id": "0:0",
+					"laos_address": "0x0000000000000000000000000000000000000000",
+					"rebaseable": false
+				},
+				{
+					"id": "1:1",
+					"laos_address": "0x0000000000000000000000000000000000000001",
+					"rebaseable": false
+				}
+			],
+			"prev": 1,
+			"next": 2,
+			"more": true
+		});
+
+		assert_eq!(serialized, expected_json);
 	}
 }
