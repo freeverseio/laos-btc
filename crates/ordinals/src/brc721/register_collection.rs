@@ -1,3 +1,4 @@
+use crate::brc721::flags::{Brc721Flag, BRC721_FLAG_LENGTH, BRC721_INIT_CODE};
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
@@ -13,9 +14,6 @@ pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 /// Constant representing the length of the rebaseable flag in bytes.
 const REBASEABLE_LENGTH: usize = 1;
 
-/// The opcode used to identify register collection operations.
-const REGISTER_COLLECTION_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15;
-
 /// Struct to represent a register collection with an address and rebaseability status.
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct RegisterCollection {
@@ -29,7 +27,7 @@ pub struct RegisterCollection {
 impl RegisterCollection {
 	/// Encodes a `RegisterCollection` instance into a Bitcoin script.
 	///
-	/// The encoded script includes an OP_RETURN opcode, the REGISTER_COLLECTION_CODE,
+	/// The encoded script includes an OP_RETURN opcode, the BRC721_INIT_CODE,
 	/// the collection address, and the rebaseable flag.
 	pub fn to_script(&self) -> ScriptBuf {
 		let address = self.address.as_fixed_bytes();
@@ -37,7 +35,8 @@ impl RegisterCollection {
 
 		script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(&Brc721Flag::RegisterCollection.to_byte_slice())
 			.push_slice(address)
 			.push_slice(rebaseable)
 			.into_script()
@@ -45,13 +44,18 @@ impl RegisterCollection {
 
 	/// Decodes a Bitcoin script into a `RegisterCollection` instance.
 	///
-	/// The function checks for the presence of OP_RETURN, REGISTER_COLLECTION_CODE,
+	/// The function checks for the presence of OP_RETURN, BRC721_INIT_CODE,
 	/// a 20-byte collection address, and a 1-byte rebaseable flag in the script.
 	pub fn from_script(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
 		let mut instructions = script.instructions();
 
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
-		expect_opcode(&mut instructions, REGISTER_COLLECTION_CODE, "REGISTER_COLLECTION_CODE")?;
+		expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
+
+		match expect_push_bytes(&mut instructions, BRC721_FLAG_LENGTH, "Register collection flag") {
+			Ok(byte) if &byte == &Brc721Flag::RegisterCollection.to_byte_slice() => (),
+			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
+		}
 
 		// Expect the collection address (20 bytes)
 		let address_bytes =
@@ -214,7 +218,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("REGISTER_COLLECTION_CODE".to_string())
+			RegisterCollectionError::InstructionNotFound("BRC721_INIT_CODE".to_string())
 		);
 	}
 
@@ -233,7 +237,7 @@ mod tests {
 	fn register_collection_decode_missing_address_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
 			.into_script();
 
 		let result = RegisterCollection::from_script(&script);
@@ -248,7 +252,7 @@ mod tests {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH - 1];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -264,7 +268,7 @@ mod tests {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH + 1];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -280,7 +284,7 @@ mod tests {
 		let address = [0xCC; COLLECTION_ADDRESS_LENGTH];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -297,7 +301,7 @@ mod tests {
 		let rebaseable = [0x01; REBASEABLE_LENGTH];
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
 			.push_slice::<&script::PushBytes>((&address).into())
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.into_script();
@@ -314,7 +318,7 @@ mod tests {
 		let extra_data = [0xFF; 10]; // Extra data that should be ignored
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_COLLECTION_CODE)
+			.push_opcode(BRC721_INIT_CODE)
 			.push_slice::<&script::PushBytes>((&address).into())
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.push_slice::<&script::PushBytes>((&extra_data).into())
