@@ -9,7 +9,9 @@ pub(crate) const BRC721_INIT_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Brc721Flag {
 	RegisterCollection,
-	//RegisterOwnership,
+	// TODO: Remove this attribute as soon as register ownership flow is introduced
+	#[allow(dead_code)]
+	RegisterOwnership,
 }
 
 impl Brc721Flag {

@@ -54,6 +54,7 @@ impl RegisterCollection {
 
 		match expect_push_bytes(&mut instructions, BRC721_FLAG_LENGTH, "Register collection flag") {
 			Ok(byte) if byte == Brc721Flag::RegisterCollection.byte_slice() => (),
+			Err(err) => return Err(err),
 			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
 		}
 
@@ -136,7 +137,7 @@ mod tests {
 		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
-			"6a5f1400000000000000000000000000000000000000000100"
+			"6a5f01001400000000000000000000000000000000000000000100"
 		);
 
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
@@ -144,7 +145,7 @@ mod tests {
 		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
-			"6a5f14abcffffffffffffffffffffffffffffffffffcba0100"
+			"6a5f010014abcffffffffffffffffffffffffffffffffffcba0100"
 		);
 
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
@@ -152,7 +153,7 @@ mod tests {
 		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
-			"6a5f14abcffffffffffffffffffffffffffffffffffcba0101"
+			"6a5f010014abcffffffffffffffffffffffffffffffffffcba0101"
 		);
 	}
 
@@ -168,12 +169,12 @@ mod tests {
 	#[test]
 	fn register_collection_decode_ignores_extra_bytes() {
 		let buf = ScriptBuf::from_bytes(
-			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
+			hex::decode("6a5f010014abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
 		);
 		RegisterCollection::from_script(&buf).unwrap();
 
 		let buf = ScriptBuf::from_bytes(
-			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101FFFFFF").unwrap(),
+			hex::decode("6a5f010014abcffffffffffffffffffffffffffffffffffcba0101FFFFFF").unwrap(),
 		);
 		RegisterCollection::from_script(&buf).unwrap();
 	}
@@ -181,19 +182,19 @@ mod tests {
 	#[test]
 	fn register_collection_decode_treats_nonzero_as_true() {
 		let buf = ScriptBuf::from_bytes(
-			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
+			hex::decode("6a5f010014abcffffffffffffffffffffffffffffffffffcba0101").unwrap(),
 		);
 		let rc = RegisterCollection::from_script(&buf).unwrap();
 		assert!(rc.rebaseable);
 
 		let buf = ScriptBuf::from_bytes(
-			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
+			hex::decode("6a5f010014abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
 		);
 		let result = RegisterCollection::from_script(&buf);
 		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction,);
 
 		let buf = ScriptBuf::from_bytes(
-			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
+			hex::decode("6a5f010014abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
 		);
 		let result = RegisterCollection::from_script(&buf);
 		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction,);
@@ -234,10 +235,37 @@ mod tests {
 	}
 
 	#[test]
+	fn register_collection_decode_missing_register_collection_flag_returns_error() {
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(BRC721_INIT_CODE)
+			.into_script();
+
+		let result = RegisterCollection::from_script(&script);
+		assert_eq!(
+			result.unwrap_err(),
+			RegisterCollectionError::InstructionNotFound("Register collection flag".to_string())
+		);
+	}
+
+	#[test]
+	fn register_collection_decode_wrong_flag_returns_error() {
+		let script = script::Builder::new()
+			.push_opcode(opcodes::all::OP_RETURN)
+			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterOwnership.byte_slice())
+			.into_script();
+
+		let result = RegisterCollection::from_script(&script);
+		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction);
+	}
+
+	#[test]
 	fn register_collection_decode_missing_address_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.into_script();
 
 		let result = RegisterCollection::from_script(&script);
@@ -253,6 +281,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -269,6 +298,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -285,6 +315,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -302,6 +333,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.into_script();
@@ -319,6 +351,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.push_slice::<&script::PushBytes>((&extra_data).into())
