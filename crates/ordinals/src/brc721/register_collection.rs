@@ -1,11 +1,12 @@
 use bitcoin::{
 	opcodes,
-	script::{self, Instruction},
+	script::{self},
 	ScriptBuf,
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
-use thiserror::Error;
+
+use super::bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError};
 
 /// Constant representing the length of a collection address in bytes.
 pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
@@ -47,7 +48,7 @@ impl RegisterCollection {
 	///
 	/// The function checks for the presence of OP_RETURN, REGISTER_COLLECTION_CODE,
 	/// a 20-byte collection address, and a 1-byte rebaseable flag in the script.
-	pub fn from_script(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
+	pub fn from_script(script: &ScriptBuf) -> Result<Self, BitcoinScriptError> {
 		let mut instructions = script.instructions();
 
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
@@ -65,65 +66,10 @@ impl RegisterCollection {
 			expect_push_bytes(&mut instructions, Some(REBASEABLE_LENGTH), "rebaseable")?;
 
 		if rebaseable_bytes[0] > 1 {
-			return Err(RegisterCollectionError::UnexpectedInstruction);
+			return Err(BitcoinScriptError::UnexpectedInstruction);
 		}
 
 		Ok(Self { address: H160::from_slice(&address_bytes), rebaseable: rebaseable_bytes[0] == 1 })
-	}
-}
-
-/// Custom error type for errors related to register collection operations.
-#[derive(Debug, Error, PartialEq)]
-pub enum RegisterCollectionError {
-	// TODO rename
-	/// An instruction of the expected type was not found in the script.
-	#[error("Instruction not found: `{0}`")]
-	InstructionNotFound(String),
-
-	/// An unexpected instruction was encountered during decoding.
-	#[error("Unexpected instruction")]
-	UnexpectedInstruction,
-
-	/// The length of a push operation in the script does not match the expected size.
-	#[error("Invalid length: `{0}`")]
-	InvalidLength(String),
-}
-
-/// Helper function to ensure the next instruction is a specific opcode.
-///
-/// Returns an error if the expected opcode is not found or if there are no more instructions.
-pub fn expect_opcode<'a>(
-	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
-	expected_op: opcodes::Opcode,
-	desc: &str,
-) -> Result<(), RegisterCollectionError> {
-	match instructions
-		.next()
-		.ok_or_else(|| RegisterCollectionError::InstructionNotFound(desc.into()))?
-	{
-		Ok(Instruction::Op(op)) if op == expected_op => Ok(()),
-		_ => Err(RegisterCollectionError::UnexpectedInstruction),
-	}
-}
-
-/// Helper function to ensure the next instruction is a push operation of the expected length.
-///
-/// Returns an error if the expected length is not met or if there are no more instructions.
-pub fn expect_push_bytes<'a>(
-	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
-	expected_len: Option<usize>,
-	desc: &str,
-) -> Result<Vec<u8>, RegisterCollectionError> {
-	match (
-		instructions
-			.next()
-			.ok_or_else(|| RegisterCollectionError::InstructionNotFound(desc.into()))?,
-		expected_len,
-	) {
-		(Ok(Instruction::PushBytes(bytes)), Some(expected)) if bytes.len() != expected =>
-			Err(RegisterCollectionError::InvalidLength(desc.into())),
-		(Ok(Instruction::PushBytes(bytes)), _) => Ok(bytes.as_bytes().to_vec()),
-		_ => Err(RegisterCollectionError::UnexpectedInstruction),
 	}
 }
 
@@ -192,13 +138,13 @@ mod tests {
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba0102").unwrap(),
 		);
 		let result = RegisterCollection::from_script(&buf);
-		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction,);
+		assert_eq!(result.unwrap_err(), BitcoinScriptError::UnexpectedInstruction,);
 
 		let buf = ScriptBuf::from_bytes(
 			hex::decode("6a5f14abcffffffffffffffffffffffffffffffffffcba01ff").unwrap(),
 		);
 		let result = RegisterCollection::from_script(&buf);
-		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction,);
+		assert_eq!(result.unwrap_err(), BitcoinScriptError::UnexpectedInstruction,);
 	}
 
 	#[test]
@@ -209,7 +155,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("OP_RETURN".to_string())
+			BitcoinScriptError::InstructionNotFound("OP_RETURN".to_string())
 		);
 	}
 
@@ -220,7 +166,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("REGISTER_COLLECTION_CODE".to_string())
+			BitcoinScriptError::InstructionNotFound("REGISTER_COLLECTION_CODE".to_string())
 		);
 	}
 
@@ -232,7 +178,7 @@ mod tests {
             .into_script();
 
 		let result = RegisterCollection::from_script(&script);
-		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction);
+		assert_eq!(result.unwrap_err(), BitcoinScriptError::UnexpectedInstruction);
 	}
 
 	#[test]
@@ -245,7 +191,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("collection address".to_string())
+			BitcoinScriptError::InstructionNotFound("collection address".to_string())
 		);
 	}
 
@@ -261,7 +207,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InvalidLength("collection address".to_string())
+			BitcoinScriptError::InvalidLength("collection address".to_string())
 		);
 	}
 
@@ -277,7 +223,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InvalidLength("collection address".to_string())
+			BitcoinScriptError::InvalidLength("collection address".to_string())
 		);
 	}
 
@@ -293,7 +239,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("rebaseable".to_string())
+			BitcoinScriptError::InstructionNotFound("rebaseable".to_string())
 		);
 	}
 
