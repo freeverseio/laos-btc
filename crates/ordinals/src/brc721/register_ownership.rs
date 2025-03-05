@@ -1,54 +1,20 @@
 use bitcoin::{
 	opcodes,
 	script::{self, PushBytes},
-	Address, ScriptBuf,
+	ScriptBuf,
 };
 
-use super::register_collection::{expect_opcode, expect_push_bytes, RegisterCollectionError};
 use crate::{
 	varint::{self},
 	Brc721CollectionId,
 };
 
-#[derive(Clone, PartialEq, Debug)]
-pub struct Ranges(pub Vec<std::ops::RangeInclusive<u128>>);
+use super::bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError};
 
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct RegisterOwnership {
 	pub collection_id: Brc721CollectionId,
-	pub slots: Vec<Ranges>,
-	pub owners: Vec<Address>,
-}
-
-impl Ranges {
-	pub fn to_leb128(&self) -> Vec<u8> {
-		let mut value = Vec::new();
-
-		varint::encode_to_vec(
-			self.0.len().try_into().expect("qed; usize conversion to u128 failed"),
-			&mut value,
-		);
-
-		for range in &self.0 {
-			varint::encode_to_vec(*range.start(), &mut value);
-			varint::encode_to_vec(*range.end(), &mut value);
-		}
-		value
-	}
-
-	pub fn from_leb128(value: &mut Vec<u8>) -> Result<Self, varint::Error> {
-		let mut ranges = Vec::<std::ops::RangeInclusive<u128>>::new();
-		let (num_ranges, consumed) = varint::decode(value)?;
-		value.drain(0..consumed);
-		for _ in 0..num_ranges {
-			let (start, consumed) = varint::decode(value)?;
-			value.drain(0..consumed);
-			let (end, consumed) = varint::decode(value)?;
-			value.drain(0..consumed);
-			ranges.push(start..=end);
-		}
-		Ok(Ranges(ranges))
-	}
+	pub slots_bundles: Vec<SlotsBundle>,
 }
 
 const REGISTER_OWNERSHIP_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_16; // TODO
@@ -61,19 +27,19 @@ impl From<RegisterOwnership> for ScriptBuf {
 			.try_into()
 			.expect("qed; collection_id slice should convert to PushBytes");
 
-		let mut slots = Vec::<u8>::new();
+		let mut slots_bundles = Vec::<u8>::new();
 		varint::encode_to_vec(
 			register_ownership
-				.slots
+				.slots_bundles
 				.len()
 				.try_into()
 				.expect("qed; usize conversion to u128 failed"),
-			&mut slots,
+			&mut slots_bundles,
 		);
-		for slot_ranges in &register_ownership.slots {
-			slots.extend_from_slice(&slot_ranges.to_leb128());
+		for slots_bundle in &register_ownership.slots_bundles {
+			slots_bundles.extend_from_slice(&slots_bundle.to_leb128());
 		}
-		let slots: &PushBytes = slots
+		let slots_bundles: &PushBytes = slots_bundles
 			.as_slice()
 			.try_into()
 			.expect("qed; slots slice should convert to PushBytes");
@@ -81,15 +47,15 @@ impl From<RegisterOwnership> for ScriptBuf {
 		script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(REGISTER_OWNERSHIP_CODE)
-			.push_slice(&collection_id)
-			.push_slice(&slots)
+			.push_slice(collection_id)
+			.push_slice(slots_bundles)
 			.into_script()
 	}
 }
 
 impl TryFrom<ScriptBuf> for RegisterOwnership {
-	type Error = RegisterCollectionError;
-	fn try_from(payload: ScriptBuf) -> Result<Self, RegisterCollectionError> {
+	type Error = BitcoinScriptError;
+	fn try_from(payload: ScriptBuf) -> Result<Self, BitcoinScriptError> {
 		let mut instructions = payload.instructions();
 
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
@@ -97,21 +63,54 @@ impl TryFrom<ScriptBuf> for RegisterOwnership {
 
 		let collection_id = expect_push_bytes(&mut instructions, None, "collection id")?;
 		let collection_id = Brc721CollectionId::from_leb128(&collection_id)
-			.map_err(|e| RegisterCollectionError::InstructionNotFound(e.to_string()))?; // TODO error
+			.map_err(|e| BitcoinScriptError::Decode(e.to_string()))?;
 
-		// TODO rename slots bundles and so on
-		let mut slots_bundles: Vec<u8> =
+		let mut slots_bundles_encoded: Vec<u8> =
 			expect_push_bytes(&mut instructions, None, "slots bundles")?;
-		let (num_bundles, consumed) = varint::decode(&slots_bundles)
-			.map_err(|e| RegisterCollectionError::InvalidLength(e.to_string()))?; // TODO error
-		slots_bundles.drain(0..consumed);
-		let mut slots: Vec<Ranges> = Vec::with_capacity(num_bundles as usize);
+		let (num_bundles, consumed) = varint::decode(&slots_bundles_encoded)
+			.map_err(|e| BitcoinScriptError::Decode(e.to_string()))?;
+		slots_bundles_encoded.drain(0..consumed);
+		let mut slots_bundles: Vec<SlotsBundle> = Vec::with_capacity(num_bundles as usize);
 		for _ in 0..num_bundles {
-			let ranges = Ranges::from_leb128(&mut slots_bundles).unwrap();
-			slots.push(ranges);
+			let ranges = SlotsBundle::from_leb128(&mut slots_bundles_encoded).unwrap();
+			slots_bundles.push(ranges);
 		}
 
-		Ok(RegisterOwnership { collection_id, slots, ..Default::default() }) // TODO ignore owners
+		Ok(RegisterOwnership { collection_id, slots_bundles })
+	}
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct SlotsBundle(pub Vec<std::ops::RangeInclusive<u128>>);
+
+impl SlotsBundle {
+	pub fn to_leb128(&self) -> Vec<u8> {
+		let mut encoded = Vec::new();
+
+		varint::encode_to_vec(
+			self.0.len().try_into().expect("qed; usize conversion to u128 failed"),
+			&mut encoded,
+		);
+
+		for range in &self.0 {
+			varint::encode_to_vec(*range.start(), &mut encoded);
+			varint::encode_to_vec(*range.end(), &mut encoded);
+		}
+		encoded
+	}
+
+	pub fn from_leb128(encoded: &mut Vec<u8>) -> Result<Self, varint::Error> {
+		let mut slots_bundle = Vec::<std::ops::RangeInclusive<u128>>::new();
+		let (num_ranges, consumed) = varint::decode(encoded)?;
+		encoded.drain(0..consumed);
+		for _ in 0..num_ranges {
+			let (start, consumed) = varint::decode(encoded)?;
+			encoded.drain(0..consumed);
+			let (end, consumed) = varint::decode(encoded)?;
+			encoded.drain(0..consumed);
+			slots_bundle.push(start..=end);
+		}
+		Ok(SlotsBundle(slots_bundle))
 	}
 }
 
@@ -120,30 +119,19 @@ mod tests {
 	use super::*;
 	use std::str::FromStr;
 
-	use bitcoin::{
-		secp256k1::{rand, Secp256k1},
-		Address, Network, PublicKey,
-	};
-	fn get_random_address() -> Address {
-		// Generate random key pair.
-		let s = Secp256k1::new();
-		let public_key = PublicKey::new(s.generate_keypair(&mut rand::thread_rng()).1);
-
-		// Generate pay-to-pubkey-hash address.
-		Address::p2pkh(&public_key, Network::Regtest)
-	}
-
 	#[test]
 	fn register_ownership_encodes_decodes_correctly() {
 		let command = RegisterOwnership {
-			owners: vec![get_random_address()],
 			collection_id: Brc721CollectionId::from_str("1:1").unwrap(),
-			slots: vec![Ranges(vec![(0..=3), (4..=10)]), Ranges(vec![(15..=15), (40..=50)])],
+			slots_bundles: vec![
+				SlotsBundle(vec![(0..=3), (4..=10)]),
+				SlotsBundle(vec![(15..=15), (40..=50)]),
+			],
 		};
 		let encoded = ScriptBuf::from(command.clone());
 		assert_eq!(encoded.len(), 20);
 		let decoded = RegisterOwnership::try_from(encoded).unwrap();
 		assert_eq!(command.collection_id, decoded.collection_id);
-		assert_eq!(command.slots, decoded.slots);
+		assert_eq!(command.slots_bundles, decoded.slots_bundles);
 	}
 }

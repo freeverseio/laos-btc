@@ -71,8 +71,8 @@ impl Brc721CollectionId {
 		value
 	}
 
-	pub fn from_leb128(value: &Vec<u8>) -> Result<Self, Error> {
-		let (n, _consumed) = varint::decode(value).map_err(|e| Error::Decode(e))?;
+	pub fn from_leb128(value: &[u8]) -> Result<Self, Error> {
+		let (n, _consumed) = varint::decode(value).map_err(Error::Decode)?;
 		// Extract block from the upper 64 bits of the lower 96 bits
 		let block = n >> 32;
 		// Extract tx from the lower 32 bits
