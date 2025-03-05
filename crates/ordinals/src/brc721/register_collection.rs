@@ -244,7 +244,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("Register collection flag".to_string())
+			RegisterCollectionError::InstructionNotFound("Register collection operation".to_string())
 		);
 	}
 
