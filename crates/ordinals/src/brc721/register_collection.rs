@@ -36,7 +36,7 @@ impl RegisterCollection {
 		script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(&Brc721Flag::RegisterCollection.to_byte_slice())
+			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
 			.push_slice(address)
 			.push_slice(rebaseable)
 			.into_script()
@@ -53,7 +53,7 @@ impl RegisterCollection {
 		expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
 
 		match expect_push_bytes(&mut instructions, BRC721_FLAG_LENGTH, "Register collection flag") {
-			Ok(byte) if &byte == &Brc721Flag::RegisterCollection.to_byte_slice() => (),
+			Ok(byte) if byte == Brc721Flag::RegisterCollection.byte_slice() => (),
 			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
 		}
 
