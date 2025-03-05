@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::wallet::calculate_postage;
+
 use super::*;
-use ordinals::brc721::register_ownership::Ranges;
+use ordinals::brc721::register_ownership::{RegisterOwnership, SlotsBundle};
 use serde::{de::Error as DeError, Deserialize, Deserializer};
 
 #[derive(Debug, Parser)]
@@ -44,21 +46,33 @@ impl RegisterOwnershipCmd {
 	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
 		let file = File::load(&self.file)?;
 
-		log::debug!("Registering ownership for collection: {}", file.collection_id,);
-		for (i, output) in file.outputs.iter().enumerate() {
-			let owner_str = match &output.owner {
-				Some(addr) => addr.clone().assume_checked().to_string(),
-				None => wallet.get_change_address().unwrap().to_string(),
+		let mut slots_bundles = Vec::<SlotsBundle>::new();
+		let mut owners = Vec::<Address>::new();
+		for output in file.outputs {
+			slots_bundles.push(output.slots_bundle.clone());
+			let owner = match &output.owner {
+				Some(addr) => addr.clone().assume_checked(), /* TODO improve assume_checked and */
+				// error handling
+				None => wallet.get_change_address().unwrap(), // TODO default owner
 			};
-			log::debug!(
-				"Output {}: slots {:?} will be owned by {}",
-				i + 1,
-				output.slots_bundle,
-				owner_str
-			);
+			owners.push(owner);
 		}
 
-		Err(anyhow::anyhow!("unimplemented"))
+		let postage = calculate_postage(self.postage, wallet.get_change_address()?)?;
+
+		let register_ownership =
+			RegisterOwnership { collection_id: file.collection_id, slots_bundles };
+
+		let bitcoin_tx = wallet.build_brc721_register_ownership_tx(
+			register_ownership,
+			owners,
+			self.fee_rate,
+			postage,
+		)?;
+
+		let tx_id = wallet.bitcoin_client().send_raw_transaction(&bitcoin_tx)?;
+
+		Ok(Some(Box::new(Output { tx_id })))
 	}
 }
 
@@ -72,7 +86,7 @@ pub struct File {
 #[derive(Debug, Deserialize)]
 pub struct SlotsOwnership {
 	#[serde(deserialize_with = "deserialize_slots_bundle")]
-	slots_bundle: Ranges,
+	slots_bundle: SlotsBundle,
 	#[serde(default, deserialize_with = "deserialize_owner")]
 	owner: Option<Address<NetworkUnchecked>>,
 }
@@ -111,7 +125,7 @@ fn ranges_overlap(
 	!(r1.end() < r2.start() || r2.end() < r1.start())
 }
 
-fn deserialize_slots_bundle<'de, D>(deserializer: D) -> Result<Ranges, D::Error>
+fn deserialize_slots_bundle<'de, D>(deserializer: D) -> Result<SlotsBundle, D::Error>
 where
 	D: Deserializer<'de>,
 {
@@ -121,7 +135,7 @@ where
 		return Err(D::Error::custom("slots_bundle cannot be empty"));
 	}
 
-	let mut ranges = Ranges(Vec::with_capacity(slots_bundle.len()));
+	let mut ranges = SlotsBundle(Vec::with_capacity(slots_bundle.len()));
 	for (i, range) in slots_bundle.into_iter().enumerate() {
 		let range = match range.len() {
 			0 => return Err(D::Error::custom(format!("range at index {} cannot be empty", i))),
@@ -253,7 +267,7 @@ outputs:
 
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
-			"overlapping ranges detected in output 0: [0..=20, 20..=20, 21..=21]"
+			"overlapping ranges detected in output 0: SlotsBundle([0..=20, 20..=20, 21..=21])"
 		);
 	}
 
