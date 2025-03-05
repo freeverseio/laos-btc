@@ -15,7 +15,7 @@ pub(crate) enum Brc721Operation {
 }
 
 impl Brc721Operation {
-	pub(crate) fn byte_slice(self) -> [u8; BRC721_FLAG_LENGTH] {
+	pub(crate) fn byte_slice(self) -> [u8; BRC721_OPERATION_LENGTH] {
 		[self as u8]
 	}
 }

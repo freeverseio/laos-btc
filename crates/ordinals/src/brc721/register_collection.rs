@@ -1,4 +1,4 @@
-use crate::brc721::flags::{Brc721Operation, BRC721_FLAG_LENGTH, BRC721_INIT_CODE};
+use crate::brc721::operations::{Brc721Operation, BRC721_INIT_CODE, BRC721_OPERATION_LENGTH};
 use bitcoin::{
 	opcodes,
 	script::{self, Instruction},
@@ -52,7 +52,11 @@ impl RegisterCollection {
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
 		expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
 
-		match expect_push_bytes(&mut instructions, BRC721_FLAG_LENGTH, "Register collection flag") {
+		match expect_push_bytes(
+			&mut instructions,
+			BRC721_OPERATION_LENGTH,
+			"Register collection operation identifier",
+		) {
 			Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
 			Err(err) => return Err(err),
 			_ => return Err(RegisterCollectionError::UnexpectedInstruction),
@@ -244,7 +248,9 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound("Register collection operation".to_string())
+			RegisterCollectionError::InstructionNotFound(
+				"Register collection operation identifier".to_string()
+			)
 		);
 	}
 
