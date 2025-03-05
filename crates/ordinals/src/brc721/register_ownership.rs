@@ -68,7 +68,7 @@ impl TryFrom<ScriptBuf> for RegisterOwnership {
 			Some(BRC721_OPERATION_LENGTH),
 			"Register ownership operation",
 		) {
-			Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
+			Ok(byte) if byte == Brc721Operation::RegisterOwnership.byte_slice() => (),
 			Err(err) => return Err(err),
 			_ => return Err(BitcoinScriptError::UnexpectedInstruction),
 		}
