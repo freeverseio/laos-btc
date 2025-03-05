@@ -1,5 +1,6 @@
 use super::*;
 use ord::{subcommand::wallet::brc721::register_collection, templates::Brc721CollectionsHtml};
+use ordinals::Brc721Collection;
 use sp_core::H160;
 
 #[test]
@@ -88,9 +89,10 @@ fn register_collection_command_indexer_integration() {
 		"/brc721/collections",
 		Chain::Regtest,
 		Brc721CollectionsHtml {
-			entries: vec![(
+			entries: vec![Brc721Collection::new(
 				Brc721CollectionId { block: 2, tx: 1 },
-				"0x0000000000000000000000000000000000000000".to_owned(),
+				H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
+				true,
 			)],
 			more: false,
 			prev: None,

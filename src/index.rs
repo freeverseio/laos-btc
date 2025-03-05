@@ -1072,7 +1072,7 @@ impl Index {
 		&self,
 		page_size: usize,
 		page_index: usize,
-	) -> Result<(Vec<(Brc721CollectionId, RegisterCollection)>, bool)> {
+	) -> Result<(Vec<Brc721Collection>, bool)> {
 		let mut entries = Vec::new();
 
 		for result in self
@@ -1085,12 +1085,10 @@ impl Index {
 			.take(page_size.saturating_add(1))
 		{
 			let (id, entry) = result?;
-			entries.push((
+			entries.push(Brc721Collection::new(
 				Brc721CollectionId::load(id.value()),
-				RegisterCollection {
-					address: H160::from_slice(&entry.value().0),
-					rebaseable: entry.value().1,
-				},
+				H160::from_slice(&entry.value().0),
+				entry.value().1,
 			));
 		}
 
@@ -1102,7 +1100,7 @@ impl Index {
 	pub fn get_brc721_collection_by_id(
 		&self,
 		collection_id: Brc721CollectionId,
-	) -> Result<Option<(Brc721CollectionId, H160, bool)>> {
+	) -> Result<Option<Brc721Collection>> {
 		let result = self
 			.database
 			.begin_read()?
@@ -1112,7 +1110,7 @@ impl Index {
 		// Convert the AccessGuard to the expected tuple type
 		let converted_result = result.map(|guard| {
 			let (address, flag) = guard.value();
-			(collection_id, H160::from_slice(&address), flag)
+			Brc721Collection::new(collection_id, H160::from_slice(&address), flag)
 		});
 
 		Ok(converted_result)
