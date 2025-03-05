@@ -1,4 +1,4 @@
-use crate::brc721::flags::{Brc721Operation, BRC721_FLAG_LENGTH, BRC721_INIT_CODE};
+use crate::brc721::operations::{Brc721Operation, BRC721_INIT_CODE, BRC721_OPERATION_LENGTH};
 use bitcoin::{
 	opcodes,
 	script::{self},
@@ -55,8 +55,8 @@ impl RegisterCollection {
 
 		match expect_push_bytes(
 			&mut instructions,
-			Some(BRC721_FLAG_LENGTH),
-			"Register collection flag",
+			Some(BRC721_OPERATION_LENGTH),
+			"Register collection operation identifier",
 		) {
 			Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
 			Err(err) => return Err(err),
@@ -191,7 +191,7 @@ mod tests {
 	}
 
 	#[test]
-	fn register_collection_decode_missing_register_collection_flag_returns_error() {
+	fn register_collection_decode_missing_register_collection_operation_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
@@ -200,12 +200,14 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			BitcoinScriptError::InstructionNotFound("Register collection flag".to_string())
+			BitcoinScriptError::InstructionNotFound(
+				"Register collection operation identifier".to_string()
+			)
 		);
 	}
 
 	#[test]
-	fn register_collection_decode_wrong_flag_returns_error() {
+	fn register_collection_decode_wrong_operation_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)

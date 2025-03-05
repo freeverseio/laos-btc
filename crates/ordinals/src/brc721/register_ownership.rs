@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
 	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
-	flags::{Brc721Operation, BRC721_FLAG_LENGTH, BRC721_INIT_CODE},
+	operations::{Brc721Operation, BRC721_INIT_CODE, BRC721_OPERATION_LENGTH},
 };
 
 #[derive(Clone, PartialEq, Debug, Default)]
@@ -65,8 +65,8 @@ impl TryFrom<ScriptBuf> for RegisterOwnership {
 
 		match expect_push_bytes(
 			&mut instructions,
-			Some(BRC721_FLAG_LENGTH),
-			"Register ownership flag",
+			Some(BRC721_OPERATION_LENGTH),
+			"Register ownership operation",
 		) {
 			Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
 			Err(err) => return Err(err),
