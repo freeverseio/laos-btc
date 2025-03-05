@@ -21,4 +21,4 @@ impl Brc721Operation {
 }
 
 /// The size of a brc721 flag in bytes
-pub(crate) const BRC721_FLAG_LENGTH: usize = 1;
+pub(crate) const BRC721_OPERATION_LENGTH: usize = 1;
