@@ -9,15 +9,16 @@ use crate::{
 	Brc721CollectionId,
 };
 
-use super::bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError};
+use super::{
+	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
+	flags::{Brc721Flag, BRC721_FLAG_LENGTH, BRC721_INIT_CODE},
+};
 
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct RegisterOwnership {
 	pub collection_id: Brc721CollectionId,
 	pub slots_bundles: Vec<SlotsBundle>,
 }
-
-const REGISTER_OWNERSHIP_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_16; // TODO
 
 impl From<RegisterOwnership> for ScriptBuf {
 	fn from(register_ownership: RegisterOwnership) -> Self {
@@ -46,7 +47,8 @@ impl From<RegisterOwnership> for ScriptBuf {
 
 		script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(REGISTER_OWNERSHIP_CODE)
+			.push_opcode(BRC721_INIT_CODE)
+			.push_slice(Brc721Flag::RegisterOwnership.byte_slice())
 			.push_slice(collection_id)
 			.push_slice(slots_bundles)
 			.into_script()
@@ -59,7 +61,17 @@ impl TryFrom<ScriptBuf> for RegisterOwnership {
 		let mut instructions = payload.instructions();
 
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
-		expect_opcode(&mut instructions, REGISTER_OWNERSHIP_CODE, "REGISTER_OWNERSHIP_CODE")?;
+		expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
+
+		match expect_push_bytes(
+			&mut instructions,
+			Some(BRC721_FLAG_LENGTH),
+			"Register ownership flag",
+		) {
+			Ok(byte) if byte == Brc721Flag::RegisterCollection.byte_slice() => (),
+			Err(err) => return Err(err),
+			_ => return Err(BitcoinScriptError::UnexpectedInstruction),
+		}
 
 		let collection_id = expect_push_bytes(&mut instructions, None, "collection id")?;
 		let collection_id = Brc721CollectionId::from_leb128(&collection_id)
