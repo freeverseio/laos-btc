@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
 	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
-	flags::{Brc721Flag, BRC721_FLAG_LENGTH, BRC721_INIT_CODE},
+	flags::{Brc721Operation, BRC721_FLAG_LENGTH, BRC721_INIT_CODE},
 };
 
 #[derive(Clone, PartialEq, Debug, Default)]
@@ -48,7 +48,7 @@ impl From<RegisterOwnership> for ScriptBuf {
 		script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterOwnership.byte_slice())
+			.push_slice(Brc721Operation::RegisterOwnership.byte_slice())
 			.push_slice(collection_id)
 			.push_slice(slots_bundles)
 			.into_script()
@@ -68,7 +68,7 @@ impl TryFrom<ScriptBuf> for RegisterOwnership {
 			Some(BRC721_FLAG_LENGTH),
 			"Register ownership flag",
 		) {
-			Ok(byte) if byte == Brc721Flag::RegisterCollection.byte_slice() => (),
+			Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
 			Err(err) => return Err(err),
 			_ => return Err(BitcoinScriptError::UnexpectedInstruction),
 		}

@@ -1,4 +1,4 @@
-use crate::brc721::flags::{Brc721Flag, BRC721_FLAG_LENGTH, BRC721_INIT_CODE};
+use crate::brc721::flags::{Brc721Operation, BRC721_FLAG_LENGTH, BRC721_INIT_CODE};
 use bitcoin::{
 	opcodes,
 	script::{self},
@@ -37,7 +37,7 @@ impl RegisterCollection {
 		script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.push_slice(address)
 			.push_slice(rebaseable)
 			.into_script()
@@ -58,7 +58,7 @@ impl RegisterCollection {
 			Some(BRC721_FLAG_LENGTH),
 			"Register collection flag",
 		) {
-			Ok(byte) if byte == Brc721Flag::RegisterCollection.byte_slice() => (),
+			Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
 			Err(err) => return Err(err),
 			_ => return Err(BitcoinScriptError::UnexpectedInstruction),
 		}
@@ -209,7 +209,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterOwnership.byte_slice())
+			.push_slice(Brc721Operation::RegisterOwnership.byte_slice())
 			.into_script();
 
 		let result = RegisterCollection::from_script(&script);
@@ -221,7 +221,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.into_script();
 
 		let result = RegisterCollection::from_script(&script);
@@ -237,7 +237,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -254,7 +254,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -271,7 +271,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.into_script();
 
@@ -289,7 +289,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.into_script();
@@ -307,7 +307,7 @@ mod tests {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Flag::RegisterCollection.byte_slice())
+			.push_slice(Brc721Operation::RegisterCollection.byte_slice())
 			.push_slice::<&script::PushBytes>((&address).into())
 			.push_slice::<&script::PushBytes>((&rebaseable).into())
 			.push_slice::<&script::PushBytes>((&extra_data).into())
