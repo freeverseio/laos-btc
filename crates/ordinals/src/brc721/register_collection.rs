@@ -235,7 +235,7 @@ mod tests {
 	}
 
 	#[test]
-	fn register_collection_decode_missing_register_collection_flag_returns_error() {
+	fn register_collection_decode_missing_register_collection_operation_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
 			.push_opcode(BRC721_INIT_CODE)
