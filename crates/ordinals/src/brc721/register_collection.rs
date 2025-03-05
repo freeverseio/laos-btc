@@ -27,8 +27,8 @@ pub struct RegisterCollection {
 impl RegisterCollection {
 	/// Encodes a `RegisterCollection` instance into a Bitcoin script.
 	///
-	/// The encoded script includes an OP_RETURN opcode, the BRC721_INIT_CODE,
-	/// the collection address, and the rebaseable flag.
+	/// The encoded script includes an OP_RETURN opcode, the BRC721_INIT_CODE, the register
+	/// collection flag, the collection address, and the rebaseable flag.
 	pub fn to_script(&self) -> ScriptBuf {
 		let address = self.address.as_fixed_bytes();
 		let rebaseable = [self.rebaseable as u8];
@@ -44,8 +44,8 @@ impl RegisterCollection {
 
 	/// Decodes a Bitcoin script into a `RegisterCollection` instance.
 	///
-	/// The function checks for the presence of OP_RETURN, BRC721_INIT_CODE,
-	/// a 20-byte collection address, and a 1-byte rebaseable flag in the script.
+	/// The function checks for the presence of OP_RETURN, BRC721_INIT_CODE, the register collection
+	/// flag, a 20-byte collection address, and a 1-byte rebaseable flag in the script.
 	pub fn from_script(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
 		let mut instructions = script.instructions();
 
