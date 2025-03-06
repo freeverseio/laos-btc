@@ -7,6 +7,7 @@ pub(crate) const BRC721_INIT_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15
 /// numerical byte of each operation. Only fieldless variants are allowed, leading to a compile
 /// error otherwise.
 #[derive(Debug, Clone, PartialEq)]
+#[repr(u8)]
 pub(crate) enum Brc721Operation {
 	RegisterCollection = 0,
 	// TODO: Remove this attribute as soon as register ownership flow is introduced
