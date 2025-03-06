@@ -29,11 +29,11 @@ use index::entry::Entry;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
 use miniscript::descriptor::{DescriptorSecretKey, DescriptorXKey, Wildcard};
+use ordinals::brc721::register_ownership::RegisterOwnership;
 use redb::{Database, DatabaseError, ReadableTable, RepairSession, StorageError, TableDefinition};
 use reqwest::header;
 use std::sync::Once;
 use transaction_builder::TransactionBuilder;
-
 pub mod batch;
 pub mod entry;
 pub mod transaction_builder;
@@ -1045,6 +1045,47 @@ impl Wallet {
 				TxOut { value: Amount::from_sat(0), script_pubkey: tx.into() },
 				TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() },
 			],
+		};
+
+		let unsigned_transaction =
+			fund_raw_transaction(self.bitcoin_client(), fee_rate, &unfunded_tx)?;
+
+		let signed_transaction = self
+			.bitcoin_client()
+			.sign_raw_transaction_with_wallet(&unsigned_transaction, None, None)?
+			.hex;
+		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
+
+		Ok(signed_transaction)
+	}
+
+	pub(crate) fn build_brc721_register_ownership_tx(
+		&self,
+		tx: RegisterOwnership,
+		owners: Vec<Address>,
+		fee_rate: FeeRate,
+		postage: Postage,
+	) -> Result<Transaction> {
+		ensure!(
+			self.has_brc721_index(),
+			"registering brc721 ownership with `laos-btc wallet brc721 ro` requires index created with
+	`--index-brc721` flag");
+
+		self.lock_non_cardinal_outputs()?;
+
+		let unfunded_tx = Transaction {
+			version: Version(2),
+			lock_time: LockTime::ZERO,
+			input: vec![],
+			output: {
+				let mut output =
+					vec![TxOut { value: Amount::from_sat(0), script_pubkey: tx.clone().into() }];
+				output.extend(owners.iter().map(|owner| TxOut {
+					value: postage.amount,
+					script_pubkey: owner.script_pubkey(),
+				}));
+				output
+			},
 		};
 
 		let unsigned_transaction =
