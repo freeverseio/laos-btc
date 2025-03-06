@@ -1106,15 +1106,6 @@ pub struct Postage {
 	pub destination: Address,
 }
 
-// fn get_random_address() -> Address {
-// 		// Generate random key pair.
-// 		let s = Secp256k1::new();
-// 		let public_key = PublicKey::new(s.generate_keypair(&mut rand::thread_rng()).1);
-
-// 		// Generate pay-to-pubkey-hash address.
-// 		Address::p2pkh(&public_key, Network::Regtest)
-// 	}
-
 pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
 	let postage = postage.unwrap_or(TARGET_POSTAGE);
 
