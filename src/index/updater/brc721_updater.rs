@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::{RegisterCollection, RegisterOwnership};
+use ordinals::{RegisterCollection, RegisterOwnership, SlotsBundle};
 
 use super::*;
 
@@ -95,7 +95,13 @@ where
 		let collection_id_value =
 			(register_ownership.collection_id.block, register_ownership.collection_id.tx);
 
+		// If the collection isn't registered, there's nothing to index
 		if self.collection_table.get_value(collection_id_value).is_none() {
+			return Ok(());
+		}
+
+		// If the tx doesn't include enough outputs, there's nothing to index
+		if tx.output.len() < register_ownership.slots_bundles.len() + 1 {
 			return Ok(());
 		}
 
@@ -129,7 +135,7 @@ mod tests {
 
 	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
 
-	fn brc721_collection_tx(rebaseable: bool) -> Transaction {
+	fn brc721_register_collection_tx(rebaseable: bool) -> Transaction {
 		let collection =
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
@@ -141,6 +147,37 @@ mod tests {
 			lock_time: LockTime::from_height(1000).unwrap(),
 			input: vec![],
 			output: vec![output],
+		}
+	}
+
+	fn brc721_register_ownership_tx(
+		collection_id: Brc721CollectionId,
+		slots_bundles: Vec<SlotsBundle>,
+		owners: Vec<Address>,
+	) -> Transaction {
+		let output_0 = TxOut {
+			value: Amount::ONE_SAT,
+			script_pubkey: RegisterOwnership { collection_id, slots_bundles }.into(),
+		};
+
+		// Create outputs for each owner.
+		// Each owner’s output uses the script generated from the address.
+		let owner_outputs: Vec<TxOut> = owners
+			.iter()
+			.map(|owner| {
+				let owner_script = owner.script_pubkey();
+				TxOut { value: Amount::ONE_SAT, script_pubkey: owner_script }
+			})
+			.collect();
+
+		let mut output = vec![output_0];
+		output.extend(owner_outputs);
+
+		Transaction {
+			version: Version(1),
+			lock_time: LockTime::from_height(1000).unwrap(),
+			input: vec![], // TODO: Include input asap
+			output,
 		}
 	}
 
@@ -164,7 +201,7 @@ mod tests {
 		let mut updater =
 			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
-		let tx = brc721_collection_tx(expected_rebaseable);
+		let tx = brc721_register_collection_tx(expected_rebaseable);
 
 		updater.index_brc721(expected_tx_index, &tx).unwrap();
 
@@ -201,8 +238,11 @@ mod tests {
 		let mut updater =
 			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
-		let transactions =
-			[(0, brc721_collection_tx(true)), (1, brc721_collection_tx(false)), (2, empty_tx())];
+		let transactions = [
+			(0, brc721_register_collection_tx(true)),
+			(1, brc721_register_collection_tx(false)),
+			(2, empty_tx()),
+		];
 
 		for (tx_index, tx) in transactions.iter() {
 			updater.index_brc721(*tx_index, tx).unwrap();
@@ -223,5 +263,46 @@ mod tests {
 			id_to_collection.get(&(expected_height.into(), 0)).unwrap().0,
 			COLLECTION_ADDRESS
 		);
+	}
+
+	#[test]
+	fn index_register_ownership_for_not_registered_collection() {
+		let mut id_to_collection = HashMap::new();
+		let mut updater = Brc721Updater { height: 100u32, collection_table: &mut id_to_collection };
+
+		let transactions = [(
+			0,
+			brc721_register_ownership_tx(Brc721CollectionId { block: 100, tx: 1 }, vec![], vec![]),
+		)];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		// TODO: Assert that register ownership tables are untouched, once we define them
+	}
+
+	#[test]
+	fn index_register_ownership_with_incorrect_number_of_outputs() {
+		let mut id_to_collection = HashMap::new();
+		let mut updater = Brc721Updater { height: 100u32, collection_table: &mut id_to_collection };
+
+		let transactions = [
+			(0, brc721_register_collection_tx(false)),
+			(
+				1,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![],
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		// TODO: Assert that register ownership tables are untouched, once we define them
 	}
 }
