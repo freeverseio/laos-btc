@@ -18,11 +18,13 @@ use ordinals::{RegisterCollection, RegisterOwnership};
 
 use super::*;
 
-pub(super) trait Insertable<K, V> {
+pub(super) trait Brc721Table<K, V> {
 	fn insert(&mut self, key: K, value: V) -> redb::Result;
+
+	fn get_value(&self, key: K) -> Option<V>;
 }
 
-impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
+impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
 	for Table<'_, Brc721CollectionIdValue, RegisterCollectionValue>
 {
 	fn insert(
@@ -31,6 +33,13 @@ impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
 		value: RegisterCollectionValue,
 	) -> redb::Result {
 		self.insert(key, value).map(|_| ())
+	}
+
+	fn get_value(&self, key: Brc721CollectionIdValue) -> Option<RegisterCollectionValue> {
+		let result = self.get(key).ok()?;
+
+		// Convert the AccessGuard to the expected tuple type
+		result.map(|guard| guard.value())
 	}
 }
 
@@ -43,30 +52,27 @@ pub(super) struct Brc721Updater<'a, T> {
 
 impl<T> Brc721Updater<'_, T>
 where
-	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
+	T: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
+	/// Indexes a brc721 operation from a transaction
 	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		if tx.output.is_empty() {
 			return Ok(())
 		}
 
-		let first_output: TxOut = tx.output[0].clone();
+		let first_output_script = tx.output[0].clone().script_pubkey;
 
-		if let Ok(register_collection) =
-			RegisterCollection::from_script(&first_output.script_pubkey)
-		{
-			self.index_collections(tx_index, register_collection)?;
+		if let Ok(register_collection) = RegisterCollection::from_script(&first_output_script) {
+			self.index_register_collections(tx_index, register_collection)?;
+		} else if let Ok(register_ownership) = first_output_script.try_into() {
+			self.index_register_ownership(tx_index, tx, register_ownership)?;
 		}
 
 		Ok(())
 	}
 
-	/// Indexes collections from a transaction.
-	///
-	/// # Arguments
-	/// * `tx_index` - The index of the transaction within its block.
-	/// * `tx` - The transaction to process.
-	fn index_collections(
+	/// Indexes a register collection operation from a RegisterCollection.
+	fn index_register_collections(
 		&mut self,
 		tx_index: u32,
 		register_collection: RegisterCollection,
@@ -75,6 +81,24 @@ where
 			(self.height.into(), tx_index),
 			(register_collection.address.into(), register_collection.rebaseable),
 		)?;
+		Ok(())
+	}
+
+	/// Indexes a register ownership operation from a RegisterOwnership and the related
+	/// Transaction.
+	fn index_register_ownership(
+		&mut self,
+		tx_index: u32,
+		tx: &Transaction,
+		register_ownership: RegisterOwnership,
+	) -> Result<()> {
+		let collection_id_value =
+			(register_ownership.collection_id.block, register_ownership.collection_id.tx);
+
+		if self.collection_table.get_value(collection_id_value).is_none() {
+			return Ok(());
+		}
+
 		Ok(())
 	}
 }
@@ -86,7 +110,7 @@ mod tests {
 	use sp_core::H160;
 	use std::collections::HashMap;
 
-	impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
+	impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
 		for HashMap<Brc721CollectionIdValue, RegisterCollectionValue>
 	{
 		fn insert(
@@ -96,6 +120,10 @@ mod tests {
 		) -> redb::Result<()> {
 			HashMap::insert(self, key, value);
 			Ok(())
+		}
+
+		fn get_value(&self, key: Brc721CollectionIdValue) -> Option<RegisterCollectionValue> {
+			self.get(&key).copied()
 		}
 	}
 
