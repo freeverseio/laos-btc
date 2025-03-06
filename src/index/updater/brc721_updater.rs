@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::RegisterCollection;
+use ordinals::{RegisterCollection, RegisterOwnership};
 
 use super::*;
 
@@ -45,33 +45,36 @@ impl<T> Brc721Updater<'_, T>
 where
 	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
 {
+	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
+		if tx.output.is_empty() {
+			return Ok(())
+		}
+
+		let first_output: TxOut = tx.output[0].clone();
+
+		if let Ok(register_collection) =
+			RegisterCollection::from_script(&first_output.script_pubkey)
+		{
+			self.index_collections(tx_index, register_collection)?;
+		}
+
+		Ok(())
+	}
+
 	/// Indexes collections from a transaction.
 	///
 	/// # Arguments
 	/// * `tx_index` - The index of the transaction within its block.
 	/// * `tx` - The transaction to process.
-	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		// Ensure the transaction has at least one output.
-		if tx.output.is_empty() {
-			log::warn!("Failed to decode register collection: Output not found");
-			return Ok(());
-		}
-
-		// the protocol specify the first output has to be the register collection
-		let first_output: TxOut = tx.output[0].clone();
-
-		// Decode the register collection from the first output's script public key.
-		match RegisterCollection::from_script(&first_output.script_pubkey) {
-			Ok(register_collection) => {
-				self.collection_table.insert(
-					(self.height.into(), tx_index),
-					(register_collection.address.into(), register_collection.rebaseable),
-				)?;
-			},
-			Err(e) => {
-				log::warn!("Failed to decode register collection: {:?}", e);
-			},
-		}
+	fn index_collections(
+		&mut self,
+		tx_index: u32,
+		register_collection: RegisterCollection,
+	) -> Result<()> {
+		self.collection_table.insert(
+			(self.height.into(), tx_index),
+			(register_collection.address.into(), register_collection.rebaseable),
+		)?;
 		Ok(())
 	}
 }
@@ -135,7 +138,7 @@ mod tests {
 
 		let tx = brc721_collection_tx(expected_rebaseable);
 
-		updater.index_collections(expected_tx_index, &tx).unwrap();
+		updater.index_brc721(expected_tx_index, &tx).unwrap();
 
 		assert_eq!(id_to_collection.len(), 1);
 		let key = (expected_height.into(), expected_tx_index);
@@ -157,7 +160,7 @@ mod tests {
 		let tx_index = 5;
 		let tx = empty_tx();
 
-		updater.index_collections(tx_index, &tx).unwrap();
+		updater.index_brc721(tx_index, &tx).unwrap();
 
 		assert_eq!(id_to_collection.len(), 0);
 	}
@@ -174,7 +177,7 @@ mod tests {
 			[(0, brc721_collection_tx(true)), (1, brc721_collection_tx(false)), (2, empty_tx())];
 
 		for (tx_index, tx) in transactions.iter() {
-			updater.index_collections(*tx_index, tx).unwrap();
+			updater.index_brc721(*tx_index, tx).unwrap();
 		}
 
 		assert_eq!(id_to_collection.len(), 2);

@@ -407,7 +407,7 @@ impl Updater<'_> {
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {
-				brc721_collection_updater.index_collections(u32::try_from(i).unwrap(), tx)?;
+				brc721_collection_updater.index_brc721(u32::try_from(i).unwrap(), tx)?;
 			}
 		}
 

@@ -38,9 +38,12 @@ use thiserror::Error;
 
 pub use artifact::Artifact;
 pub use brc721::{
+	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
 	collection::Brc721Collection,
 	collection_id::Brc721CollectionId,
+	operations::{Brc721Operation, BRC721_INIT_CODE},
 	register_collection::{RegisterCollection, COLLECTION_ADDRESS_LENGTH},
+	register_ownership::RegisterOwnership,
 };
 pub use cenotaph::Cenotaph;
 pub use charm::Charm;
