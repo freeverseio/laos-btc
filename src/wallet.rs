@@ -1066,16 +1066,11 @@ impl Wallet {
 		fee_rate: FeeRate,
 		postage: Postage,
 	) -> Result<Transaction> {
-		// TODO
-		// aqui podria hacer un test de que el indice de los outputs coinciden con el indice de los
-		// slots y que pertenece al destination
-		// podría testear lo del sorting?
 		ensure!(
 			self.has_brc721_index(),
 			"registering brc721 ownership with `laos-btc wallet brc721 ro` requires index created with
 	`--index-brc721` flag");
 
-		// TODO lock brc721 outputs
 		self.lock_non_cardinal_outputs()?;
 
 		let unfunded_tx = Transaction {

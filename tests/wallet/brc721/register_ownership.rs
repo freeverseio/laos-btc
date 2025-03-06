@@ -3,7 +3,7 @@ use ord::subcommand::wallet::brc721::register_ownership;
 use ordinals::brc721::register_ownership::{RegisterOwnership, SlotsBundle};
 
 #[test]
-fn register_ownership_using_fixtures_file() {
+fn using_fixtures_file() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
@@ -55,4 +55,23 @@ fn register_ownership_using_fixtures_file() {
 	assert!(core.state().is_wallet_address(
 		&Address::from_script(&tx.output[3].script_pubkey, Network::Regtest).unwrap()
 	));
+}
+
+#[test]
+fn invalid_address() {
+	let core = mockcore::builder().network(Network::Regtest).build();
+
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
+
+	core.mine_blocks(1);
+
+	create_wallet(&core, &ord);
+
+	CommandBuilder::new("--regtest wallet brc721 register-ownership --fee-rate 1 --file tmp.yml")
+	.write("tmp.yml", "collection_id: 300:1\noutputs:\n  - slots_bundle: [[0]]\n    owner: 1BitcoinEaterAddressDontSendf59kuE")
+	.core(&core)
+	.ord(&ord)
+	.stderr_regex("(?s).*address 1BitcoinEaterAddressDontSendf59kuE is not valid on regtest.*")
+		.expected_exit_code(1)
+		.run_and_extract_stdout();
 }

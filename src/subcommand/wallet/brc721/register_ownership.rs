@@ -51,9 +51,8 @@ impl RegisterOwnershipCmd {
 		for output in file.outputs {
 			slots_bundles.push(output.slots_bundle.clone());
 			let owner = match &output.owner {
-				Some(addr) => addr.clone().assume_checked(), /* TODO improve assume_checked and */
-				// error handling
-				None => wallet.get_change_address().unwrap(), // TODO default owner
+				Some(owner) => owner.clone().require_network(wallet.chain().into())?,
+				None => wallet.get_change_address().unwrap(),
 			};
 			owners.push(owner);
 		}
@@ -171,10 +170,8 @@ where
 	D: Deserializer<'de>,
 {
 	match Option::<String>::deserialize(deserializer)? {
-		Some(s) => {
-			// Attempt to parse the string as a Bitcoin address.
-			s.parse::<Address<NetworkUnchecked>>().map(Some).map_err(D::Error::custom)
-		},
+		Some(owner) =>
+			owner.parse::<Address<NetworkUnchecked>>().map(Some).map_err(D::Error::custom),
 		None => Ok(None),
 	}
 }
