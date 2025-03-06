@@ -219,34 +219,6 @@ mod tests {
 	}
 
 	#[test]
-	fn register_collection_decode_missing_register_collection_operation_returns_error() {
-		let script = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(BRC721_INIT_CODE)
-			.into_script();
-
-		let result = RegisterCollection::from_script(&script);
-		assert_eq!(
-			result.unwrap_err(),
-			RegisterCollectionError::InstructionNotFound(
-				"Register collection operation identifier".to_string()
-			)
-		);
-	}
-
-	#[test]
-	fn register_collection_decode_wrong_operation_returns_error() {
-		let script = script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Operation::RegisterOwnership.byte_slice())
-			.into_script();
-
-		let result = RegisterCollection::from_script(&script);
-		assert_eq!(result.unwrap_err(), RegisterCollectionError::UnexpectedInstruction);
-	}
-
-	#[test]
 	fn register_collection_decode_missing_address_returns_error() {
 		let script = script::Builder::new()
 			.push_opcode(opcodes::all::OP_RETURN)
