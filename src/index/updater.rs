@@ -403,6 +403,7 @@ impl Updater<'_> {
 
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
+				client: &self.index.client,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
 			};
 

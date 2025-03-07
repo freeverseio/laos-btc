@@ -38,6 +38,7 @@ use thiserror::Error;
 
 pub use artifact::Artifact;
 pub use brc721::{
+	address_mapping::{btc_address_to_h160, h160_to_btc_address},
 	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
 	collection::Brc721Collection,
 	collection_id::Brc721CollectionId,
