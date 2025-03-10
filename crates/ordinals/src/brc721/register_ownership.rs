@@ -14,7 +14,7 @@ use super::{
 	operations::{Brc721Operation, BRC721_INIT_CODE, BRC721_OPERATION_LENGTH},
 };
 
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct RegisterOwnership {
 	pub collection_id: Brc721CollectionId,
 	pub slots_bundles: Vec<SlotsBundle>,

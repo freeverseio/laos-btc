@@ -65,6 +65,7 @@ impl RegisterOwnershipCmd {
 		let bitcoin_tx = wallet.build_brc721_register_ownership_tx(
 			register_ownership,
 			owners,
+			wallet.get_change_address()?, // TODO get owner from file
 			self.fee_rate,
 			postage,
 		)?;
