@@ -14,15 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::RegisterCollection;
+use ordinals::{txin_to_h160, RegisterCollection, RegisterOwnership, SlotsBundle};
 
 use super::*;
 
-pub(super) trait Insertable<K, V> {
+pub(super) trait Brc721Table<K, V> {
 	fn insert(&mut self, key: K, value: V) -> redb::Result;
+
+	fn get_value(&self, key: K) -> Option<V>;
 }
 
-impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
+impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
 	for Table<'_, Brc721CollectionIdValue, RegisterCollectionValue>
 {
 	fn insert(
@@ -32,46 +34,126 @@ impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
 	) -> redb::Result {
 		self.insert(key, value).map(|_| ())
 	}
+
+	fn get_value(&self, key: Brc721CollectionIdValue) -> Option<RegisterCollectionValue> {
+		let result = self.get(key).ok()?;
+
+		// Convert the AccessGuard to the expected tuple type
+		result.map(|guard| guard.value())
+	}
+}
+
+pub(crate) type Brc721TokenId = ([u8; 12], [u8; 20]);
+pub(crate) type Brc721TokenInCollection = (Brc721TokenId, Brc721CollectionIdValue);
+
+pub(crate) type TokenScriptOwner = Vec<u8>;
+
+impl Brc721Table<Brc721TokenInCollection, TokenScriptOwner>
+	for Table<'_, Brc721TokenInCollection, TokenScriptOwner>
+{
+	fn insert(&mut self, key: Brc721TokenInCollection, value: TokenScriptOwner) -> redb::Result {
+		self.insert(key, value).map(|_| ())
+	}
+
+	fn get_value(&self, key: Brc721TokenInCollection) -> Option<TokenScriptOwner> {
+		let result = self.get(key).ok()?;
+
+		// Convert the AccessGuard to the expected tuple type
+		result.map(|guard| guard.value())
+	}
 }
 
 pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
 
-pub(super) struct Brc721Updater<'a, T> {
+pub(super) struct Brc721Updater<'a, T1, T2> {
 	pub(super) height: u32,
-	pub(super) collection_table: &'a mut T,
+	pub(super) collection_table: &'a mut T1,
+	pub(super) token_owners: &'a mut T2,
 }
 
-impl<T> Brc721Updater<'_, T>
+impl<T1, T2> Brc721Updater<'_, T1, T2>
 where
-	T: Insertable<Brc721CollectionIdValue, RegisterCollectionValue>,
+	T1: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
+	T2: Brc721Table<Brc721TokenInCollection, TokenScriptOwner>,
 {
-	/// Indexes collections from a transaction.
-	///
-	/// # Arguments
-	/// * `tx_index` - The index of the transaction within its block.
-	/// * `tx` - The transaction to process.
-	pub(super) fn index_collections(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
-		// Ensure the transaction has at least one output.
+	/// Indexes a brc721 operation from a transaction
+	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		if tx.output.is_empty() {
-			log::warn!("Failed to decode register collection: Output not found");
+			return Ok(())
+		}
+
+		let first_output_script = tx.output[0].clone().script_pubkey;
+
+		if let Ok(register_collection) = RegisterCollection::from_script(&first_output_script) {
+			self.index_register_collections(tx_index, register_collection)?;
+		} else if let Ok(register_ownership) = first_output_script.try_into() {
+			self.index_register_ownership(tx_index, tx, register_ownership)?;
+		}
+
+		Ok(())
+	}
+
+	/// Indexes a register collection operation from a RegisterCollection.
+	fn index_register_collections(
+		&mut self,
+		tx_index: u32,
+		register_collection: RegisterCollection,
+	) -> Result<()> {
+		self.collection_table.insert(
+			(self.height.into(), tx_index),
+			(register_collection.address.into(), register_collection.rebaseable),
+		)?;
+		Ok(())
+	}
+
+	/// Indexes a register ownership operation from a RegisterOwnership and the related
+	/// Transaction.
+	fn index_register_ownership(
+		&mut self,
+		tx_index: u32,
+		tx: &Transaction,
+		register_ownership: RegisterOwnership,
+	) -> Result<()> {
+		let collection_id_value =
+			(register_ownership.collection_id.block, register_ownership.collection_id.tx);
+
+		// If the collection isn't registered, there's nothing to index
+		if self.collection_table.get_value(collection_id_value).is_none() {
 			return Ok(());
 		}
 
-		// the protocol specify the first output has to be the register collection
-		let first_output: TxOut = tx.output[0].clone();
-
-		// Decode the register collection from the first output's script public key.
-		match RegisterCollection::from_script(&first_output.script_pubkey) {
-			Ok(register_collection) => {
-				self.collection_table.insert(
-					(self.height.into(), tx_index),
-					(register_collection.address.into(), register_collection.rebaseable),
-				)?;
-			},
-			Err(e) => {
-				log::warn!("Failed to decode register collection: {:?}", e);
-			},
+		// If the tx doesn't include enough outputs, there's nothing to index
+		if tx.output.len() < register_ownership.slots_bundles.len() + 1 {
+			return Ok(());
 		}
+
+		// Get the h160 address contained in the first input or return Ok if it's not
+		// P2PKH/P2WPKH(nothing to index)
+		let h160_address = if let Ok(address) = txin_to_h160(&tx.input[0]) {
+			address
+		} else {
+			return Ok(());
+		};
+
+		for (index, slot_bundle) in register_ownership.slots_bundles.into_iter().enumerate() {
+			for slot_range in slot_bundle.0.into_iter() {
+				for slot in slot_range {
+					let mut slot_bytes = [0u8; 12];
+					slot_bytes.copy_from_slice(&slot.to_le_bytes()[..12]);
+					let token_id = (slot_bytes, h160_address.0);
+					if self.token_owners.get_value((token_id, collection_id_value)).is_some() {
+						return Err(anyhow::anyhow!(format!(
+							"Token {:?} already registered",
+							token_id
+						)));
+					}
+
+					let owner_bytes = tx.output[index + 1].clone().script_pubkey.into_bytes();
+					self.token_owners.insert((token_id, collection_id_value), owner_bytes)?;
+				}
+			}
+		}
+
 		Ok(())
 	}
 }
@@ -83,7 +165,7 @@ mod tests {
 	use sp_core::H160;
 	use std::collections::HashMap;
 
-	impl Insertable<Brc721CollectionIdValue, RegisterCollectionValue>
+	impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
 		for HashMap<Brc721CollectionIdValue, RegisterCollectionValue>
 	{
 		fn insert(
@@ -94,11 +176,32 @@ mod tests {
 			HashMap::insert(self, key, value);
 			Ok(())
 		}
+
+		fn get_value(&self, key: Brc721CollectionIdValue) -> Option<RegisterCollectionValue> {
+			self.get(&key).copied()
+		}
+	}
+
+	impl Brc721Table<Brc721TokenInCollection, TokenScriptOwner>
+		for HashMap<Brc721TokenInCollection, TokenScriptOwner>
+	{
+		fn insert(
+			&mut self,
+			key: Brc721TokenInCollection,
+			value: TokenScriptOwner,
+		) -> redb::Result<()> {
+			HashMap::insert(self, key, value);
+			Ok(())
+		}
+
+		fn get_value(&self, key: Brc721TokenInCollection) -> Option<TokenScriptOwner> {
+			self.get(&key).cloned()
+		}
 	}
 
 	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
 
-	fn brc721_collection_tx(rebaseable: bool) -> Transaction {
+	fn brc721_register_collection_tx(rebaseable: bool) -> Transaction {
 		let collection =
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
@@ -110,6 +213,54 @@ mod tests {
 			lock_time: LockTime::from_height(1000).unwrap(),
 			input: vec![],
 			output: vec![output],
+		}
+	}
+
+	fn brc721_register_ownership_tx(
+		collection_id: Brc721CollectionId,
+		slots_bundles: Vec<SlotsBundle>,
+		owners: Vec<Address>,
+		input: Option<Vec<TxIn>>,
+	) -> Transaction {
+		let input = if let Some(input) = input {
+			input
+		} else {
+			// If not specified, include a valid P2PWKH input
+			let pubkey_hex = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+			let pubkey_bytes = hex::decode(pubkey_hex).unwrap();
+			// Dummy signature.
+			let signature = vec![0x30, 0x45, 0x02, 0x21];
+			vec![TxIn {
+				previous_output: Default::default(),
+				script_sig: Script::new().into(),
+				sequence: bitcoin::Sequence(0xffffffff),
+				witness: vec![signature, pubkey_bytes.clone()].into(),
+			}]
+		};
+
+		let output_0 = TxOut {
+			value: Amount::ONE_SAT,
+			script_pubkey: RegisterOwnership { collection_id, slots_bundles }.into(),
+		};
+
+		// Create outputs for each owner.
+		// Each owner’s output uses the script generated from the address.
+		let owner_outputs: Vec<TxOut> = owners
+			.iter()
+			.map(|owner| {
+				let owner_script = owner.script_pubkey();
+				TxOut { value: Amount::ONE_SAT, script_pubkey: owner_script }
+			})
+			.collect();
+
+		let mut output = vec![output_0];
+		output.extend(owner_outputs);
+
+		Transaction {
+			version: Version(1),
+			lock_time: LockTime::from_height(1000).unwrap(),
+			input,
+			output,
 		}
 	}
 
@@ -129,13 +280,17 @@ mod tests {
 		let expected_tx_index = 5;
 
 		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
 
-		let mut updater =
-			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
 
-		let tx = brc721_collection_tx(expected_rebaseable);
+		let tx = brc721_register_collection_tx(expected_rebaseable);
 
-		updater.index_collections(expected_tx_index, &tx).unwrap();
+		updater.index_brc721(expected_tx_index, &tx).unwrap();
 
 		assert_eq!(id_to_collection.len(), 1);
 		let key = (expected_height.into(), expected_tx_index);
@@ -150,14 +305,18 @@ mod tests {
 	fn test_no_collections() {
 		let expected_height = 100u32;
 		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
 
-		let mut updater =
-			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
 
 		let tx_index = 5;
 		let tx = empty_tx();
 
-		updater.index_collections(tx_index, &tx).unwrap();
+		updater.index_brc721(tx_index, &tx).unwrap();
 
 		assert_eq!(id_to_collection.len(), 0);
 	}
@@ -166,15 +325,22 @@ mod tests {
 	fn test_multiple_transactions() {
 		let expected_height = 100u32;
 		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
 
-		let mut updater =
-			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
 
-		let transactions =
-			[(0, brc721_collection_tx(true)), (1, brc721_collection_tx(false)), (2, empty_tx())];
+		let transactions = [
+			(0, brc721_register_collection_tx(true)),
+			(1, brc721_register_collection_tx(false)),
+			(2, empty_tx()),
+		];
 
 		for (tx_index, tx) in transactions.iter() {
-			updater.index_collections(*tx_index, tx).unwrap();
+			updater.index_brc721(*tx_index, tx).unwrap();
 		}
 
 		assert_eq!(id_to_collection.len(), 2);
@@ -192,5 +358,151 @@ mod tests {
 			id_to_collection.get(&(expected_height.into(), 0)).unwrap().0,
 			COLLECTION_ADDRESS
 		);
+	}
+
+	#[test]
+	fn index_register_ownership_for_not_registered_collection() {
+		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
+
+		let transactions = [(
+			1,
+			brc721_register_ownership_tx(
+				Brc721CollectionId { block: 100, tx: 1 },
+				vec![],
+				vec![],
+				None,
+			),
+		)];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		assert_eq!(token_owners, HashMap::new());
+	}
+
+	#[test]
+	fn index_register_ownership_with_incorrect_number_of_outputs() {
+		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
+
+		let transactions = [
+			(1, brc721_register_collection_tx(false)),
+			(
+				2,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![],
+					None,
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		assert_eq!(token_owners, HashMap::new());
+	}
+
+	#[test]
+	fn index_register_ownership_with_invalid_input() {
+		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
+
+		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+		let owner_address =
+			Address::from_str(addr_str).unwrap().require_network(Network::Bitcoin).unwrap();
+
+		let txin = TxIn {
+			previous_output: Default::default(),
+			script_sig: Script::new().into(),
+			sequence: bitcoin::Sequence(0xffffffff),
+			witness: vec![vec![0x30, 0x45, 0x02, 0x21]].into(), // Only one element.
+		};
+
+		let transactions = [
+			(1, brc721_register_collection_tx(false)),
+			(
+				2,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![owner_address.clone(), owner_address],
+					Some(vec![txin]),
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		assert_eq!(token_owners, HashMap::new());
+	}
+
+	#[test]
+	fn index_register_ownership_already_registered_ownership() {
+		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+		};
+
+		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+		let owner_address =
+			Address::from_str(addr_str).unwrap().require_network(Network::Bitcoin).unwrap();
+
+		let transactions = [
+			(1, brc721_register_collection_tx(false)),
+			(
+				2,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![owner_address.clone(), owner_address.clone()],
+					None,
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		assert!(updater
+			.index_brc721(
+				3,
+				&brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![std::ops::RangeInclusive::new(3, 3)])],
+					vec![owner_address.clone(), owner_address],
+					None,
+				)
+			)
+			.is_err());
 	}
 }

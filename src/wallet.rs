@@ -29,11 +29,11 @@ use index::entry::Entry;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
 use miniscript::descriptor::{DescriptorSecretKey, DescriptorXKey, Wildcard};
+use ordinals::brc721::register_ownership::RegisterOwnership;
 use redb::{Database, DatabaseError, ReadableTable, RepairSession, StorageError, TableDefinition};
 use reqwest::header;
 use std::sync::Once;
 use transaction_builder::TransactionBuilder;
-
 pub mod batch;
 pub mod entry;
 pub mod transaction_builder;
@@ -1058,12 +1058,67 @@ impl Wallet {
 
 		Ok(signed_transaction)
 	}
+
+	pub(crate) fn build_brc721_register_ownership_tx(
+		&self,
+		tx: RegisterOwnership,
+		owners: Vec<Address>,
+		fee_rate: FeeRate,
+		postage: Postage,
+	) -> Result<Transaction> {
+		// TODO
+		// aqui podria hacer un test de que el indice de los outputs coinciden con el indice de los
+		// slots y que pertenece al destination
+		// podría testear lo del sorting?
+		ensure!(
+			self.has_brc721_index(),
+			"registering brc721 ownership with `laos-btc wallet brc721 ro` requires index created with
+	`--index-brc721` flag");
+
+		// TODO lock brc721 outputs
+		self.lock_non_cardinal_outputs()?;
+
+		let unfunded_tx = Transaction {
+			version: Version(2),
+			lock_time: LockTime::ZERO,
+			input: vec![],
+			output: {
+				let mut output =
+					vec![TxOut { value: Amount::from_sat(0), script_pubkey: tx.clone().into() }];
+				output.extend(owners.iter().map(|owner| TxOut {
+					value: postage.amount,
+					script_pubkey: owner.script_pubkey(),
+				}));
+				output
+			},
+		};
+
+		let unsigned_transaction =
+			fund_raw_transaction(self.bitcoin_client(), fee_rate, &unfunded_tx)?;
+
+		let signed_transaction = self
+			.bitcoin_client()
+			.sign_raw_transaction_with_wallet(&unsigned_transaction, None, None)?
+			.hex;
+		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
+
+		Ok(signed_transaction)
+	}
 }
 
 pub struct Postage {
 	pub amount: Amount,
 	pub destination: Address,
 }
+
+// fn get_random_address() -> Address {
+// 		// Generate random key pair.
+// 		let s = Secp256k1::new();
+// 		let public_key = PublicKey::new(s.generate_keypair(&mut rand::thread_rng()).1);
+
+// 		// Generate pay-to-pubkey-hash address.
+// 		Address::p2pkh(&public_key, Network::Regtest)
+// 	}
 
 pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
 	let postage = postage.unwrap_or(TARGET_POSTAGE);
