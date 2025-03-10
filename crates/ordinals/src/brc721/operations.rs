@@ -10,8 +10,6 @@ pub(crate) const BRC721_INIT_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15
 #[repr(u8)]
 pub(crate) enum Brc721Operation {
 	RegisterCollection = 0,
-	// TODO: Remove this attribute as soon as register ownership flow is introduced
-	#[allow(dead_code)]
 	RegisterOwnership = 1,
 }
 

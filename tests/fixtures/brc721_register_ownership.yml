@@ -1,6 +1,5 @@
 collection_id: 300:1
 outputs:
   - slots_bundle: [[0, 3], [4, 10]]
-    owner: 1BitcoinEaterAddressDontSendf59kuE
-  - slots_bundle: [[2]] # by default no owner means signing account
-  - slots_bundle: [[0,3], [6], [3,14]] # by default no owner means signing account
+    owner: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m
+  - slots_bundle: [[340282366920938463463374607431768211455]] # by default no owner means signing account

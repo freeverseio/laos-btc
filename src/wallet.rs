@@ -29,11 +29,11 @@ use index::entry::Entry;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
 use miniscript::descriptor::{DescriptorSecretKey, DescriptorXKey, Wildcard};
+use ordinals::brc721::register_ownership::RegisterOwnership;
 use redb::{Database, DatabaseError, ReadableTable, RepairSession, StorageError, TableDefinition};
 use reqwest::header;
 use std::sync::Once;
 use transaction_builder::TransactionBuilder;
-
 pub mod batch;
 pub mod entry;
 pub mod transaction_builder;
@@ -1057,6 +1057,94 @@ impl Wallet {
 		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
 
 		Ok(signed_transaction)
+	}
+
+	pub(crate) fn build_brc721_register_ownership_tx(
+		&self,
+		tx: RegisterOwnership,
+		receivers: Vec<Address>,
+		initial_owner: Address,
+		fee_rate: FeeRate,
+		postage: Postage,
+	) -> Result<Transaction> {
+		ensure!(
+			self.has_brc721_index(),
+			"registering brc721 ownership with `laos-btc wallet brc721 ro` requires index created with
+	`--index-brc721` flag");
+
+		self.lock_non_cardinal_outputs()?;
+
+		let cardinal_utxos = self.get_cardinal_utxos(initial_owner.clone())?;
+		if cardinal_utxos.is_empty() {
+			return Err(anyhow!("No available UTXOs found for address {}", initial_owner));
+		}
+
+		// TODO check that address included in file belongs to wallet: initial owner is not
+		// controlled by wallet
+
+		let unfunded_tx = Transaction {
+			version: Version(2),
+			lock_time: LockTime::ZERO,
+			input: cardinal_utxos
+				.into_iter()
+				.map(|outpoint| TxIn {
+					previous_output: outpoint,
+					script_sig: ScriptBuf::new(),
+					sequence: Sequence::MAX,
+					witness: Witness::new(),
+				})
+				.collect(),
+			output: {
+				let mut output =
+					vec![TxOut { value: Amount::from_sat(0), script_pubkey: tx.clone().into() }];
+				output.extend(receivers.iter().map(|owner| TxOut {
+					value: postage.amount,
+					script_pubkey: owner.script_pubkey(),
+				}));
+				output
+			},
+		};
+
+		let unsigned_transaction =
+			fund_raw_transaction(self.bitcoin_client(), fee_rate, &unfunded_tx)?;
+
+		let signed_transaction = self
+			.bitcoin_client()
+			.sign_raw_transaction_with_wallet(&unsigned_transaction, None, None)?
+			.hex;
+		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
+
+		Ok(signed_transaction)
+	}
+
+	fn get_cardinal_utxos(&self, owner: Address) -> Result<Vec<OutPoint>> {
+		let inscribed_utxos = self
+			.inscriptions()
+			.keys()
+			.map(|satpoint| satpoint.outpoint)
+			.collect::<BTreeSet<OutPoint>>();
+
+		let runic_utxos = self.get_runic_outputs()?.unwrap_or_default();
+
+		let cardinal_utxos = self
+			.utxos
+			.iter()
+			.filter(|(_, txout)| {
+				self.chain()
+					.address_from_script(&txout.script_pubkey)
+					.map(|addr| addr == owner)
+					.unwrap_or(false)
+			})
+			.filter(|(output, _)| {
+				!inscribed_utxos.contains(output) && !runic_utxos.contains(output) // TODO filter out brc721
+				                                                        // outputs
+			})
+			.map(|(output, _)| *output)
+			.collect::<Vec<_>>();
+
+		println!("cardinal_utxos: {:?}", cardinal_utxos);
+
+		Ok(cardinal_utxos)
 	}
 }
 
