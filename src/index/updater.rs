@@ -25,7 +25,9 @@ use tokio::sync::{
 	mpsc::{self},
 };
 
-pub(crate) use brc721_updater::{Brc721TokenId, RegisterCollectionValue};
+pub(crate) use brc721_updater::{
+	Brc721TokenInCollection, RegisterCollectionValue, TokenScriptOwner,
+};
 
 mod brc721_updater;
 mod inscription_updater;
@@ -401,13 +403,12 @@ impl Updater<'_> {
 			let mut brc721_collection_id_to_brc721_collection_value =
 				wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
-			let mut brc721_token_id_to_brc721_collection_id =
-				wtx.open_table(BRC721_TOKENID_TO_BRC721_COLLECTION_ID)?;
+			let mut brc721_token_to_owner = wtx.open_table(BRC721_TOKEN_TO_OWNER)?;
 
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
-				tokens: &mut brc721_token_id_to_brc721_collection_id,
+				token_owners: &mut brc721_token_to_owner,
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {
