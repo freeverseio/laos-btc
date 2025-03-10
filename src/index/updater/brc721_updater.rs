@@ -381,8 +381,7 @@ mod tests {
 			updater.index_brc721(*tx_index, tx).unwrap()
 		}
 
-        assert_eq!(tokens, HashMap::new());
-
+		assert_eq!(tokens, HashMap::new());
 	}
 
 	#[test]
@@ -413,8 +412,7 @@ mod tests {
 			updater.index_brc721(*tx_index, tx).unwrap()
 		}
 
-        assert_eq!(tokens, HashMap::new());
-
+		assert_eq!(tokens, HashMap::new());
 	}
 
 	#[test]
@@ -456,8 +454,7 @@ mod tests {
 			updater.index_brc721(*tx_index, tx).unwrap()
 		}
 
-        assert_eq!(tokens, HashMap::new());
-
+		assert_eq!(tokens, HashMap::new());
 	}
 
 	#[test]
@@ -503,7 +500,5 @@ mod tests {
 				)
 			)
 			.is_err());
-
-
 	}
 }
