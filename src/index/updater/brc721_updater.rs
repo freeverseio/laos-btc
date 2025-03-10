@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::{RegisterCollection, RegisterOwnership, SlotsBundle};
+use ordinals::{txin_to_h160, RegisterCollection, RegisterOwnership, SlotsBundle};
 
 use super::*;
 
@@ -43,16 +43,36 @@ impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
 	}
 }
 
-pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
+pub(crate) type Brc721TokenId = ([u8; 12], [u8; 20]);
 
-pub(super) struct Brc721Updater<'a, T> {
-	pub(super) height: u32,
-	pub(super) collection_table: &'a mut T,
+impl Brc721Table<Brc721TokenId, Brc721CollectionIdValue>
+	for Table<'_, Brc721TokenId, Brc721CollectionIdValue>
+{
+	fn insert(&mut self, key: Brc721TokenId, value: Brc721CollectionIdValue) -> redb::Result {
+		self.insert(key, value).map(|_| ())
+	}
+
+	fn get_value(&self, key: Brc721TokenId) -> Option<Brc721CollectionIdValue> {
+		let result = self.get(key).ok()?;
+
+		// Convert the AccessGuard to the expected tuple type
+		result.map(|guard| guard.value())
+	}
 }
 
-impl<T> Brc721Updater<'_, T>
+pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
+
+pub(super) struct Brc721Updater<'a, T1, T2> {
+	pub(super) height: u32,
+	pub(super) collection_table: &'a mut T1,
+	pub(super) tokens: &'a mut T2,
+	//pub(super) unspent_tokens: &'a mut T3,
+}
+
+impl<T1, T2> Brc721Updater<'_, T1, T2>
 where
-	T: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
+	T1: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
+	T2: Brc721Table<Brc721TokenId, Brc721CollectionIdValue>,
 {
 	/// Indexes a brc721 operation from a transaction
 	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
@@ -105,6 +125,31 @@ where
 			return Ok(());
 		}
 
+		// Get the h160 address contained in the first input or return Ok if it's not
+		// P2PKH/P2WPKH(nothing to index)
+		let h160_address = if let Ok(address) = txin_to_h160(&tx.input[0]) {
+			address
+		} else {
+			return Ok(());
+		};
+
+		for slot_bundle in register_ownership.slots_bundles.into_iter() {
+			for slot_range in slot_bundle.0.into_iter() {
+				for slot in slot_range {
+					let mut slot_bytes = [0u8; 12];
+					slot_bytes.copy_from_slice(&slot.to_le_bytes()[..12]);
+					let token_id = (slot_bytes, h160_address.0);
+					if self.tokens.get_value(token_id).is_some() {
+						return Err(anyhow::anyhow!(format!(
+							"Token {:?} already registered",
+							token_id
+						)));
+					}
+					self.tokens.insert(token_id, collection_id_value)?;
+				}
+			}
+		}
+
 		Ok(())
 	}
 }
@@ -133,6 +178,23 @@ mod tests {
 		}
 	}
 
+	impl Brc721Table<Brc721TokenId, Brc721CollectionIdValue>
+		for HashMap<Brc721TokenId, Brc721CollectionIdValue>
+	{
+		fn insert(
+			&mut self,
+			key: Brc721TokenId,
+			value: Brc721CollectionIdValue,
+		) -> redb::Result<()> {
+			HashMap::insert(self, key, value);
+			Ok(())
+		}
+
+		fn get_value(&self, key: Brc721TokenId) -> Option<Brc721CollectionIdValue> {
+			self.get(&key).copied()
+		}
+	}
+
 	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
 
 	fn brc721_register_collection_tx(rebaseable: bool) -> Transaction {
@@ -154,7 +216,24 @@ mod tests {
 		collection_id: Brc721CollectionId,
 		slots_bundles: Vec<SlotsBundle>,
 		owners: Vec<Address>,
+		input: Option<Vec<TxIn>>,
 	) -> Transaction {
+		let input = if let Some(input) = input {
+			input
+		} else {
+			// If not specified, include a valid P2PWKH input
+			let pubkey_hex = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+			let pubkey_bytes = hex::decode(pubkey_hex).unwrap();
+			// Dummy signature.
+			let signature = vec![0x30, 0x45, 0x02, 0x21];
+			vec![TxIn {
+				previous_output: Default::default(),
+				script_sig: Script::new().into(),
+				sequence: bitcoin::Sequence(0xffffffff),
+				witness: vec![signature, pubkey_bytes.clone()].into(),
+			}]
+		};
+
 		let output_0 = TxOut {
 			value: Amount::ONE_SAT,
 			script_pubkey: RegisterOwnership { collection_id, slots_bundles }.into(),
@@ -176,7 +255,7 @@ mod tests {
 		Transaction {
 			version: Version(1),
 			lock_time: LockTime::from_height(1000).unwrap(),
-			input: vec![], // TODO: Include input asap
+			input,
 			output,
 		}
 	}
@@ -197,9 +276,13 @@ mod tests {
 		let expected_tx_index = 5;
 
 		let mut id_to_collection = HashMap::new();
+		let mut tokens = HashMap::new();
 
-		let mut updater =
-			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
 
 		let tx = brc721_register_collection_tx(expected_rebaseable);
 
@@ -218,9 +301,13 @@ mod tests {
 	fn test_no_collections() {
 		let expected_height = 100u32;
 		let mut id_to_collection = HashMap::new();
+		let mut tokens = HashMap::new();
 
-		let mut updater =
-			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
 
 		let tx_index = 5;
 		let tx = empty_tx();
@@ -234,9 +321,13 @@ mod tests {
 	fn test_multiple_transactions() {
 		let expected_height = 100u32;
 		let mut id_to_collection = HashMap::new();
+		let mut tokens = HashMap::new();
 
-		let mut updater =
-			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
 
 		let transactions = [
 			(0, brc721_register_collection_tx(true)),
@@ -268,33 +359,52 @@ mod tests {
 	#[test]
 	fn index_register_ownership_for_not_registered_collection() {
 		let mut id_to_collection = HashMap::new();
-		let mut updater = Brc721Updater { height: 100u32, collection_table: &mut id_to_collection };
+		let mut tokens = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
 
 		let transactions = [(
-			0,
-			brc721_register_ownership_tx(Brc721CollectionId { block: 100, tx: 1 }, vec![], vec![]),
+			1,
+			brc721_register_ownership_tx(
+				Brc721CollectionId { block: 100, tx: 1 },
+				vec![],
+				vec![],
+				None,
+			),
 		)];
 
 		for (tx_index, tx) in transactions.iter() {
 			updater.index_brc721(*tx_index, tx).unwrap()
 		}
 
-		// TODO: Assert that register ownership tables are untouched, once we define them
+        assert_eq!(tokens, HashMap::new());
+
 	}
 
 	#[test]
 	fn index_register_ownership_with_incorrect_number_of_outputs() {
 		let mut id_to_collection = HashMap::new();
-		let mut updater = Brc721Updater { height: 100u32, collection_table: &mut id_to_collection };
+		let mut tokens = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
 
 		let transactions = [
-			(0, brc721_register_collection_tx(false)),
+			(1, brc721_register_collection_tx(false)),
 			(
-				1,
+				2,
 				brc721_register_ownership_tx(
 					Brc721CollectionId { block: 100, tx: 1 },
 					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
 					vec![],
+					None,
 				),
 			),
 		];
@@ -303,6 +413,97 @@ mod tests {
 			updater.index_brc721(*tx_index, tx).unwrap()
 		}
 
-		// TODO: Assert that register ownership tables are untouched, once we define them
+        assert_eq!(tokens, HashMap::new());
+
+	}
+
+	#[test]
+	fn index_register_ownership_with_invalid_input() {
+		let mut id_to_collection = HashMap::new();
+		let mut tokens = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
+
+		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+		let owner_address =
+			Address::from_str(addr_str).unwrap().require_network(Network::Bitcoin).unwrap();
+
+		let txin = TxIn {
+			previous_output: Default::default(),
+			script_sig: Script::new().into(),
+			sequence: bitcoin::Sequence(0xffffffff),
+			witness: vec![vec![0x30, 0x45, 0x02, 0x21]].into(), // Only one element.
+		};
+
+		let transactions = [
+			(1, brc721_register_collection_tx(false)),
+			(
+				2,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![owner_address.clone(), owner_address],
+					Some(vec![txin]),
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+        assert_eq!(tokens, HashMap::new());
+
+	}
+
+	#[test]
+	fn index_register_ownership_already_registered_ownership() {
+		let mut id_to_collection = HashMap::new();
+		let mut tokens = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: 100u32,
+			collection_table: &mut id_to_collection,
+			tokens: &mut tokens,
+		};
+
+		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+		let owner_address =
+			Address::from_str(addr_str).unwrap().require_network(Network::Bitcoin).unwrap();
+
+		let transactions = [
+			(1, brc721_register_collection_tx(false)),
+			(
+				2,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![owner_address.clone(), owner_address.clone()],
+					None,
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap()
+		}
+
+		assert!(updater
+			.index_brc721(
+				3,
+				&brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![std::ops::RangeInclusive::new(3, 3)])],
+					vec![owner_address.clone(), owner_address],
+					None,
+				)
+			)
+			.is_err());
+
+
 	}
 }

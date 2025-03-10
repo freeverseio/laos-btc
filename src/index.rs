@@ -23,7 +23,7 @@ use self::{
 	event::Event,
 	lot::Lot,
 	reorg::Reorg,
-	updater::{RegisterCollectionValue, Updater},
+	updater::{Brc721TokenId, RegisterCollectionValue, Updater},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
 use super::*;
@@ -89,6 +89,7 @@ define_table! { TRANSACTION_ID_TO_RUNE, &TxidValue, u128 }
 define_table! { TRANSACTION_ID_TO_TRANSACTION, &TxidValue, &[u8] }
 define_table! { WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP, u32, u128 }
 define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, Brc721CollectionIdValue, RegisterCollectionValue }
+define_table! { BRC721_TOKENID_TO_BRC721_COLLECTION_ID, Brc721TokenId, Brc721CollectionIdValue}
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
