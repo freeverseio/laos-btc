@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::{txin_to_h160, RegisterCollection, RegisterOwnership, SlotsBundle};
+use ordinals::{txin_to_h160, RegisterCollection, RegisterOwnership};
 
 use super::*;
 
@@ -55,21 +55,24 @@ impl_brc721_table!(Brc721CollectionIdValue, RegisterCollectionValue);
 impl_brc721_table!(Brc721TokenInCollection, TokenScriptOwner);
 impl_brc721_table!(OwnerUTXOIndex, TokenBundles);
 impl_brc721_table!(String, u128);
+impl_brc721_table!((), Vec<TokenScriptOwner>);
 
-pub(super) struct Brc721Updater<'a, T1, T2, T3, T4> {
+pub(super) struct Brc721Updater<'a, T1, T2, T3, T4, T5> {
 	pub(super) height: u32,
 	pub(super) collection_table: &'a mut T1,
 	pub(super) token_owners: &'a mut T2,
 	pub(super) token_by_owner: &'a mut T3,
 	pub(super) tokens_for_owner: &'a mut T4,
+	pub(super) unspent_utxos: &'a mut T5,
 }
 
-impl<T1, T2, T3, T4> Brc721Updater<'_, T1, T2, T3, T4>
+impl<T1, T2, T3, T4, T5> Brc721Updater<'_, T1, T2, T3, T4, T5>
 where
 	T1: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
 	T2: Brc721Table<Brc721TokenInCollection, TokenScriptOwner>,
 	T3: Brc721Table<OwnerUTXOIndex, TokenBundles>,
 	T4: Brc721Table<String, u128>,
+	T5: Brc721Table<(), Vec<TokenScriptOwner>>,
 {
 	/// Indexes a brc721 operation from a transaction
 	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
@@ -160,6 +163,12 @@ where
 				)?;
 
 				self.tokens_for_owner.insert(hex_encoded_owner, slot_range_owned_by_owner + 1)?;
+
+				let mut unspent_utxos = self.unspent_utxos.get_value(()).unwrap_or(vec![]);
+				if !unspent_utxos.contains(&owner_bytes) {
+					unspent_utxos.push(owner_bytes);
+					self.unspent_utxos.insert((), unspent_utxos)?;
+				}
 			}
 		}
 
@@ -171,6 +180,7 @@ where
 mod tests {
 	use super::*;
 	use bitcoin::Transaction;
+	use ordinals::{btc_address_to_h160, SlotsBundle};
 	use sp_core::H160;
 	use std::collections::HashMap;
 
@@ -193,6 +203,7 @@ mod tests {
 	impl_brc721_table_hashmap!(Brc721TokenInCollection, TokenScriptOwner);
 	impl_brc721_table_hashmap!(OwnerUTXOIndex, TokenBundles);
 	impl_brc721_table_hashmap!(String, u128);
+	impl_brc721_table_hashmap!((), Vec<TokenScriptOwner>);
 
 	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
 
@@ -278,6 +289,7 @@ mod tests {
 		let mut token_owners = HashMap::new();
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -285,6 +297,7 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 
 		let tx = brc721_register_collection_tx(expected_rebaseable);
@@ -307,6 +320,7 @@ mod tests {
 		let mut token_owners = HashMap::new();
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -314,6 +328,7 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 		let tx_index = 5;
 		let tx = empty_tx();
@@ -331,6 +346,7 @@ mod tests {
 
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -338,6 +354,7 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 
 		let transactions = [
@@ -368,12 +385,14 @@ mod tests {
 	}
 
 	#[test]
-	fn index_register_ownership_for_not_registered_collection() {
+	fn index_register_ownership() {
 		let expected_height = 100;
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
+
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -381,6 +400,70 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
+		};
+
+		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+
+		let owner_address =
+			Address::from_str(addr_str).unwrap().require_network(Network::Bitcoin).unwrap();
+
+		let h160_signer = btc_address_to_h160(owner_address.clone()).unwrap();
+
+		let transactions = [
+			(1, brc721_register_collection_tx(false)),
+			(
+				2,
+				brc721_register_ownership_tx(
+					Brc721CollectionId { block: 100, tx: 1 },
+					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
+					vec![owner_address.clone()],
+					None,
+				),
+			),
+		];
+
+		for (tx_index, tx) in transactions.iter() {
+			updater.index_brc721(*tx_index, tx).unwrap();
+		}
+
+		let existing_token_id = ([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], h160_signer.0);
+
+		let owner_script_buf = ScriptBuf::from_bytes(
+			token_owners.get(&(existing_token_id, (100, 1))).unwrap().clone(),
+		);
+
+		assert_eq!(owner_script_buf, owner_address.script_pubkey());
+
+		let hex_encoded_owner = hex::encode(owner_address.script_pubkey());
+		assert_eq!(
+			token_by_owner.get(&(hex_encoded_owner.clone(), 0)).unwrap(),
+			&((100u64, 1u32), h160_signer.0, 0u128, 3u128)
+		);
+
+		assert_eq!(*tokens_for_owner.get(&hex_encoded_owner).unwrap(), 2u128);
+		assert_eq!(
+			unspent_utxos.get(&()).unwrap(),
+			&vec![owner_address.script_pubkey().into_bytes()]
+		);
+	}
+
+	#[test]
+	fn index_register_ownership_for_not_registered_collection() {
+		let expected_height = 100;
+		let mut id_to_collection = HashMap::new();
+		let mut token_owners = HashMap::new();
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
+
+		let mut updater = Brc721Updater {
+			height: expected_height,
+			collection_table: &mut id_to_collection,
+			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 
 		let transactions = [(
@@ -410,6 +493,7 @@ mod tests {
 
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -417,6 +501,7 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 
 		let transactions = [
@@ -449,6 +534,7 @@ mod tests {
 
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -456,6 +542,7 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
 		let owner_address =
@@ -499,6 +586,7 @@ mod tests {
 
 		let mut tokens_for_owner = HashMap::new();
 		let mut token_by_owner = HashMap::new();
+		let mut unspent_utxos = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
@@ -506,6 +594,7 @@ mod tests {
 			token_owners: &mut token_owners,
 			tokens_for_owner: &mut tokens_for_owner,
 			token_by_owner: &mut token_by_owner,
+			unspent_utxos: &mut unspent_utxos,
 		};
 
 		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
@@ -519,7 +608,7 @@ mod tests {
 				brc721_register_ownership_tx(
 					Brc721CollectionId { block: 100, tx: 1 },
 					vec![SlotsBundle(vec![(0..=3), (4..=10)])],
-					vec![owner_address.clone(), owner_address.clone()],
+					vec![owner_address.clone()],
 					None,
 				),
 			),
@@ -535,7 +624,7 @@ mod tests {
 				&brc721_register_ownership_tx(
 					Brc721CollectionId { block: 100, tx: 1 },
 					vec![SlotsBundle(vec![std::ops::RangeInclusive::new(3, 3)])],
-					vec![owner_address.clone(), owner_address],
+					vec![owner_address.clone()],
 					None,
 				)
 			)

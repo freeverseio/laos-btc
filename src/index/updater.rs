@@ -410,12 +410,15 @@ impl Updater<'_> {
 
 			let mut brc721_tokens_for_owner = wtx.open_table(BRC721_TOKENS_FOR_OWNER)?;
 
+			let mut brc721_unspent_utxos = wtx.open_table(BRC721_UNSPENT_UTXOS)?;
+
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
 				token_owners: &mut brc721_token_to_owner,
 				token_by_owner: &mut brc721_utxo_to_token_id,
 				tokens_for_owner: &mut brc721_tokens_for_owner,
+				unspent_utxos: &mut brc721_unspent_utxos,
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {

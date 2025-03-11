@@ -95,6 +95,7 @@ define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, Brc721Collectio
 define_table! { BRC721_TOKEN_TO_OWNER, Brc721TokenInCollection, TokenScriptOwner}
 define_table! { BRC721_UTXO_TO_TOKEN_ID, OwnerUTXOIndex, TokenBundles }
 define_table! { BRC721_TOKENS_FOR_OWNER, String, u128 }
+define_table! { BRC721_UNSPENT_UTXOS, (), Vec<TokenScriptOwner> }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
