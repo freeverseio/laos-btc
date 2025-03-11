@@ -24,57 +24,52 @@ pub(super) trait Brc721Table<K, V> {
 	fn get_value(&self, key: K) -> Option<V>;
 }
 
-impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
-	for Table<'_, Brc721CollectionIdValue, RegisterCollectionValue>
-{
-	fn insert(
-		&mut self,
-		key: Brc721CollectionIdValue,
-		value: RegisterCollectionValue,
-	) -> redb::Result {
-		self.insert(key, value).map(|_| ())
-	}
+macro_rules! impl_brc721_table {
+	($K: ty, $V: ty) => {
+		impl Brc721Table<$K, $V> for Table<'_, $K, $V> {
+			fn insert(&mut self, key: $K, value: $V) -> redb::Result {
+				self.insert(key, value).map(|_| ())
+			}
 
-	fn get_value(&self, key: Brc721CollectionIdValue) -> Option<RegisterCollectionValue> {
-		let result = self.get(key).ok()?;
+			fn get_value(&self, key: $K) -> Option<$V> {
+				let result = self.get(key).ok()?;
 
-		// Convert the AccessGuard to the expected tuple type
-		result.map(|guard| guard.value())
-	}
+				// Convert the AccessGuard to the expected tuple type
+				result.map(|guard| guard.value())
+			}
+		}
+	};
 }
+
+pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
 
 pub(crate) type Brc721TokenId = ([u8; 12], [u8; 20]);
 pub(crate) type Brc721TokenInCollection = (Brc721TokenId, Brc721CollectionIdValue);
 
 pub(crate) type TokenScriptOwner = Vec<u8>;
 
-impl Brc721Table<Brc721TokenInCollection, TokenScriptOwner>
-	for Table<'_, Brc721TokenInCollection, TokenScriptOwner>
-{
-	fn insert(&mut self, key: Brc721TokenInCollection, value: TokenScriptOwner) -> redb::Result {
-		self.insert(key, value).map(|_| ())
-	}
+pub(crate) type OwnerUTXOIndex = (String, u128);
+pub(crate) type TokenBundles = (Brc721CollectionIdValue, [u8; 20], u128, u128);
 
-	fn get_value(&self, key: Brc721TokenInCollection) -> Option<TokenScriptOwner> {
-		let result = self.get(key).ok()?;
+impl_brc721_table!(Brc721CollectionIdValue, RegisterCollectionValue);
+impl_brc721_table!(Brc721TokenInCollection, TokenScriptOwner);
+impl_brc721_table!(OwnerUTXOIndex, TokenBundles);
+impl_brc721_table!(String, u128);
 
-		// Convert the AccessGuard to the expected tuple type
-		result.map(|guard| guard.value())
-	}
-}
-
-pub(crate) type RegisterCollectionValue = ([u8; COLLECTION_ADDRESS_LENGTH], bool);
-
-pub(super) struct Brc721Updater<'a, T1, T2> {
+pub(super) struct Brc721Updater<'a, T1, T2, T3, T4> {
 	pub(super) height: u32,
 	pub(super) collection_table: &'a mut T1,
 	pub(super) token_owners: &'a mut T2,
+	pub(super) token_by_owner: &'a mut T3,
+	pub(super) tokens_for_owner: &'a mut T4,
 }
 
-impl<T1, T2> Brc721Updater<'_, T1, T2>
+impl<T1, T2, T3, T4> Brc721Updater<'_, T1, T2, T3, T4>
 where
 	T1: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
 	T2: Brc721Table<Brc721TokenInCollection, TokenScriptOwner>,
+	T3: Brc721Table<OwnerUTXOIndex, TokenBundles>,
+	T4: Brc721Table<String, u128>,
 {
 	/// Indexes a brc721 operation from a transaction
 	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
@@ -87,7 +82,7 @@ where
 		if let Ok(register_collection) = RegisterCollection::from_script(&first_output_script) {
 			self.index_register_collections(tx_index, register_collection)?;
 		} else if let Ok(register_ownership) = first_output_script.try_into() {
-			self.index_register_ownership(tx_index, tx, register_ownership)?;
+			self.index_register_ownership(tx, register_ownership)?;
 		}
 
 		Ok(())
@@ -110,7 +105,6 @@ where
 	/// Transaction.
 	fn index_register_ownership(
 		&mut self,
-		tx_index: u32,
 		tx: &Transaction,
 		register_ownership: RegisterOwnership,
 	) -> Result<()> {
@@ -137,6 +131,14 @@ where
 
 		for (index, slot_bundle) in register_ownership.slots_bundles.into_iter().enumerate() {
 			for slot_range in slot_bundle.0.into_iter() {
+				let owner_bytes = tx.output[index + 1].clone().script_pubkey.into_bytes();
+				let hex_encoded_owner = hex::encode(&owner_bytes);
+				let slot_range_owned_by_owner =
+					self.tokens_for_owner.get_value(hex_encoded_owner.clone()).unwrap_or(0);
+
+				let slot_start = *slot_range.start();
+				let slot_end = *slot_range.end();
+
 				for slot in slot_range {
 					let mut slot_bytes = [0u8; 12];
 					slot_bytes.copy_from_slice(&slot.to_le_bytes()[..12]);
@@ -144,13 +146,20 @@ where
 					if self.token_owners.get_value((token_id, collection_id_value)).is_some() {
 						return Err(anyhow::anyhow!(format!(
 							"Token {:?} already registered",
-							token_id
+							(token_id, collection_id_value)
 						)));
 					}
 
-					let owner_bytes = tx.output[index + 1].clone().script_pubkey.into_bytes();
-					self.token_owners.insert((token_id, collection_id_value), owner_bytes)?;
+					self.token_owners
+						.insert((token_id, collection_id_value), owner_bytes.clone())?;
 				}
+
+				self.token_by_owner.insert(
+					(hex_encoded_owner.clone(), slot_range_owned_by_owner),
+					(collection_id_value, h160_address.0, slot_start, slot_end),
+				)?;
+
+				self.tokens_for_owner.insert(hex_encoded_owner, slot_range_owned_by_owner + 1)?;
 			}
 		}
 
@@ -165,39 +174,25 @@ mod tests {
 	use sp_core::H160;
 	use std::collections::HashMap;
 
-	impl Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>
-		for HashMap<Brc721CollectionIdValue, RegisterCollectionValue>
-	{
-		fn insert(
-			&mut self,
-			key: Brc721CollectionIdValue,
-			value: RegisterCollectionValue,
-		) -> redb::Result<()> {
-			HashMap::insert(self, key, value);
-			Ok(())
-		}
+	macro_rules! impl_brc721_table_hashmap {
+		($K: ty, $V: ty) => {
+			impl Brc721Table<$K, $V> for HashMap<$K, $V> {
+				fn insert(&mut self, key: $K, value: $V) -> redb::Result<()> {
+					HashMap::insert(self, key, value);
+					Ok(())
+				}
 
-		fn get_value(&self, key: Brc721CollectionIdValue) -> Option<RegisterCollectionValue> {
-			self.get(&key).copied()
-		}
+				fn get_value(&self, key: $K) -> Option<$V> {
+					self.get(&key).cloned()
+				}
+			}
+		};
 	}
 
-	impl Brc721Table<Brc721TokenInCollection, TokenScriptOwner>
-		for HashMap<Brc721TokenInCollection, TokenScriptOwner>
-	{
-		fn insert(
-			&mut self,
-			key: Brc721TokenInCollection,
-			value: TokenScriptOwner,
-		) -> redb::Result<()> {
-			HashMap::insert(self, key, value);
-			Ok(())
-		}
-
-		fn get_value(&self, key: Brc721TokenInCollection) -> Option<TokenScriptOwner> {
-			self.get(&key).cloned()
-		}
-	}
+	impl_brc721_table_hashmap!(Brc721CollectionIdValue, RegisterCollectionValue);
+	impl_brc721_table_hashmap!(Brc721TokenInCollection, TokenScriptOwner);
+	impl_brc721_table_hashmap!(OwnerUTXOIndex, TokenBundles);
+	impl_brc721_table_hashmap!(String, u128);
 
 	const COLLECTION_ADDRESS: [u8; COLLECTION_ADDRESS_LENGTH] = [0x2A; COLLECTION_ADDRESS_LENGTH];
 
@@ -281,11 +276,15 @@ mod tests {
 
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
 
 		let tx = brc721_register_collection_tx(expected_rebaseable);
@@ -306,13 +305,16 @@ mod tests {
 		let expected_height = 100u32;
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
 
 		let mut updater = Brc721Updater {
 			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
-
 		let tx_index = 5;
 		let tx = empty_tx();
 
@@ -327,10 +329,15 @@ mod tests {
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
 
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
+
 		let mut updater = Brc721Updater {
 			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
 
 		let transactions = [
@@ -362,13 +369,18 @@ mod tests {
 
 	#[test]
 	fn index_register_ownership_for_not_registered_collection() {
+		let expected_height = 100;
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
 
 		let mut updater = Brc721Updater {
-			height: 100u32,
+			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
 
 		let transactions = [(
@@ -386,17 +398,25 @@ mod tests {
 		}
 
 		assert_eq!(token_owners, HashMap::new());
+		assert_eq!(tokens_for_owner, HashMap::new());
+		assert_eq!(token_by_owner, HashMap::new());
 	}
 
 	#[test]
 	fn index_register_ownership_with_incorrect_number_of_outputs() {
+		let expected_height = 100;
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
 
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
+
 		let mut updater = Brc721Updater {
-			height: 100u32,
+			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
 
 		let transactions = [
@@ -417,19 +437,26 @@ mod tests {
 		}
 
 		assert_eq!(token_owners, HashMap::new());
+		assert_eq!(tokens_for_owner, HashMap::new());
+		assert_eq!(token_by_owner, HashMap::new());
 	}
 
 	#[test]
 	fn index_register_ownership_with_invalid_input() {
+		let expected_height = 100;
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
 
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
+
 		let mut updater = Brc721Updater {
-			height: 100u32,
+			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
-
 		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
 		let owner_address =
 			Address::from_str(addr_str).unwrap().require_network(Network::Bitcoin).unwrap();
@@ -459,17 +486,26 @@ mod tests {
 		}
 
 		assert_eq!(token_owners, HashMap::new());
+
+		assert_eq!(tokens_for_owner, HashMap::new());
+		assert_eq!(token_by_owner, HashMap::new());
 	}
 
 	#[test]
 	fn index_register_ownership_already_registered_ownership() {
+		let expected_height = 100;
 		let mut id_to_collection = HashMap::new();
 		let mut token_owners = HashMap::new();
 
+		let mut tokens_for_owner = HashMap::new();
+		let mut token_by_owner = HashMap::new();
+
 		let mut updater = Brc721Updater {
-			height: 100u32,
+			height: expected_height,
 			collection_table: &mut id_to_collection,
 			token_owners: &mut token_owners,
+			tokens_for_owner: &mut tokens_for_owner,
+			token_by_owner: &mut token_by_owner,
 		};
 
 		let addr_str = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";

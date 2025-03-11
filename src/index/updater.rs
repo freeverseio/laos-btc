@@ -26,7 +26,8 @@ use tokio::sync::{
 };
 
 pub(crate) use brc721_updater::{
-	Brc721TokenInCollection, RegisterCollectionValue, TokenScriptOwner,
+	Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue, TokenBundles,
+	TokenScriptOwner,
 };
 
 mod brc721_updater;
@@ -405,10 +406,16 @@ impl Updater<'_> {
 
 			let mut brc721_token_to_owner = wtx.open_table(BRC721_TOKEN_TO_OWNER)?;
 
+			let mut brc721_utxo_to_token_id = wtx.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
+
+			let mut brc721_tokens_for_owner = wtx.open_table(BRC721_TOKENS_FOR_OWNER)?;
+
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
 				token_owners: &mut brc721_token_to_owner,
+				token_by_owner: &mut brc721_utxo_to_token_id,
+				tokens_for_owner: &mut brc721_tokens_for_owner,
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {
