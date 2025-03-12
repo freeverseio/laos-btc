@@ -111,6 +111,44 @@ fn create_wallet(core: &mockcore::Handle, ord: &TestServer) {
 		.run_and_extract_stdout();
 }
 
+fn create_brc721_wallet(core: &mockcore::Handle, ord: &TestServer, name: &str) {
+	CommandBuilder::new(format!("--chain {} wallet --brc721 --name {} restore --from descriptor", core.network(), name))
+      .stdin(r#"
+{
+  "wallet_name": "bar",
+  "descriptors": [
+    {
+    	"desc": "wpkh([1bd99ea6/84h/1h/0h]tpubDCBg5D4XDJtgRtFFQNTBUZAqWLCeQDrgXPkvKirFrCXREmX38bHYUUTMT7xVeyzTcgYp7dfZ4RnAScTKNf5h9VmN65aiYizyAzhRYQMvoM9/0/*)#d0v92la2",
+        "timestamp": 1741691061,
+        "active": true,
+        "internal": false,
+        "range": [
+            0,
+            999
+        ],
+        "next": 0,
+        "next_index": 0
+    },
+    {
+        "desc": "wpkh([1bd99ea6/84h/1h/0h]tpubDCBg5D4XDJtgRtFFQNTBUZAqWLCeQDrgXPkvKirFrCXREmX38bHYUUTMT7xVeyzTcgYp7dfZ4RnAScTKNf5h9VmN65aiYizyAzhRYQMvoM9/1/*)#umfyh2dj",
+        "timestamp": 1741691061,
+        "active": true,
+        "internal": true,
+        "range": [
+            0,
+            999
+        ],
+        "next": 0,
+        "next_index": 0
+    }
+  ]
+}"#.into())
+		.core(core)
+		.ord(ord)
+		.stdout_regex(".*")
+		.run_and_extract_stdout();
+}
+
 fn sats(
 	core: &mockcore::Handle,
 	ord: &TestServer,

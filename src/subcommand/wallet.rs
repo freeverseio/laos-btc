@@ -15,7 +15,10 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use crate::wallet::{batch, wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet};
+use crate::wallet::{
+	batch, wallet_brc721_constructor::WalletBrc721Constructor,
+	wallet_constructor::WalletConstructor, ListDescriptorsResult, Wallet,
+};
 use shared_args::SharedArgs;
 
 pub mod addresses;
@@ -51,6 +54,8 @@ pub(crate) struct WalletCommand {
 	pub(crate) no_sync: bool,
 	#[arg(long, help = "Use ord running at <SERVER_URL>. [default: http://localhost:80]")]
 	pub(crate) server_url: Option<Url>,
+	#[arg(long, help = "Activate brc721 wallet [default: false]")]
+	brc721: bool,
 	#[command(subcommand)]
 	pub(crate) subcommand: Subcommand,
 }
@@ -108,6 +113,28 @@ pub(crate) enum Subcommand {
 
 impl WalletCommand {
 	pub(crate) fn run(self, settings: Settings) -> SubcommandResult {
+		if self.brc721 {
+			match self.subcommand {
+				Subcommand::Restore(restore) => return restore.run_brc721(self.name, &settings),
+				Subcommand::Brc721(brc721) => {
+					let wallet = WalletBrc721Constructor::construct(
+						self.name.clone(),
+						self.no_sync,
+						settings.clone(),
+						self.server_url
+							.as_ref()
+							.map(Url::as_str)
+							.or(settings.server_url())
+							.unwrap_or("http://127.0.0.1:80")
+							.parse::<Url>()
+							.context("invalid server URL")?,
+					)?;
+					return brc721.run(wallet);
+				},
+				_ => bail!("Only restore and brc721 commands are supported with --brc721 flag"),
+			}
+		}
+
 		match self.subcommand {
 			Subcommand::Create(create) => return create.run(self.name, &settings),
 			Subcommand::Restore(restore) => return restore.run(self.name, &settings),
@@ -131,7 +158,9 @@ impl WalletCommand {
 			Subcommand::Addresses => addresses::run(wallet),
 			Subcommand::Balance => balance::run(wallet),
 			Subcommand::Batch(batch) => batch.run(wallet),
-			Subcommand::Brc721(brc721) => brc721.run(wallet),
+			Subcommand::Brc721(_) => {
+				bail!("brc721 subcommand should be used with --brc721 wallet flag")
+			},
 			Subcommand::Burn(burn) => burn.run(wallet),
 			Subcommand::Cardinals => cardinals::run(wallet),
 			Subcommand::Create(_) | Subcommand::Restore(_) => unreachable!(),

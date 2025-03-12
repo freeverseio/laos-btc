@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::wallet_brc721::WalletBrc721;
+
 use super::*;
 
 #[derive(Debug, Clone)]
@@ -92,6 +94,40 @@ impl Restore {
 						.0,
 				)?;
 			},
+		}
+
+		Ok(None)
+	}
+
+	pub(crate) fn run_brc721(self, name: String, settings: &Settings) -> SubcommandResult {
+		ensure!(
+			!settings
+				.bitcoin_rpc_client(None)?
+				.list_wallet_dir()?
+				.iter()
+				.any(|wallet_name| wallet_name == &name),
+			"wallet `{}` already exists",
+			name
+		);
+
+		let mut buffer = String::new();
+
+		match self.from {
+			Source::Descriptor => {
+				io::stdin().read_to_string(&mut buffer)?;
+
+				ensure!(self.passphrase.is_none(), "descriptor does not take a passphrase");
+
+				ensure!(self.timestamp.is_none(), "descriptor does not take a timestamp");
+
+				let wallet_descriptors: ListDescriptorsResult = serde_json::from_str(&buffer)?;
+				WalletBrc721::initialize_from_descriptors(
+					name,
+					settings,
+					wallet_descriptors.descriptors,
+				)?;
+			},
+			Source::Mnemonic => bail!("Only descriptor source is supported for brc721 wallets"),
 		}
 
 		Ok(None)

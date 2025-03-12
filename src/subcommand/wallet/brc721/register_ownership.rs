@@ -40,7 +40,7 @@ pub struct Output {
 }
 
 impl RegisterOwnershipCmd {
-	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
+	pub(crate) fn run(self, wallet: WalletBrc721) -> SubcommandResult {
 		let file = File::load(&self.file)?;
 
 		log::debug!("Registering ownership for collection: {}", file.collection_id,);

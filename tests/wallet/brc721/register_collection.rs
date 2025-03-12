@@ -11,12 +11,14 @@ fn register_collection_returns_tx_id() {
 
 	core.mine_blocks(1);
 
-	create_wallet(&core, &ord);
+	let wallet_name = "brc721-wallet";
+	create_brc721_wallet(&core, &ord, wallet_name);
 
 	let alice = H160::from_slice(&[0; 20]);
 
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
+		"--regtest wallet --brc721 --name {} brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
+		wallet_name,
 		alice
 	))
 	.core(&core)
@@ -42,13 +44,14 @@ fn rebaseable_is_false_by_default() {
 
 	core.mine_blocks(1);
 
-	create_wallet(&core, &ord);
+	let wallet_name = "brc721-wallet";
+	create_brc721_wallet(&core, &ord, wallet_name);
 
 	let alice = format!("{:x}", H160::from_slice(&[0; 20]));
 
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet brc721 register-collection --fee-rate 1 --address {}",
-		alice
+		"--regtest wallet --brc721 --name {} brc721 register-collection --fee-rate 1 --address {}",
+		wallet_name, alice
 	))
 	.core(&core)
 	.ord(&ord)
@@ -71,12 +74,14 @@ fn register_collection_command_indexer_integration() {
 
 	core.mine_blocks(1);
 
-	create_wallet(&core, &ord);
+	let wallet_name = "brc721-wallet";
+	create_brc721_wallet(&core, &ord, wallet_name);
 
 	let alice = H160::from_slice(&[0; 20]);
 
 	CommandBuilder::new(format!(
-		"--regtest wallet brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
+		"--regtest wallet --brc721 --name {} brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
+		wallet_name,
 		alice
 	))
 	.core(&core)

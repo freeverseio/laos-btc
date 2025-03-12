@@ -37,6 +37,7 @@ use transaction_builder::TransactionBuilder;
 pub mod batch;
 pub mod entry;
 pub mod transaction_builder;
+pub mod wallet_brc721_constructor;
 pub mod wallet_constructor;
 
 const SCHEMA_VERSION: u64 = 1;
@@ -168,6 +169,10 @@ impl Wallet {
 
 	pub(crate) fn locked_utxos(&self) -> &BTreeMap<OutPoint, TxOut> {
 		&self.locked_utxos
+	}
+
+	pub(crate) fn settings(&self) -> &Settings {
+		&self.settings
 	}
 
 	pub(crate) fn lock_non_cardinal_outputs(&self) -> Result {
@@ -1022,41 +1027,6 @@ impl Wallet {
 		}
 
 		Ok(unsigned_transaction)
-	}
-
-	pub(crate) fn build_brc721_tx<T: Into<ScriptBuf>>(
-		&self,
-		tx: T,
-		fee_rate: FeeRate,
-		postage: Postage,
-	) -> Result<Transaction> {
-		ensure!(
-			self.has_brc721_index(),
-			"creating brc721 collections with `laos-btc wallet brc721 rc` requires index created with `--index-brc721` flag",
-		);
-
-		self.lock_non_cardinal_outputs()?;
-
-		let unfunded_tx = Transaction {
-			version: Version(2),
-			lock_time: LockTime::ZERO,
-			input: vec![],
-			output: vec![
-				TxOut { value: Amount::from_sat(0), script_pubkey: tx.into() },
-				TxOut { value: postage.amount, script_pubkey: postage.destination.script_pubkey() },
-			],
-		};
-
-		let unsigned_transaction =
-			fund_raw_transaction(self.bitcoin_client(), fee_rate, &unfunded_tx)?;
-
-		let signed_transaction = self
-			.bitcoin_client()
-			.sign_raw_transaction_with_wallet(&unsigned_transaction, None, None)?
-			.hex;
-		let signed_transaction = consensus::encode::deserialize(&signed_transaction)?;
-
-		Ok(signed_transaction)
 	}
 }
 

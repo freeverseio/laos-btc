@@ -48,7 +48,7 @@ pub struct Output {
 }
 
 impl RegisterCollectionCmd {
-	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
+	pub(crate) fn run(self, wallet: WalletBrc721) -> SubcommandResult {
 		let destination = wallet.get_change_address()?;
 
 		let postage = calculate_postage(self.postage, destination)?;

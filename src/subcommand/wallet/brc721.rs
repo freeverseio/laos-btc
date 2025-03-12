@@ -15,7 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use crate::wallet::Wallet;
+use crate::wallet_brc721::WalletBrc721;
 
 pub mod register_collection;
 pub mod register_ownership;
@@ -36,7 +36,7 @@ pub(crate) enum Subcommand {
 }
 
 impl Brc721Command {
-	pub(crate) fn run(self, wallet: Wallet) -> SubcommandResult {
+	pub(crate) fn run(self, wallet: WalletBrc721) -> SubcommandResult {
 		match self.subcommand {
 			Subcommand::RegisterCollection(register) => register.run(wallet),
 			Subcommand::RegisterOwnership(cmd) => cmd.run(wallet),
