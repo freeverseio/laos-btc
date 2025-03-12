@@ -45,6 +45,7 @@ pub use brc721::{
 	operations::{Brc721Operation, BRC721_INIT_CODE},
 	register_collection::{RegisterCollection, COLLECTION_ADDRESS_LENGTH},
 	register_ownership::{RegisterOwnership, SlotsBundle},
+	token::Brc721Token,
 };
 pub use cenotaph::Cenotaph;
 pub use charm::Charm;

@@ -24,8 +24,8 @@ use self::{
 	lot::Lot,
 	reorg::Reorg,
 	updater::{
-		Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue, TokenBundles,
-		TokenScriptOwner, Updater,
+		Brc721TokenId, Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue,
+		TokenBundles, TokenScriptOwner, Updater,
 	},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
@@ -1121,6 +1121,50 @@ impl Index {
 		});
 
 		Ok(converted_result)
+	}
+
+	pub fn get_brc721_token_by_id(
+		&self,
+		collection_id: Brc721CollectionId,
+		token_id: Brc721TokenId,
+	) -> Result<Option<Brc721Token>> {
+		let maybe_collection = self.get_brc721_collection_by_id(collection_id)?;
+		if let Some(collection) = maybe_collection {
+			let res = self
+				.database
+				.begin_read()?
+				.open_table(BRC721_TOKEN_TO_OWNER)?
+				.get((token_id, (collection.id.block, collection.id.tx)))?;
+			match res {
+				None => return Ok(Some(Brc721Token::new(Some(token_id.1.into()), None))),
+				Some(g) => {
+					let owner = hex::encode(g.value());
+					let mut utxo_index = 0;
+					let mut extended_token_id = [0u8; 16];
+					extended_token_id.copy_from_slice(&token_id.0);
+					let token_id_slot = u128::from_le_bytes(extended_token_id);
+
+					while let Some(res) = self
+						.database
+						.begin_read()?
+						.open_table(BRC721_UTXO_TO_TOKEN_ID)?
+						.get((owner.clone(), utxo_index))?
+					{
+						let token_bundle: TokenBundles = res.value();
+						if (collection.id.block, collection.id.tx) == token_bundle.0 &&
+							token_id.1 == token_bundle.1 &&
+							token_id_slot >= token_bundle.3 &&
+							token_id_slot <= token_bundle.4
+						{
+							// TODO return utxo_id
+						}
+						utxo_index += 1;
+					}
+					// TODO return H160
+				},
+			}
+		}
+		Ok(None)
 	}
 
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {

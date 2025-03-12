@@ -260,6 +260,7 @@ impl Server {
 				.route("/update", get(Self::update))
 				.route("/brc721/collections", get(Self::brc721_collections))
 				.route("/brc721/collection/:collection_id", get(Self::brc721_collection))
+				.route("/brc721/token/:collection_id/:token_id", get(Self::brc721_token))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1905,6 +1906,10 @@ impl Server {
 
 		// Return the JSON response as an HTTP response.
 		Ok(Json(response_data).into_response())
+	}
+
+	async fn brc721_token() {
+		// TODO implement me
 	}
 
 	async fn inscriptions_paginated(

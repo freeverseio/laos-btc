@@ -72,8 +72,8 @@ use html_escaper::{Escape, Trusted};
 use http::{HeaderMap, StatusCode};
 use lazy_static::lazy_static;
 use ordinals::{
-	varint, Artifact, Brc721Collection, Brc721CollectionId, Charm, Edict, Epoch, Etching, Height,
-	Pile, Rarity, Rune, RuneId, Runestone, Sat, SatPoint, SpacedRune, Terms,
+	varint, Artifact, Brc721Collection, Brc721CollectionId, Brc721Token, Charm, Edict, Epoch,
+	Etching, Height, Pile, Rarity, Rune, RuneId, Runestone, Sat, SatPoint, SpacedRune, Terms,
 	COLLECTION_ADDRESS_LENGTH,
 };
 use regex::Regex;

@@ -49,7 +49,7 @@ pub(crate) type Brc721TokenInCollection = (Brc721TokenId, Brc721CollectionIdValu
 pub(crate) type TokenScriptOwner = Vec<u8>;
 
 pub(crate) type OwnerUTXOIndex = (String, u128);
-pub(crate) type TokenBundles = (Brc721CollectionIdValue, [u8; 20], u128, u128);
+pub(crate) type TokenBundles = (Brc721CollectionIdValue, [u8; 20], u32, u128, u128, u128);
 
 impl_brc721_table!(Brc721CollectionIdValue, RegisterCollectionValue);
 impl_brc721_table!(Brc721TokenInCollection, TokenScriptOwner);
@@ -85,7 +85,7 @@ where
 		if let Ok(register_collection) = RegisterCollection::from_script(&first_output_script) {
 			self.index_register_collections(tx_index, register_collection)?;
 		} else if let Ok(register_ownership) = first_output_script.try_into() {
-			self.index_register_ownership(tx, register_ownership)?;
+			self.index_register_ownership(tx, tx_index, register_ownership)?;
 		}
 
 		Ok(())
@@ -109,6 +109,7 @@ where
 	fn index_register_ownership(
 		&mut self,
 		tx: &Transaction,
+		tx_index: u32,
 		register_ownership: RegisterOwnership,
 	) -> Result<()> {
 		let collection_id_value =
@@ -159,7 +160,14 @@ where
 
 				self.token_by_owner.insert(
 					(hex_encoded_owner.clone(), slot_range_owned_by_owner),
-					(collection_id_value, h160_address.0, slot_start, slot_end),
+					(
+						collection_id_value,
+						h160_address.0,
+						tx_index,
+						(index + 1) as u128,
+						slot_start,
+						slot_end,
+					),
 				)?;
 
 				self.tokens_for_owner.insert(hex_encoded_owner, slot_range_owned_by_owner + 1)?;
@@ -438,7 +446,7 @@ mod tests {
 		let hex_encoded_owner = hex::encode(owner_address.script_pubkey());
 		assert_eq!(
 			token_by_owner.get(&(hex_encoded_owner.clone(), 0)).unwrap(),
-			&((100u64, 1u32), h160_signer.0, 0u128, 3u128)
+			&((100u64, 1u32), h160_signer.0, 2, 1u128, 0u128, 3u128)
 		);
 
 		assert_eq!(*tokens_for_owner.get(&hex_encoded_owner).unwrap(), 2u128);
