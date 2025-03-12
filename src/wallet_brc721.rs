@@ -27,7 +27,7 @@ pub(crate) struct WalletBrc721<'a> {
 
 impl<'a> WalletBrc721<'a> {
 	pub(crate) fn bitcoin_client(&self) -> &Client {
-		&self.inner.bitcoin_client()
+		self.inner.bitcoin_client()
 	}
 
 	pub(crate) fn lock_non_cardinal_outputs(&self) -> Result {
