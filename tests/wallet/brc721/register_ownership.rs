@@ -4,9 +4,10 @@ use ordinals::brc721::{
 	address_mapping,
 	register_ownership::{RegisterOwnership, SlotsBundle},
 };
+use sp_core::H160;
 
 #[test]
-fn using_fixtures_file() {
+fn fixtures_file() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
@@ -25,7 +26,7 @@ fn using_fixtures_file() {
 		.ord(&ord)
 		.run_and_deserialize_output::<receive::Output>();
 
-	let recipient = output
+	let initial_owner = output
 		.addresses
 		.first()
 		.unwrap()
@@ -33,11 +34,14 @@ fn using_fixtures_file() {
 		.require_network(Network::Regtest)
 		.unwrap();
 	assert_eq!(
-		recipient.to_string(),
+		initial_owner.to_string(),
 		"bcrt1pswcsgefgmts0esvgvw0hx3w3xf68ce8yf9tmsgu5ltlj5kmrcjlqd402f3"
 	);
-	let recipìent_h160 = address_mapping::btc_address_to_h160(recipient).unwrap();
-	assert_eq!(recipìent_h160.to_string(), "0x0000000000000000000000000000000000000000"); // WIP esta address vendrá del fichero
+	let initial_owner_h160 = address_mapping::btc_address_to_h160(initial_owner.clone()).unwrap();
+	assert_eq!(
+		initial_owner_h160,
+		H160::from_slice(&hex::decode("e2638d8108b08814460a11d1cdffbcee0b19f7b3").unwrap())
+	);
 
 	let balances = CommandBuilder::new("--regtest wallet --name test balance")
 		.core(&core)
@@ -52,7 +56,7 @@ fn using_fixtures_file() {
 	let file_path =
 		format!("{}/tests/fixtures/brc721_register_ownership.yml", env!("CARGO_MANIFEST_DIR"));
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet brc721 register-ownership --fee-rate 1 --file {}",
+		"--regtest wallet --name test brc721 register-ownership --fee-rate 1 --file {}",
 		file_path
 	))
 	.core(&core)
@@ -87,15 +91,27 @@ fn using_fixtures_file() {
 	// UTXO 2
 	assert!(core.state().is_wallet_address(
 		&Address::from_script(&tx.output[2].script_pubkey, Network::Regtest).unwrap()
-	)); // TODO check if recipient is also the owner (not only the wallet)
-	 // UTXO 3
+	));
+	assert_eq!(
+		Address::from_script(&tx.output[2].script_pubkey, Network::Regtest)
+			.unwrap()
+			.to_string(),
+		initial_owner.to_string()
+	);
+	// UTXO 3
 	assert!(core.state().is_wallet_address(
 		&Address::from_script(&tx.output[3].script_pubkey, Network::Regtest).unwrap()
-	)); // TODO check if recipient is also the owner (not only the wallet)
+	));
+	assert_eq!(
+		Address::from_script(&tx.output[3].script_pubkey, Network::Regtest)
+			.unwrap()
+			.to_string(),
+		initial_owner.to_string()
+	);
 }
 
 #[test]
-fn invalid_address() {
+fn invalid_recipient() {
 	let core = mockcore::builder().network(Network::Regtest).build();
 
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
@@ -105,10 +121,29 @@ fn invalid_address() {
 	create_wallet(&core, &ord);
 
 	CommandBuilder::new("--regtest wallet brc721 register-ownership --fee-rate 1 --file tmp.yml")
-	.write("tmp.yml", "collection_id: 300:1\noutputs:\n  - slots_bundle: [[0]]\n    owner: 1BitcoinEaterAddressDontSendf59kuE")
+	.write("tmp.yml", "collection_id: 300:1\ninitial_owner: bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae\noutputs:\n  - slots_bundle: [[0]]\n    recipient: 1BitcoinEaterAddressDontSendf59kuE")
 	.core(&core)
 	.ord(&ord)
 	.stderr_regex("(?s).*address 1BitcoinEaterAddressDontSendf59kuE is not valid on regtest.*")
+		.expected_exit_code(1)
+		.run_and_extract_stdout();
+}
+
+#[test]
+fn invalid_initial_owner() {
+	let core = mockcore::builder().network(Network::Regtest).build();
+
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
+
+	core.mine_blocks(1);
+
+	create_wallet(&core, &ord);
+
+	CommandBuilder::new("--regtest wallet brc721 register-ownership --fee-rate 1 --file tmp.yml")
+	.write("tmp.yml", "collection_id: 300:1\ninitial_owner: bc1p0zp08hxlum5p5ghmf3qsjvk3q0my3jqwmzq2zz04hpqykmh0mvlq35z3xd\noutputs:\n  - slots_bundle: [[0]]\n    recipient: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
+	.core(&core)
+	.ord(&ord)
+	.stderr_regex("(?s).*address bc1p0zp08hxlum5p5ghmf3qsjvk3q0my3jqwmzq2zz04hpqykmh0mvlq35z3xd is not valid on regtest.*")
 		.expected_exit_code(1)
 		.run_and_extract_stdout();
 }
@@ -124,10 +159,10 @@ fn insufficient_utxos() {
 	create_wallet(&core, &ord);
 
 	CommandBuilder::new("--regtest wallet brc721 register-ownership --fee-rate 1 --file tmp.yml")
-	.write("tmp.yml", "collection_id: 300:1\noutputs:\n  - slots_bundle: [[0]]\n    owner: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
+	.write("tmp.yml", "collection_id: 300:1\ninitial_owner: bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae\noutputs:\n  - slots_bundle: [[0]]\n    recipient: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
 	.core(&core)
 	.ord(&ord)
-	.stderr_regex("(?s).*address 1BitcoinEaterAddressDontSendf59kuE is not valid on regtest.*")
+	.stderr_regex("(?s).*error: No available UTXOs found for address bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae.*")
 		.expected_exit_code(1)
 		.run_and_extract_stdout();
 }

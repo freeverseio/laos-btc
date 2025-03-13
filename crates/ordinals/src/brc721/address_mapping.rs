@@ -1,8 +1,8 @@
 use bitcoin::{Address, Network, WitnessProgram, WitnessVersion};
 use bitcoin_hashes::{hash160::Hash as BTCH160, Hash};
+use ripemd::{Digest, Ripemd160};
 use sp_core::H160;
 use thiserror::Error;
-
 /// Custom error type for errors related to the address mapping.
 #[derive(Debug, Error, PartialEq)]
 pub enum AddressMappingError {
@@ -15,6 +15,14 @@ pub fn btc_address_to_h160(address: Address) -> Result<H160, AddressMappingError
 	if let Some(program) = address.witness_program() {
 		if program.is_p2wpkh() {
 			let h160_bytes: Vec<u8> = program.program().as_bytes().to_vec();
+			return Ok(H160::from_slice(&h160_bytes));
+		}
+
+		if program.is_p2tr() {
+			let pubkey = program.program().as_bytes();
+			let mut hasher = Ripemd160::new();
+			hasher.update(pubkey);
+			let h160_bytes = hasher.finalize();
 			return Ok(H160::from_slice(&h160_bytes));
 		}
 	} else {
@@ -95,6 +103,24 @@ mod tests {
 		let back_address = h160_to_btc_address(h160, Network::Bitcoin, false)
 			.expect("Valid H160 should be mapped back to P2PKH");
 		assert_eq!(address, back_address);
+	}
+
+	#[test]
+	fn p2tr_conversion() {
+		let addr_str = "bcrt1pswcsgefgmts0esvgvw0hx3w3xf68ce8yf9tmsgu5ltlj5kmrcjlqd402f3";
+		let address =
+			Address::from_str(addr_str).unwrap().require_network(Network::Regtest).unwrap();
+
+		let expected_h160 =
+			H160::from_slice(&hex::decode("e2638d8108b08814460a11d1cdffbcee0b19f7b3").unwrap());
+
+		let h160 = btc_address_to_h160(address.clone())
+			.expect("Valid P2TR address should be mapped correctly");
+		assert_eq!(h160, expected_h160);
+
+		let back_address = h160_to_btc_address(h160, Network::Regtest, false)
+			.expect("Valid H160 should be mapped back to P2TR");
+		assert!(address != back_address);
 	}
 
 	#[test]

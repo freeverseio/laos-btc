@@ -1085,7 +1085,7 @@ impl Wallet {
 		let unfunded_tx = Transaction {
 			version: Version(2),
 			lock_time: LockTime::ZERO,
-			input: cardinal_utxos
+			input: cardinal_utxos // TODO put only what I need
 				.into_iter()
 				.map(|outpoint| TxIn {
 					previous_output: outpoint,
@@ -1137,12 +1137,10 @@ impl Wallet {
 			})
 			.filter(|(output, _)| {
 				!inscribed_utxos.contains(output) && !runic_utxos.contains(output) // TODO filter out brc721
-				                                                        // outputs
+				                                                       // outputs
 			})
 			.map(|(output, _)| *output)
 			.collect::<Vec<_>>();
-
-		println!("cardinal_utxos: {:?}", cardinal_utxos);
 
 		Ok(cardinal_utxos)
 	}
