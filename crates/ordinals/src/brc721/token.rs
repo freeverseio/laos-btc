@@ -3,13 +3,13 @@ use sp_core::H160;
 use crate::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721Token {
 	pub owner: Option<H160>,
 	pub utxo_id: Option<UtxoId>,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UtxoId {
 	pub tx_idx: u32,
 	pub tx_out_idx: u128,
@@ -29,7 +29,7 @@ impl fmt::Display for Brc721Token {
 		} else if let Some(utxo_id) = &self.utxo_id {
 			write!(f, "{} - {} - {}", utxo_id.tx_idx, utxo_id.tx_out_idx, utxo_id.utxo_idx)
 		} else {
-			write!(f, "")
+			write!(f, "unexisting collection")
 		}
 	}
 }
