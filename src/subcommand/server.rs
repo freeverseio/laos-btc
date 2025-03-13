@@ -45,6 +45,7 @@ use rustls_acme::{
 	caches::DirCache,
 	AcmeConfig,
 };
+use sp_core::U256;
 use std::{str, sync::Arc};
 use tokio_stream::StreamExt;
 use tower_http::{
@@ -1908,8 +1909,28 @@ impl Server {
 		Ok(Json(response_data).into_response())
 	}
 
-	async fn brc721_token() {
-		// TODO implement me
+	async fn brc721_token(
+		Extension(_server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		Path(collection_id): Path<Brc721CollectionId>,
+		Path(token_id): Path<String>,
+	) -> ServerResult {
+		// check if token_id is a valid number
+		let num = U256::from_str(&token_id)
+			.map_err(|_| ServerError::BadRequest("token_id is not a valid number".to_string()))?
+			.to_big_endian();
+
+		let mut slot = [0u8; 12];
+		slot.copy_from_slice(&num[..12]);
+		let mut owner = [0u8; 20];
+		owner.copy_from_slice(&num[12..]);
+		let token_id = (slot, owner);
+
+		let token = index
+			.get_brc721_token_by_id(collection_id, token_id)?
+			.ok_or_else(|| ServerError::Internal(anyhow!("internal server error")))?;
+		let resp = serde_json::to_value(token).unwrap();
+		Ok(Json(resp).into_response())
 	}
 
 	async fn inscriptions_paginated(

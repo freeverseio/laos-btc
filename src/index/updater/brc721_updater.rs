@@ -77,7 +77,7 @@ where
 	/// Indexes a brc721 operation from a transaction
 	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		if tx.output.is_empty() {
-			return Ok(())
+			return Ok(());
 		}
 
 		let first_output_script = tx.output[0].clone().script_pubkey;
