@@ -164,6 +164,12 @@ pub trait Api {
 		address_type: Option<bitcoincore_rpc::json::AddressType>,
 	) -> Result<Address, jsonrpc_core::Error>;
 
+	#[rpc(name = "getaddressinfo")]
+	fn get_address_info(
+		&self,
+		address: Address<NetworkUnchecked>,
+	) -> Result<GetAddressInfoResult, jsonrpc_core::Error>;
+
 	#[rpc(name = "getdescriptorinfo")]
 	fn get_descriptor_info(
 		&self,

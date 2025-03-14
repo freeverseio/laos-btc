@@ -17,7 +17,7 @@
 use super::*;
 use base64::Engine;
 use bitcoin::{consensus::Decodable, opcodes, psbt::Psbt, script::Instruction, Witness};
-use bitcoincore_rpc::json::StringOrStringArray;
+use bitcoincore_rpc::json::{GetAddressInfoResult, StringOrStringArray};
 
 pub(crate) struct Server {
 	pub(crate) state: Arc<Mutex<State>>,
@@ -792,6 +792,35 @@ impl Api for Server {
 		_address_type: Option<bitcoincore_rpc::json::AddressType>,
 	) -> Result<Address, jsonrpc_core::Error> {
 		Ok(self.state().new_address(true))
+	}
+
+	fn get_address_info(
+		&self,
+		address: Address<NetworkUnchecked>,
+	) -> Result<GetAddressInfoResult, jsonrpc_core::Error> {
+		#[allow(deprecated)]
+		Ok(GetAddressInfoResult {
+			is_mine: Some(self.state().is_wallet_address(&address.clone().assume_checked())),
+			address: address.clone(),
+			script_pub_key: address.assume_checked().script_pubkey(),
+			embedded: None,
+			hd_key_path: None,
+			label: None,
+			n_signatures_required: None,
+			hd_seed_id: None,
+			pubkey: None,
+			pubkeys: None,
+			is_compressed: None,
+			timestamp: None,
+			labels: vec![],
+			is_watchonly: None,
+			is_script: None,
+			is_witness: None,
+			witness_version: None,
+			witness_program: None,
+			script: None,
+			hex: None,
+		})
 	}
 
 	fn get_descriptor_info(
