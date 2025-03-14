@@ -8,5 +8,5 @@ bitcoind:
   storage:
     size: 100Gi
 laosbtc:
-  debug: true
+  logLever: debug
   host: "localhost"  # Localhost for testing
