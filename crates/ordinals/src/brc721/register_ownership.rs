@@ -11,7 +11,8 @@ use crate::{
 
 use super::{
 	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
-	operations::{Brc721Operation, BRC721_INIT_CODE, BRC721_OPERATION_LENGTH},
+	operations::{Brc721Operation, BRC721_OPERATION_LENGTH},
+	BRC721_INIT_CODE,
 };
 
 #[derive(Clone, PartialEq, Debug)]
