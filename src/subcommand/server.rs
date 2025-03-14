@@ -21,12 +21,12 @@ use self::{
 };
 use super::*;
 use crate::templates::{
-	AddressHtml, BlockHtml, BlocksHtml, Brc721CollectionsHtml, ChildrenHtml, ClockSvg,
-	CollectionsHtml, HomeHtml, InputHtml, InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml,
-	OutputHtml, PageContent, PageHtml, ParentsHtml, PreviewAudioHtml, PreviewCodeHtml,
-	PreviewFontHtml, PreviewImageHtml, PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml,
-	PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RareTxt, RuneHtml, RuneNotFoundHtml,
-	RunesHtml, SatHtml, TransactionHtml,
+	AddressHtml, BlockHtml, BlocksHtml, Brc721CollectionsHtml, Brc721TokenHtml, ChildrenHtml,
+	ClockSvg, CollectionsHtml, HomeHtml, InputHtml, InscriptionHtml, InscriptionsBlockHtml,
+	InscriptionsHtml, OutputHtml, PageContent, PageHtml, ParentsHtml, PreviewAudioHtml,
+	PreviewCodeHtml, PreviewFontHtml, PreviewImageHtml, PreviewMarkdownHtml, PreviewModelHtml,
+	PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RareTxt, RuneHtml,
+	RuneNotFoundHtml, RunesHtml, SatHtml, TransactionHtml,
 };
 use axum::{
 	body,
@@ -1910,27 +1910,31 @@ impl Server {
 	}
 
 	async fn brc721_token(
-		Extension(_server_config): Extension<Arc<ServerConfig>>,
+		Extension(server_config): Extension<Arc<ServerConfig>>,
 		Extension(index): Extension<Arc<Index>>,
-		Path(collection_id): Path<Brc721CollectionId>,
-		Path(token_id): Path<String>,
+		Path((collection_id, token_id)): Path<(Brc721CollectionId, String)>,
+		AcceptJson(accept_json): AcceptJson,
 	) -> ServerResult {
 		// check if token_id is a valid number
-		let num = U256::from_str(&token_id)
+		let num = U256::from_dec_str(&token_id)
 			.map_err(|_| ServerError::BadRequest("token_id is not a valid number".to_string()))?
-			.to_big_endian();
+			.to_little_endian();
 
 		let mut slot = [0u8; 12];
 		slot.copy_from_slice(&num[..12]);
-		let mut owner = [0u8; 20];
+		let mut owner: [u8; 20] = [0u8; 20];
 		owner.copy_from_slice(&num[12..]);
 		let token_id = (slot, owner);
 
-		let token = index
+		let entry = index
 			.get_brc721_token_by_id(collection_id, token_id)?
-			.ok_or_else(|| ServerError::Internal(anyhow!("internal server error")))?;
-		let resp = serde_json::to_value(token).unwrap();
-		Ok(Json(resp).into_response())
+			.ok_or_else(|| ServerError::NotFound(Brc721Token::default().to_string()))?;
+
+		Ok(if accept_json {
+			Json(Brc721TokenHtml { entry }).into_response()
+		} else {
+			Brc721TokenHtml { entry }.page(server_config).into_response()
+		})
 	}
 
 	async fn inscriptions_paginated(
@@ -2125,8 +2129,10 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
+	use crate::templates::Brc721TokenHtml;
+
 	use super::*;
-	use ordinals::RegisterCollection;
+	use ordinals::{brc721::token::UtxoId, RegisterCollection, RegisterOwnership, SlotsBundle};
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
 	use sp_core::H160;
@@ -6954,6 +6960,137 @@ next
 			"/output/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:123",
 			StatusCode::NOT_FOUND,
 			"output 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:123 not found",
+		);
+	}
+
+	#[test]
+	fn brc721_no_token() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+		server.assert_response(
+			"/brc721/token/1:1/1234",
+			StatusCode::NOT_FOUND,
+			&Brc721Token::default().to_string(),
+		);
+	}
+
+	#[test]
+	fn brc721_malformed_token_id() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+		server.assert_response(
+			"/brc721/token/1:1/absolutelynobrownm&ms",
+			StatusCode::BAD_REQUEST,
+			"token_id is not a valid number",
+		);
+	}
+
+	#[test]
+	fn brc721_not_registered_token() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.to_script()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		let ro = RegisterOwnership {
+			collection_id: Brc721CollectionId { block: 2, tx: 1 },
+			slots_bundles: vec![SlotsBundle(vec![(0..=3)])],
+		};
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[(1, 0, 0, Default::default())],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(ro.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_html(
+			"/brc721/token/2:1/1234",
+			Brc721TokenHtml {
+				entry: Brc721Token::new(
+					Some(H160::from_str("0000000000000000000000000000000000001234").unwrap()),
+					None,
+				),
+			},
+		);
+	}
+
+	#[test]
+	fn brc721_registered_token() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.to_script()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		let ro = RegisterOwnership {
+			collection_id: Brc721CollectionId { block: 2, tx: 1 },
+			slots_bundles: vec![SlotsBundle(vec![(0..=3)])],
+		};
+
+		let pubkey_hex = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+		let pubkey_bytes = hex::decode(pubkey_hex).unwrap();
+		let signature = vec![0x30, 0x45, 0x02, 0x21];
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[(1, 0, 0, vec![signature, pubkey_bytes.clone()].into())],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(ro.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		let token_id_parts = (
+			[3u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			H160::from_str("751e76e8199196d454941c45d1b3a323f1433bd6").unwrap().0,
+		);
+
+		let mut raw_token_id = [0u8; 32];
+		raw_token_id[..12].copy_from_slice(&token_id_parts.0);
+		raw_token_id[12..].copy_from_slice(&token_id_parts.1);
+
+		let expected_token_id = U256::from_little_endian(&raw_token_id);
+
+		server.assert_html(
+			format!("/brc721/token/2:1/{expected_token_id}"),
+			Brc721TokenHtml {
+				entry: Brc721Token::new(
+					None,
+					Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 0 }),
+				),
+			},
 		);
 	}
 

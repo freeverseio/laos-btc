@@ -1148,7 +1148,7 @@ impl Index {
 		let mut utxo_index = 0;
 
 		let mut extended_token_id = [0u8; 16];
-		extended_token_id.copy_from_slice(&token_id.0);
+		extended_token_id[..12].copy_from_slice(&token_id.0);
 		let token_id_slot = u128::from_le_bytes(extended_token_id);
 
 		let utxo_table = db_read.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
@@ -1157,8 +1157,8 @@ impl Index {
 
 			if collection_key == token_bundle.0 &&
 				token_id.1 == token_bundle.1 &&
-				token_id_slot >= token_bundle.3 &&
-				token_id_slot <= token_bundle.4
+				token_id_slot >= token_bundle.4 &&
+				token_id_slot <= token_bundle.5
 			{
 				return Ok(Some(Brc721Token::new(
 					None,

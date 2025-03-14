@@ -49,6 +49,10 @@ pub(crate) type Brc721TokenInCollection = (Brc721TokenId, Brc721CollectionIdValu
 pub(crate) type TokenScriptOwner = Vec<u8>;
 
 pub(crate) type OwnerUTXOIndex = (String, u128);
+// u32  (token_bundle.2) is the tx_index
+// u128 (token_bundle.3) is the tx output index
+// u128 (token_bundle.4) is the slot start
+// u128 (token_bundle.5) is the slot end
 pub(crate) type TokenBundles = (Brc721CollectionIdValue, [u8; 20], u32, u128, u128, u128);
 
 impl_brc721_table!(Brc721CollectionIdValue, RegisterCollectionValue);
