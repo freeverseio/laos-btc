@@ -344,7 +344,11 @@ impl Updater<'_> {
 			wtx.open_table(INSCRIPTION_ID_TO_SEQUENCE_NUMBER)?;
 		let mut statistic_to_count = wtx.open_table(STATISTIC_TO_COUNT)?;
 
-		if self.index.index_inscriptions || self.index.index_addresses || self.index.index_sats {
+		if self.index.index_inscriptions ||
+			self.index.index_addresses ||
+			self.index.index_sats ||
+			self.index.index_brc721
+		{
 			self.index_utxo_entries(
 				&block,
 				txout_receiver,
