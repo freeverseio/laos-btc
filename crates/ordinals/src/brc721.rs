@@ -23,10 +23,7 @@ pub fn is_brc721_script(script: &ScriptBuf) -> bool {
 	}
 
 	// Check for the next instruction to see if it matches the BRC721 initialization code.
-	match instructions.next() {
-		Some(Ok(Instruction::Op(op))) if op == BRC721_INIT_CODE => true,
-		_ => false,
-	}
+	matches!(instructions.next(), Some(Ok(Instruction::Op(op))) if op == BRC721_INIT_CODE)
 }
 
 /// Tests for the BRC721 script functions.
