@@ -106,7 +106,8 @@ impl State {
 	}
 
 	#[track_caller]
-	pub(crate) fn mine_block(&mut self, subsidy: u64) -> Block {
+	pub(crate) fn mine_block_to(&mut self, subsidy: u64, address: Option<Address>) -> Block {
+		let address = if let Some(address) = address { address } else { self.new_address(false) };
 		let coinbase = Transaction {
 			version: Version(2),
 			lock_time: LockTime::ZERO,
@@ -141,7 +142,7 @@ impl State {
 							fee
 						})
 						.sum::<Amount>(),
-				script_pubkey: self.new_address(false).into(),
+				script_pubkey: address.into(),
 			}],
 		};
 

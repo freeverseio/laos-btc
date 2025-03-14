@@ -1062,7 +1062,7 @@ impl Wallet {
 	pub(crate) fn build_brc721_register_ownership_tx(
 		&self,
 		tx: RegisterOwnership,
-		receivers: Vec<Address>,
+		recipients: Vec<Address>,
 		initial_owner: Address,
 		fee_rate: FeeRate,
 		postage: Postage,
@@ -1097,9 +1097,9 @@ impl Wallet {
 			output: {
 				let mut output =
 					vec![TxOut { value: Amount::from_sat(0), script_pubkey: tx.clone().into() }];
-				output.extend(receivers.iter().map(|owner| TxOut {
+				output.extend(recipients.iter().map(|recipient| TxOut {
 					value: postage.amount,
-					script_pubkey: owner.script_pubkey(),
+					script_pubkey: recipient.script_pubkey(),
 				}));
 				output
 			},
@@ -1117,7 +1117,7 @@ impl Wallet {
 		Ok(signed_transaction)
 	}
 
-	fn get_cardinal_utxos(&self, owner: Address) -> Result<Vec<OutPoint>> {
+	fn get_cardinal_utxos(&self, who: Address) -> Result<Vec<OutPoint>> {
 		let inscribed_utxos = self
 			.inscriptions()
 			.keys()
@@ -1132,7 +1132,7 @@ impl Wallet {
 			.filter(|(_, txout)| {
 				self.chain()
 					.address_from_script(&txout.script_pubkey)
-					.map(|addr| addr == owner)
+					.map(|addr| addr == who)
 					.unwrap_or(false)
 			})
 			.filter(|(output, _)| {

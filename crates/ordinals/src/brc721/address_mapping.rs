@@ -1,6 +1,5 @@
 use bitcoin::{Address, Network, WitnessProgram, WitnessVersion};
 use bitcoin_hashes::{hash160::Hash as BTCH160, Hash};
-use ripemd::{Digest, Ripemd160};
 use sp_core::H160;
 use thiserror::Error;
 /// Custom error type for errors related to the address mapping.
@@ -20,10 +19,8 @@ pub fn btc_address_to_h160(address: Address) -> Result<H160, AddressMappingError
 
 		if program.is_p2tr() {
 			let pubkey = program.program().as_bytes();
-			let mut hasher = Ripemd160::new();
-			hasher.update(pubkey);
-			let h160_bytes = hasher.finalize();
-			return Ok(H160::from_slice(&h160_bytes));
+			let hash: BTCH160 = BTCH160::hash(pubkey);
+			return Ok(H160::from_slice(hash.as_byte_array()));
 		}
 	} else {
 		let script_pubkey = address.script_pubkey();
@@ -112,7 +109,7 @@ mod tests {
 			Address::from_str(addr_str).unwrap().require_network(Network::Regtest).unwrap();
 
 		let expected_h160 =
-			H160::from_slice(&hex::decode("e2638d8108b08814460a11d1cdffbcee0b19f7b3").unwrap());
+			H160::from_slice(&hex::decode("4e7b5ee0272b429056a8c7de8d464c67aa17facf").unwrap());
 
 		let h160 = btc_address_to_h160(address.clone())
 			.expect("Valid P2TR address should be mapped correctly");

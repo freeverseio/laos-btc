@@ -250,11 +250,31 @@ impl Handle {
 	}
 
 	#[track_caller]
+	pub fn mine_blocks_to(&self, n: u64, address: Address) -> Vec<Block> {
+		self.mine_blocks_with_subsidy_to(n, 50 * COIN_VALUE, address)
+	}
+
+	#[track_caller]
 	pub fn mine_blocks_with_subsidy(&self, n: u64, subsidy: u64) -> Vec<Block> {
 		let mut bitcoin_rpc_data = self.state();
 		let mut blocks = Vec::new();
 		for _ in 0..n {
-			blocks.push(bitcoin_rpc_data.mine_block(subsidy));
+			blocks.push(bitcoin_rpc_data.mine_block_to(subsidy, None));
+		}
+		blocks
+	}
+
+	#[track_caller]
+	pub fn mine_blocks_with_subsidy_to(
+		&self,
+		n: u64,
+		subsidy: u64,
+		address: Address,
+	) -> Vec<Block> {
+		let mut bitcoin_rpc_data = self.state();
+		let mut blocks = Vec::new();
+		for _ in 0..n {
+			blocks.push(bitcoin_rpc_data.mine_block_to(subsidy, Some(address.clone())));
 		}
 		blocks
 	}

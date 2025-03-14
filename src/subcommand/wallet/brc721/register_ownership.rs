@@ -47,17 +47,17 @@ impl RegisterOwnershipCmd {
 		let file = File::load(&self.file)?;
 
 		let mut slots_bundles = Vec::<SlotsBundle>::new();
-		let mut owners = Vec::<Address>::new();
+		let mut recipients = Vec::<Address>::new();
 
 		let initial_owner = file.initial_owner.clone().require_network(wallet.chain().into())?;
 
 		for output in file.outputs {
 			slots_bundles.push(output.slots_bundle.clone());
-			let owner = match &output.recipient {
-				Some(owner) => owner.clone().require_network(wallet.chain().into())?,
-				None => wallet.get_change_address().unwrap(),
+			let recipient = match &output.recipient {
+				Some(recipient) => recipient.clone().require_network(wallet.chain().into())?,
+				None => initial_owner.clone(),
 			};
-			owners.push(owner);
+			recipients.push(recipient);
 		}
 
 		let postage = calculate_postage(self.postage, wallet.get_change_address()?)?;
@@ -67,7 +67,7 @@ impl RegisterOwnershipCmd {
 
 		let bitcoin_tx = wallet.build_brc721_register_ownership_tx(
 			register_ownership,
-			owners,
+			recipients,
 			initial_owner,
 			self.fee_rate,
 			postage,

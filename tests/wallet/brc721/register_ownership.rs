@@ -9,11 +9,11 @@ use sp_core::H160;
 #[test]
 fn fixtures_file() {
 	let core = mockcore::builder().network(Network::Regtest).build();
-
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
 
 	core.mine_blocks(1);
 
+	// Restore `test` wallet
 	let mnemonic = "taste pole august obvious estate hurry illness bread match farm ready indicate"
 		.to_string();
 	CommandBuilder::new(["--regtest", "wallet", "--name", "test", "restore", "--from", "mnemonic"])
@@ -21,6 +21,7 @@ fn fixtures_file() {
 		.core(&core)
 		.run_and_extract_stdout();
 
+	// Get initial owner address
 	let output = CommandBuilder::new("--regtest wallet --name test receive")
 		.core(&core)
 		.ord(&ord)
@@ -33,6 +34,7 @@ fn fixtures_file() {
 		.clone()
 		.require_network(Network::Regtest)
 		.unwrap();
+
 	assert_eq!(
 		initial_owner.to_string(),
 		"bcrt1pswcsgefgmts0esvgvw0hx3w3xf68ce8yf9tmsgu5ltlj5kmrcjlqd402f3"
@@ -40,19 +42,13 @@ fn fixtures_file() {
 	let initial_owner_h160 = address_mapping::btc_address_to_h160(initial_owner.clone()).unwrap();
 	assert_eq!(
 		initial_owner_h160,
-		H160::from_slice(&hex::decode("e2638d8108b08814460a11d1cdffbcee0b19f7b3").unwrap())
+		H160::from_slice(&hex::decode("4e7b5ee0272b429056a8c7de8d464c67aa17facf").unwrap())
 	);
 
-	let balances = CommandBuilder::new("--regtest wallet --name test balance")
-		.core(&core)
-		.ord(&ord)
-		.expected_exit_code(0)
-		.stdout_regex(".*")
-		.run_and_extract_stdout();
-	let balances: serde_json::Value = serde_json::from_str(&balances).unwrap();
-	let cardinal_balance = balances["cardinal"].as_u64().unwrap();
-	assert!(cardinal_balance > 0, "Cardinal balance should be greater than 0");
+	// Fund initial owner address
+	core.mine_blocks_to(3, initial_owner.clone());
 
+	// Call register ownership
 	let file_path =
 		format!("{}/tests/fixtures/brc721_register_ownership.yml", env!("CARGO_MANIFEST_DIR"));
 	let output = CommandBuilder::new(format!(
@@ -98,16 +94,10 @@ fn fixtures_file() {
 			.to_string(),
 		initial_owner.to_string()
 	);
-	// UTXO 3
+	// UTXO 3 (postage)
 	assert!(core.state().is_wallet_address(
 		&Address::from_script(&tx.output[3].script_pubkey, Network::Regtest).unwrap()
 	));
-	assert_eq!(
-		Address::from_script(&tx.output[3].script_pubkey, Network::Regtest)
-			.unwrap()
-			.to_string(),
-		initial_owner.to_string()
-	);
 }
 
 #[test]
