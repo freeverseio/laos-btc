@@ -8,4 +8,5 @@ bitcoind:
   storage:
     size: 100Gi
 laosbtc:
+  logLevel: debug
   host: dev.ord.gorengine.com

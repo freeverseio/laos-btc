@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::RegisterCollection;
+use ordinals::{brc721::is_brc721_script, RegisterCollection};
 
 use super::*;
 
@@ -59,9 +59,15 @@ where
 
 		// the protocol specify the first output has to be the register collection
 		let first_output: TxOut = tx.output[0].clone();
+		let script = first_output.script_pubkey;
+
+		// early return if the script is not a BRC721 script.
+		if !is_brc721_script(&script) {
+			return Ok(());
+		}
 
 		// Decode the register collection from the first output's script public key.
-		match RegisterCollection::from_script(&first_output.script_pubkey) {
+		match RegisterCollection::from_script(&script) {
 			Ok(register_collection) => {
 				self.collection_table.insert(
 					(self.height.into(), tx_index),

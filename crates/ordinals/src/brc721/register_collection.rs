@@ -1,4 +1,7 @@
-use crate::brc721::operations::{Brc721Operation, BRC721_INIT_CODE, BRC721_OPERATION_LENGTH};
+use crate::brc721::{
+	operations::{Brc721Operation, BRC721_OPERATION_LENGTH},
+	BRC721_INIT_CODE,
+};
 use bitcoin::{
 	opcodes,
 	script::{self},
