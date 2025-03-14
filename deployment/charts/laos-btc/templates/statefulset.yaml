@@ -23,8 +23,6 @@ spec:
         args:
           - --data-dir
           - /data
-          - --index-sats
-          - --index-runes
           - --index-brc721
           - --no-index-inscriptions 
           - --bitcoin-rpc-url
