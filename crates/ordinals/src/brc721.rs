@@ -17,9 +17,9 @@ pub fn is_brc721_script(script: &ScriptBuf) -> bool {
 	let mut instructions = script.instructions().peekable();
 
 	// Expect the first instruction to be OP_RETURN, which signals the start of a script.
-	match instructions.next() {
-		Some(Ok(Instruction::Op(op))) if op == bitcoin::opcodes::all::OP_RETURN => (),
-		_ => return false, // If it's not OP_RETURN, return false.
+	if !matches!(instructions.next(), Some(Ok(Instruction::Op(op))) if op == bitcoin::opcodes::all::OP_RETURN)
+	{
+		return false; // If it's not OP_RETURN, return false.
 	}
 
 	// Check for the next instruction to see if it matches the BRC721 initialization code.
