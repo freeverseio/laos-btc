@@ -23,7 +23,10 @@ use self::{
 	event::Event,
 	lot::Lot,
 	reorg::Reorg,
-	updater::{RegisterCollectionValue, Updater},
+	updater::{
+		Brc721TokenId, Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue,
+		TokenBundles, TokenScriptOwner, Updater,
+	},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
 use super::*;
@@ -40,6 +43,7 @@ use bitcoincore_rpc::{
 use chrono::SubsecRound;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
+use ordinals::brc721::token::UtxoId;
 use redb::{
 	Database, DatabaseError, MultimapTable, MultimapTableDefinition, MultimapTableHandle,
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
@@ -60,7 +64,7 @@ mod fetcher;
 mod lot;
 mod reorg;
 mod rtx;
-mod updater;
+pub mod updater;
 mod utxo_entry;
 
 #[cfg(test)]
@@ -89,6 +93,10 @@ define_table! { TRANSACTION_ID_TO_RUNE, &TxidValue, u128 }
 define_table! { TRANSACTION_ID_TO_TRANSACTION, &TxidValue, &[u8] }
 define_table! { WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP, u32, u128 }
 define_table! { BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE, Brc721CollectionIdValue, RegisterCollectionValue }
+define_table! { BRC721_TOKEN_TO_OWNER, Brc721TokenInCollection, TokenScriptOwner}
+define_table! { BRC721_UTXO_TO_TOKEN_ID, OwnerUTXOIndex, TokenBundles }
+define_table! { BRC721_TOKENS_FOR_OWNER, String, u128 }
+define_table! { BRC721_UNSPENT_UTXOS, (), Vec<TokenScriptOwner> }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
@@ -1114,6 +1122,57 @@ impl Index {
 		});
 
 		Ok(converted_result)
+	}
+
+	pub fn get_brc721_token_by_id(
+		&self,
+		collection_id: Brc721CollectionId,
+		token_id: Brc721TokenId,
+	) -> Result<Option<Brc721Token>> {
+		let maybe_collection = self.get_brc721_collection_by_id(collection_id)?;
+		if maybe_collection.is_none() {
+			return Ok(None);
+		}
+
+		let collection = maybe_collection.unwrap();
+		let collection_key = (collection.id.block, collection.id.tx);
+		let db_read = self.database.begin_read()?;
+
+		let res = db_read.open_table(BRC721_TOKEN_TO_OWNER)?.get((token_id, collection_key))?;
+
+		if res.is_none() {
+			return Ok(Some(Brc721Token::new(Some(token_id.1.into()), None)));
+		}
+
+		let owner = hex::encode(res.unwrap().value());
+		let mut utxo_index = 0;
+
+		let mut extended_token_id = [0u8; 16];
+		extended_token_id.copy_from_slice(&token_id.0);
+		let token_id_slot = u128::from_le_bytes(extended_token_id);
+
+		let utxo_table = db_read.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
+		while let Some(res) = utxo_table.get((owner.clone(), utxo_index))? {
+			let token_bundle: TokenBundles = res.value();
+
+			if collection_key == token_bundle.0 &&
+				token_id.1 == token_bundle.1 &&
+				token_id_slot >= token_bundle.3 &&
+				token_id_slot <= token_bundle.4
+			{
+				return Ok(Some(Brc721Token::new(
+					None,
+					Some(UtxoId {
+						tx_idx: token_bundle.2,
+						tx_out_idx: token_bundle.3,
+						utxo_idx: utxo_index,
+					}),
+				)));
+			}
+			utxo_index += 1;
+		}
+
+		Ok(Some(Brc721Token::new(Some(H160::from_slice(&token_id.1)), None)))
 	}
 
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {

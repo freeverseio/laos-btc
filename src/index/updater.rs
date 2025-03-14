@@ -25,7 +25,10 @@ use tokio::sync::{
 	mpsc::{self},
 };
 
-pub(crate) use brc721_updater::RegisterCollectionValue;
+pub(crate) use brc721_updater::{
+	Brc721TokenId, Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue, TokenBundles,
+	TokenScriptOwner,
+};
 
 mod brc721_updater;
 mod inscription_updater;
@@ -405,13 +408,25 @@ impl Updater<'_> {
 			let mut brc721_collection_id_to_brc721_collection_value =
 				wtx.open_table(BRC721_COLLECTION_ID_TO_BRC721_COLLECTION_VALUE)?;
 
+			let mut brc721_token_to_owner = wtx.open_table(BRC721_TOKEN_TO_OWNER)?;
+
+			let mut brc721_utxo_to_token_id = wtx.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
+
+			let mut brc721_tokens_for_owner = wtx.open_table(BRC721_TOKENS_FOR_OWNER)?;
+
+			let mut brc721_unspent_utxos = wtx.open_table(BRC721_UNSPENT_UTXOS)?;
+
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
 				collection_table: &mut brc721_collection_id_to_brc721_collection_value,
+				token_owners: &mut brc721_token_to_owner,
+				token_by_owner: &mut brc721_utxo_to_token_id,
+				tokens_for_owner: &mut brc721_tokens_for_owner,
+				unspent_utxos: &mut brc721_unspent_utxos,
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {
-				brc721_collection_updater.index_collections(u32::try_from(i).unwrap(), tx)?;
+				brc721_collection_updater.index_brc721(u32::try_from(i).unwrap(), tx)?;
 			}
 		}
 
