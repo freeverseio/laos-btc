@@ -141,18 +141,54 @@ fn invalid_initial_owner() {
 #[test]
 fn insufficient_utxos() {
 	let core = mockcore::builder().network(Network::Regtest).build();
-
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
-
-	core.mine_blocks(1);
-
 	create_wallet(&core, &ord);
+
+	let output = CommandBuilder::new("--regtest wallet receive")
+		.core(&core)
+		.ord(&ord)
+		.run_and_deserialize_output::<receive::Output>();
+
+	let initial_owner = output
+		.addresses
+		.first()
+		.unwrap()
+		.clone()
+		.require_network(Network::Regtest)
+		.unwrap();
+
+	assert!(core.state().is_wallet_address(&initial_owner));
+	assert_eq!(
+		initial_owner.to_string(),
+		"bcrt1phe7th6w2q6na0v4p0345la9ctvmze0xhacvhpk4xdha2sdxltxsqtkttl7"
+	);
+
+	CommandBuilder::new("--regtest wallet brc721 register-ownership --fee-rate 1 --file tmp.yml")
+	.write("tmp.yml", "collection_id: 300:1\ninitial_owner: bcrt1phe7th6w2q6na0v4p0345la9ctvmze0xhacvhpk4xdha2sdxltxsqtkttl7\noutputs:\n  - slots_bundle: [[0]]\n    recipient: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
+	.core(&core)
+	.ord(&ord)
+	.stderr_regex("(?s).*error: No available UTXOs found for address bcrt1phe7th6w2q6na0v4p0345la9ctvmze0xhacvhpk4xdha2sdxltxsqtkttl7.*")
+		.expected_exit_code(1)
+		.run_and_extract_stdout();
+}
+
+#[test]
+fn initial_owner_not_in_wallet() {
+	let core = mockcore::builder().network(Network::Regtest).build();
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
+	create_wallet(&core, &ord);
+
+	assert!(!core.state().is_wallet_address(
+		&Address::from_str("bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae")
+			.unwrap()
+			.assume_checked()
+	));
 
 	CommandBuilder::new("--regtest wallet brc721 register-ownership --fee-rate 1 --file tmp.yml")
 	.write("tmp.yml", "collection_id: 300:1\ninitial_owner: bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae\noutputs:\n  - slots_bundle: [[0]]\n    recipient: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
 	.core(&core)
 	.ord(&ord)
-	.stderr_regex("(?s).*error: No available UTXOs found for address bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae.*")
+	.stderr_regex("(?s).*error: initial owner address bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae is not controlled by wallet.*")
 		.expected_exit_code(1)
 		.run_and_extract_stdout();
 }

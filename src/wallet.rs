@@ -308,6 +308,13 @@ impl Wallet {
 			.require_network(self.chain().network())?)
 	}
 
+	pub(crate) fn is_wallet_address(&self, address: &Address) -> Result<bool> {
+		let address_info = self
+			.bitcoin_client()
+			.call::<serde_json::Value>("getaddressinfo", &[address.to_string().into()])?;
+		Ok(address_info.get("ismine").and_then(|v| v.as_bool()).unwrap_or(false))
+	}
+
 	pub(crate) fn has_brc721_index(&self) -> bool {
 		self.has_brc721_index
 	}
@@ -1074,18 +1081,21 @@ impl Wallet {
 
 		self.lock_non_cardinal_outputs()?;
 
+		ensure!(
+			self.is_wallet_address(&initial_owner)?,
+			"initial owner address {} is not controlled by wallet",
+			initial_owner
+		);
+
 		let cardinal_utxos = self.get_cardinal_utxos(initial_owner.clone())?;
 		if cardinal_utxos.is_empty() {
 			return Err(anyhow!("No available UTXOs found for address {}", initial_owner));
 		}
 
-		// TODO check that address included in file belongs to wallet: initial owner is not
-		// controlled by wallet
-
 		let unfunded_tx = Transaction {
 			version: Version(2),
 			lock_time: LockTime::ZERO,
-			input: cardinal_utxos // TODO put only what I need
+			input: cardinal_utxos
 				.into_iter()
 				.map(|outpoint| TxIn {
 					previous_output: outpoint,
@@ -1136,8 +1146,7 @@ impl Wallet {
 					.unwrap_or(false)
 			})
 			.filter(|(output, _)| {
-				!inscribed_utxos.contains(output) && !runic_utxos.contains(output) // TODO filter out brc721
-				                                                       // outputs
+				!inscribed_utxos.contains(output) && !runic_utxos.contains(output)
 			})
 			.map(|(output, _)| *output)
 			.collect::<Vec<_>>();

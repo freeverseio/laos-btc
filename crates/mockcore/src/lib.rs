@@ -36,14 +36,14 @@ use bitcoin::{
 };
 use bitcoincore_rpc::json::{
 	Bip125Replaceable, CreateRawTransactionInput, EstimateMode, FeeRatePercentiles,
-	FinalizePsbtResult, GetBalancesResult, GetBalancesResultEntry, GetBlockHeaderResult,
-	GetBlockStatsResult, GetBlockchainInfoResult, GetDescriptorInfoResult, GetNetworkInfoResult,
-	GetRawTransactionResult, GetRawTransactionResultVout, GetRawTransactionResultVoutScriptPubKey,
-	GetTransactionResult, GetTransactionResultDetail, GetTransactionResultDetailCategory,
-	GetTxOutResult, GetWalletInfoResult, ImportDescriptors, ImportMultiResult,
-	ListTransactionResult, ListUnspentResultEntry, ListWalletDirItem, ListWalletDirResult,
-	LoadWalletResult, SignRawTransactionInput, SignRawTransactionResult, Timestamp,
-	WalletProcessPsbtResult, WalletTxInfo,
+	FinalizePsbtResult, GetAddressInfoResult, GetBalancesResult, GetBalancesResultEntry,
+	GetBlockHeaderResult, GetBlockStatsResult, GetBlockchainInfoResult, GetDescriptorInfoResult,
+	GetNetworkInfoResult, GetRawTransactionResult, GetRawTransactionResultVout,
+	GetRawTransactionResultVoutScriptPubKey, GetTransactionResult, GetTransactionResultDetail,
+	GetTransactionResultDetailCategory, GetTxOutResult, GetWalletInfoResult, ImportDescriptors,
+	ImportMultiResult, ListTransactionResult, ListUnspentResultEntry, ListWalletDirItem,
+	ListWalletDirResult, LoadWalletResult, SignRawTransactionInput, SignRawTransactionResult,
+	Timestamp, WalletProcessPsbtResult, WalletTxInfo,
 };
 use jsonrpc_core::{IoHandler, Value};
 use jsonrpc_http_server::{CloseHandle, ServerBuilder};
