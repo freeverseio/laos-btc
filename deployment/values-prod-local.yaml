@@ -7,7 +7,7 @@ bitcoind:
   storage:
     size: 1500Gi
 laosbtc:
-  logLever: info
+  logLevel: info
   host: "localhost"  # Localhost for testing
   storage:
     size: 1500Gi
