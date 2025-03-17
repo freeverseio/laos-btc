@@ -142,7 +142,7 @@ mod tests {
 			],
 		};
 		let encoded = ScriptBuf::from(command.clone());
-		assert_eq!(encoded.len(), 22);
+		assert_eq!(encoded.len(), 19);
 		let decoded = RegisterOwnership::try_from(encoded).unwrap();
 		assert_eq!(command.collection_id, decoded.collection_id);
 		assert_eq!(command.slots_bundles, decoded.slots_bundles);
