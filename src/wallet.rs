@@ -308,6 +308,13 @@ impl Wallet {
 			.require_network(self.chain().network())?)
 	}
 
+	pub(crate) fn is_wallet_address(&self, address: &Address) -> Result<bool> {
+		let address_info = self
+			.bitcoin_client()
+			.call::<serde_json::Value>("getaddressinfo", &[address.to_string().into()])?;
+		Ok(address_info.get("ismine").and_then(|v| v.as_bool()).unwrap_or(false))
+	}
+
 	pub(crate) fn has_brc721_index(&self) -> bool {
 		self.has_brc721_index
 	}
@@ -1062,32 +1069,47 @@ impl Wallet {
 	pub(crate) fn build_brc721_register_ownership_tx(
 		&self,
 		tx: RegisterOwnership,
-		owners: Vec<Address>,
+		recipients: Vec<Address>,
+		initial_owner: Address,
 		fee_rate: FeeRate,
 		postage: Postage,
 	) -> Result<Transaction> {
-		// TODO
-		// aqui podria hacer un test de que el indice de los outputs coinciden con el indice de los
-		// slots y que pertenece al destination
-		// podría testear lo del sorting?
 		ensure!(
 			self.has_brc721_index(),
 			"registering brc721 ownership with `laos-btc wallet brc721 ro` requires index created with
 	`--index-brc721` flag");
 
-		// TODO lock brc721 outputs
 		self.lock_non_cardinal_outputs()?;
+
+		ensure!(
+			self.is_wallet_address(&initial_owner)?,
+			"initial owner address {} is not controlled by wallet",
+			initial_owner
+		);
+
+		let cardinal_utxos = self.get_cardinal_utxos(initial_owner.clone())?;
+		if cardinal_utxos.is_empty() {
+			return Err(anyhow!("No available UTXOs found for address {}", initial_owner));
+		}
 
 		let unfunded_tx = Transaction {
 			version: Version(2),
 			lock_time: LockTime::ZERO,
-			input: vec![],
+			input: cardinal_utxos
+				.into_iter()
+				.map(|outpoint| TxIn {
+					previous_output: outpoint,
+					script_sig: ScriptBuf::new(),
+					sequence: Sequence::MAX,
+					witness: Witness::new(),
+				})
+				.collect(),
 			output: {
 				let mut output =
 					vec![TxOut { value: Amount::from_sat(0), script_pubkey: tx.clone().into() }];
-				output.extend(owners.iter().map(|owner| TxOut {
+				output.extend(recipients.iter().map(|recipient| TxOut {
 					value: postage.amount,
-					script_pubkey: owner.script_pubkey(),
+					script_pubkey: recipient.script_pubkey(),
 				}));
 				output
 			},
@@ -1104,21 +1126,39 @@ impl Wallet {
 
 		Ok(signed_transaction)
 	}
+
+	fn get_cardinal_utxos(&self, who: Address) -> Result<Vec<OutPoint>> {
+		let inscribed_utxos = self
+			.inscriptions()
+			.keys()
+			.map(|satpoint| satpoint.outpoint)
+			.collect::<BTreeSet<OutPoint>>();
+
+		let runic_utxos = self.get_runic_outputs()?.unwrap_or_default();
+
+		let cardinal_utxos = self
+			.utxos
+			.iter()
+			.filter(|(_, txout)| {
+				self.chain()
+					.address_from_script(&txout.script_pubkey)
+					.map(|addr| addr == who)
+					.unwrap_or(false)
+			})
+			.filter(|(output, _)| {
+				!inscribed_utxos.contains(output) && !runic_utxos.contains(output)
+			})
+			.map(|(output, _)| *output)
+			.collect::<Vec<_>>();
+
+		Ok(cardinal_utxos)
+	}
 }
 
 pub struct Postage {
 	pub amount: Amount,
 	pub destination: Address,
 }
-
-// fn get_random_address() -> Address {
-// 		// Generate random key pair.
-// 		let s = Secp256k1::new();
-// 		let public_key = PublicKey::new(s.generate_keypair(&mut rand::thread_rng()).1);
-
-// 		// Generate pay-to-pubkey-hash address.
-// 		Address::p2pkh(&public_key, Network::Regtest)
-// 	}
 
 pub fn calculate_postage(postage: Option<Amount>, destination: Address) -> Result<Postage> {
 	let postage = postage.unwrap_or(TARGET_POSTAGE);

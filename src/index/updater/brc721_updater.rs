@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::{txin_to_h160, RegisterCollection, RegisterOwnership};
+use ordinals::{brc721::is_brc721_script, txin_to_h160, RegisterCollection, RegisterOwnership};
 
 use super::*;
 
@@ -85,6 +85,11 @@ where
 		}
 
 		let first_output_script = tx.output[0].clone().script_pubkey;
+
+		// early return if the script is not a BRC721 script.
+		if !is_brc721_script(&first_output_script) {
+			return Ok(());
+		}
 
 		if let Ok(register_collection) = RegisterCollection::from_script(&first_output_script) {
 			self.index_register_collections(tx_index, register_collection)?;

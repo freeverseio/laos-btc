@@ -47,15 +47,17 @@ impl RegisterOwnershipCmd {
 		let file = File::load(&self.file)?;
 
 		let mut slots_bundles = Vec::<SlotsBundle>::new();
-		let mut owners = Vec::<Address>::new();
+		let mut recipients = Vec::<Address>::new();
+
+		let initial_owner = file.initial_owner.clone().require_network(wallet.chain().into())?;
+
 		for output in file.outputs {
 			slots_bundles.push(output.slots_bundle.clone());
-			let owner = match &output.owner {
-				Some(addr) => addr.clone().assume_checked(), /* TODO improve assume_checked and */
-				// error handling
-				None => wallet.get_change_address().unwrap(), // TODO default owner
+			let recipient = match &output.recipient {
+				Some(recipient) => recipient.clone().require_network(wallet.chain().into())?,
+				None => initial_owner.clone(),
 			};
-			owners.push(owner);
+			recipients.push(recipient);
 		}
 
 		let postage = calculate_postage(self.postage, wallet.get_change_address()?)?;
@@ -65,7 +67,8 @@ impl RegisterOwnershipCmd {
 
 		let bitcoin_tx = wallet.build_brc721_register_ownership_tx(
 			register_ownership,
-			owners,
+			recipients,
+			initial_owner,
 			self.fee_rate,
 			postage,
 		)?;
@@ -81,14 +84,16 @@ pub struct File {
 	#[serde(deserialize_with = "deserialize_collection_id")]
 	pub collection_id: Brc721CollectionId,
 	pub outputs: Vec<SlotsOwnership>,
+	#[serde(deserialize_with = "deserialize_initial_owner")]
+	pub initial_owner: Address<NetworkUnchecked>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SlotsOwnership {
 	#[serde(deserialize_with = "deserialize_slots_bundle")]
 	slots_bundle: SlotsBundle,
-	#[serde(default, deserialize_with = "deserialize_owner")]
-	owner: Option<Address<NetworkUnchecked>>,
+	#[serde(default, deserialize_with = "deserialize_recipient")]
+	recipient: Option<Address<NetworkUnchecked>>,
 }
 
 impl File {
@@ -166,17 +171,26 @@ where
 	Ok(ranges)
 }
 
-fn deserialize_owner<'de, D>(deserializer: D) -> Result<Option<Address<NetworkUnchecked>>, D::Error>
+fn deserialize_recipient<'de, D>(
+	deserializer: D,
+) -> Result<Option<Address<NetworkUnchecked>>, D::Error>
 where
 	D: Deserializer<'de>,
 {
 	match Option::<String>::deserialize(deserializer)? {
-		Some(s) => {
-			// Attempt to parse the string as a Bitcoin address.
-			s.parse::<Address<NetworkUnchecked>>().map(Some).map_err(D::Error::custom)
-		},
+		Some(address) =>
+			address.parse::<Address<NetworkUnchecked>>().map(Some).map_err(D::Error::custom),
 		None => Ok(None),
 	}
+}
+
+fn deserialize_initial_owner<'de, D>(deserializer: D) -> Result<Address<NetworkUnchecked>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	String::deserialize(deserializer)?
+		.parse::<Address<NetworkUnchecked>>()
+		.map_err(D::Error::custom)
 }
 
 fn deserialize_collection_id<'de, D>(deserializer: D) -> Result<Brc721CollectionId, D::Error>
@@ -200,6 +214,7 @@ mod tests {
 			batch_file.clone(),
 			r#"
 collection_id: 1:1
+initial_owner: 1BitcoinEaterAddressDontSendf59kuE
 outputs:
 "#,
 		)
@@ -208,6 +223,26 @@ outputs:
 		assert_eq!(
 			File::load(batch_file.as_path()).unwrap_err().to_string(),
 			"register ownership file must contain at least one output"
+		);
+	}
+
+	#[test]
+	fn load_file_wrong_initial_owner() {
+		let tempdir = TempDir::new().unwrap();
+		let batch_file = tempdir.path().join("temp.yaml");
+		fs::write(
+			batch_file.clone(),
+			r#"
+collection_id: 1:1
+initial_owner: a
+outputs:
+"#,
+		)
+		.unwrap();
+
+		assert_eq!(
+			File::load(batch_file.as_path()).unwrap_err().to_string(),
+			"base58 error at line 2 column 1"
 		);
 	}
 
@@ -259,6 +294,7 @@ outputs:
 			batch_file.clone(),
 			r#"
 collection_id: 1:1
+initial_owner: 1BitcoinEaterAddressDontSendf59kuE
 outputs:
   - slots_bundle: [[0,20],[21],[20]]
 "#,
@@ -272,13 +308,14 @@ outputs:
 	}
 
 	#[test]
-	fn load_file_slot_bundle_one_element_no_owner() {
+	fn load_file_slot_bundle_one_element_no_recipient() {
 		let tempdir = TempDir::new().unwrap();
 		let batch_file = tempdir.path().join("temp.yaml");
 		fs::write(
 			batch_file.clone(),
 			r#"
 collection_id: 1:1
+initial_owner: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m
 outputs:
   - slots_bundle: [[0]]
 "#,
@@ -288,6 +325,11 @@ outputs:
 		let file = File::load(batch_file.as_path()).unwrap();
 		assert_eq!(file.outputs.len(), 1);
 		assert_eq!(file.outputs[0].slots_bundle.0.len(), 1);
+		assert_eq!(
+			file.initial_owner.clone().assume_checked().to_string(),
+			"mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m"
+		);
+		assert_eq!(file.collection_id, Brc721CollectionId::new(1, 1).unwrap());
 		let range = &file.outputs[0].slots_bundle.0[0];
 		// For a one-element range, start == end.
 		assert_eq!(range.start(), range.end());
@@ -296,7 +338,7 @@ outputs:
 	}
 
 	#[test]
-	fn load_file_slot_bundle_one_element_with_owner_wrong_address() {
+	fn load_file_slot_bundle_one_element_with_recipient_wrong_address() {
 		let tempdir = TempDir::new().unwrap();
 		let batch_file = tempdir.path().join("temp.yaml");
 		fs::write(
@@ -305,7 +347,7 @@ outputs:
 collection_id: 1:1
 outputs:
   - slots_bundle: [[0]]
-    owner: asd
+    recipient: asd
 "#,
 		)
 		.unwrap();
@@ -317,16 +359,17 @@ outputs:
 	}
 
 	#[test]
-	fn load_file_slot_bundle_one_element_with_owner() {
+	fn load_file_slot_bundle_one_element_with_recipient() {
 		let tempdir = TempDir::new().unwrap();
 		let batch_file = tempdir.path().join("temp.yaml");
 		fs::write(
 			batch_file.clone(),
 			r#"
 collection_id: 1:1
+initial_owner: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m
 outputs:
   - slots_bundle: [[0]]
-    owner: 1BitcoinEaterAddressDontSendf59kuE
+    recipient: 1BitcoinEaterAddressDontSendf59kuE
 "#,
 		)
 		.unwrap();
@@ -340,7 +383,7 @@ outputs:
 		// And the only element is 0.
 		assert_eq!(*range.start(), 0);
 		assert_eq!(
-			file.outputs[0].owner.as_ref().unwrap().clone().assume_checked().to_string(),
+			file.outputs[0].recipient.as_ref().unwrap().clone().assume_checked().to_string(),
 			"1BitcoinEaterAddressDontSendf59kuE"
 		);
 	}
@@ -353,11 +396,12 @@ outputs:
 			batch_file.clone(),
 			r#"
 collection_id: 1:1
+initial_owner: 1BitcoinEaterAddressDontSendf59kuE
 outputs:
   - slots_bundle: [[0]]
-    owner: 1BitcoinEaterAddressDontSendf59kuE
+    recipient: 1BitcoinEaterAddressDontSendf59kuE
   - slots_bundle: [[0],[2], [4,6]]
-    owner: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+    recipient: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 "#,
 		)
 		.unwrap();
@@ -365,7 +409,7 @@ outputs:
 		let file = File::load(batch_file.as_path()).unwrap();
 		assert_eq!(file.outputs.len(), 2);
 		assert_eq!(
-			file.outputs[0].owner.as_ref().unwrap().clone().assume_checked().to_string(),
+			file.outputs[0].recipient.as_ref().unwrap().clone().assume_checked().to_string(),
 			"1BitcoinEaterAddressDontSendf59kuE"
 		);
 		// OUTPUT 0
@@ -375,7 +419,7 @@ outputs:
 		assert_eq!(*bundle0.start(), 0);
 		assert_eq!(*bundle0.end(), 0);
 		assert_eq!(
-			file.outputs[1].owner.as_ref().unwrap().clone().assume_checked().to_string(),
+			file.outputs[1].recipient.as_ref().unwrap().clone().assume_checked().to_string(),
 			"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
 		);
 		// OUTPUT 1

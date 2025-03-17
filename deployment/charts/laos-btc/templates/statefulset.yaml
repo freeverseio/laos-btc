@@ -24,7 +24,6 @@ spec:
           - --data-dir
           - /data
           - --index-sats
-          - --index-runes
           - --index-brc721
           - --no-index-inscriptions 
           - --bitcoin-rpc-url
@@ -38,7 +37,7 @@ spec:
           - --http-port=8080
         env:
         - name: RUST_LOG
-          value: "debug"
+          value: {{ .Values.laosbtc.logLevel }}
 {{- if .Values.laosbtc.storage }}
         volumeMounts:
         - mountPath: /data
