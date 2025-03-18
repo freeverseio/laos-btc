@@ -17,5 +17,3 @@ impl TryFrom<u8> for Brc721Operation {
 		}
 	}
 }
-
-
