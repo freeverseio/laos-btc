@@ -42,7 +42,7 @@ mod tests {
 	fn brc721_token_display_none() {
 		let token = Brc721Token::new(None, None);
 
-		assert_eq!(format!("{}", token), "");
+		assert_eq!(format!("{}", token), "unexisting collection");
 	}
 
 	#[test]
