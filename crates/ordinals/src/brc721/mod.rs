@@ -9,11 +9,21 @@ pub use operations::Brc721Operation;
 
 use super::*;
 
-/// The opcode used to identify register collection operations.
+/// The opcode used to identify a BRC721 operation.
 pub(crate) const BRC721_INIT_SEQUENCE: [u8; 2] = [OP_RETURN.to_u8(), OP_PUSHBYTES_15.to_u8()];
 /// Constant representing the length of a collection address in bytes.
 pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 
+/// Parses and returns a Brc721Operation from a given script buffer, if valid.
+///
+/// # Arguments
+///
+/// * `script` - A reference to a ScriptBuf containing the script data.
+///
+/// # Returns
+///
+/// * An Option<Brc721Operation> which is Some(operation) if the script is valid, and None
+///   otherwise.
 pub fn get_operation(script: &ScriptBuf) -> Option<Brc721Operation> {
 	let buffer = script.as_bytes();
 
