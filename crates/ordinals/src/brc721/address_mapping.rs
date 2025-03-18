@@ -1,5 +1,5 @@
-use bitcoin::{script::Instruction, Address, Network, TxIn, WitnessProgram, WitnessVersion};
-use bitcoin_hashes::{hash160::Hash as BTCH160, ripemd160, sha256, Hash};
+use bitcoin::{Address, Network, WitnessProgram, WitnessVersion};
+use bitcoin_hashes::{hash160::Hash as BTCH160, Hash};
 use sp_core::H160;
 use thiserror::Error;
 /// Custom error type for errors related to the address mapping.
@@ -61,44 +61,6 @@ pub fn h160_to_btc_address(
 			BTCH160::from_slice(bytes).expect("H160 contains exactly 20 bytes; qed;");
 		Ok(Address::p2pkh(hash, network))
 	}
-}
-
-pub fn txin_to_h160(txin: &TxIn) -> Result<H160, AddressMappingError> {
-	// Check for segwit: P2WPKH (or P2SH-P2WPKH) should have a witness stack.
-	if !txin.witness.is_empty() {
-		// For P2WPKH the witness must contain exactly two elements.
-		if txin.witness.len() == 2 {
-			let pubkey_bytes = &txin.witness[1];
-			let sha256_hash = sha256::Hash::hash(pubkey_bytes);
-			let ripemd160_hash = ripemd160::Hash::hash(&sha256_hash.to_byte_array());
-			return Ok(H160::from_slice(&ripemd160_hash.to_byte_array()));
-		} else {
-			return Err(AddressMappingError::InvalidInput);
-		}
-	}
-
-	// If no witness is present, then expect a legacy P2PKH.
-	// The scriptSig must consist of exactly two pushes: <signature> <pubkey>
-	let instructions = txin
-		.script_sig
-		.instructions()
-		.collect::<Result<Vec<_>, _>>()
-		.map_err(|_| AddressMappingError::InvalidInput)?;
-
-	if instructions.len() != 2 {
-		return Err(AddressMappingError::InvalidInput);
-	}
-
-	// Verify that the second push is the public key.
-	let pubkey_bytes = if let Instruction::PushBytes(bytes) = instructions[1] {
-		bytes
-	} else {
-		return Err(AddressMappingError::InvalidInput);
-	};
-
-	let sha256_hash = sha256::Hash::hash(pubkey_bytes.as_bytes());
-	let ripemd160_hash = ripemd160::Hash::hash(&sha256_hash.to_byte_array());
-	Ok(H160::from_slice(&ripemd160_hash.to_byte_array()))
 }
 
 #[cfg(test)]
@@ -177,101 +139,5 @@ mod tests {
 			},
 			_ => panic!("Expected InvalidAddress error variant"),
 		}
-	}
-
-	#[test]
-	fn test_txin_to_h160_segwit() {
-		let pubkey_hex = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
-		let pubkey_bytes = hex::decode(pubkey_hex).unwrap();
-		// Dummy signature.
-		let signature = vec![0x30, 0x45, 0x02, 0x21];
-		let txin = TxIn {
-			previous_output: Default::default(),
-			script_sig: Script::new().into(),
-			sequence: bitcoin::Sequence(0xffffffff),
-			witness: vec![signature, pubkey_bytes.clone()].into(),
-		};
-
-		let h160 = txin_to_h160(&txin).expect("Valid segwit TxIn should return H160");
-		let expected_h160 =
-			H160::from_slice(&hex::decode("751e76e8199196d454941c45d1b3a323f1433bd6").unwrap());
-		assert_eq!(h160, expected_h160);
-	}
-
-	#[test]
-	fn test_txin_to_h160_legacy() {
-		let pubkey_hex = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
-		let mut pubkey_bytes = [0; 33];
-		hex::decode_to_slice(pubkey_hex, &mut pubkey_bytes).expect("The size is correct; qed;");
-		// Dummy signature.
-		let signature = [0x30, 0x45, 0x02, 0x21];
-		let script_sig =
-			Builder::new().push_slice(signature).push_slice(pubkey_bytes).into_script();
-
-		let txin = TxIn {
-			previous_output: Default::default(),
-			script_sig,
-			sequence: bitcoin::Sequence(0xffffffff),
-			witness: Witness::new(),
-		};
-
-		let h160 = txin_to_h160(&txin).expect("Valid legacy TxIn should return H160");
-		let expected_h160 =
-			H160::from_slice(&hex::decode("751e76e8199196d454941c45d1b3a323f1433bd6").unwrap());
-		assert_eq!(h160, expected_h160);
-	}
-
-	#[test]
-	fn test_txin_to_h160_segwit_invalid_witness_length() {
-		let txin = TxIn {
-			previous_output: Default::default(),
-			script_sig: Script::new().into(),
-			sequence: bitcoin::Sequence(0xffffffff),
-			witness: vec![vec![0x30, 0x45, 0x02, 0x21]].into(), // Only one element.
-		};
-
-		let err = txin_to_h160(&txin)
-			.expect_err("Expected error for segwit TxIn with invalid witness length");
-		assert_eq!(err, AddressMappingError::InvalidInput);
-	}
-
-	#[test]
-	fn test_txin_to_h160_legacy_invalid_push_count() {
-		// Create a legacy TxIn with a scriptSig that doesn't have exactly two pushes.
-		// Here, we only push a dummy signature and omit the pubkey.
-		let script_sig = Builder::new().push_slice([0x30, 0x45, 0x02, 0x21]).into_script();
-
-		let txin = TxIn {
-			previous_output: Default::default(),
-			script_sig,
-			sequence: bitcoin::Sequence(0xffffffff),
-			witness: Witness::new(),
-		};
-
-		let err = txin_to_h160(&txin)
-			.expect_err("Expected error for legacy TxIn with invalid push count");
-		assert_eq!(err, AddressMappingError::InvalidInput);
-	}
-
-	#[test]
-	fn test_txin_to_h160_legacy_invalid_push_type() {
-		// Create a legacy TxIn with a scriptSig where the second instruction is not a push of
-		// bytes. Instead of a pubkey push, we insert an opcode.
-		let signature = [0x30, 0x45, 0x02, 0x21];
-		let script_sig = Builder::new()
-            .push_slice(signature)
-            .push_opcode(OP_CHECKSIG) // Not a push bytes, should trigger an error.
-            .into_script();
-
-		let txin = TxIn {
-			previous_output: Default::default(),
-			script_sig,
-			sequence: bitcoin::Sequence(0xffffffff),
-			witness: Witness::new(),
-		};
-
-		let err =
-			txin_to_h160(&txin).expect_err("Expected error for legacy TxIn with invalid push type");
-		assert_eq!(err, AddressMappingError::InvalidInput);
 	}
 }

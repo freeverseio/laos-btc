@@ -7026,7 +7026,7 @@ next
 			"/brc721/token/2:1/1234",
 			Brc721TokenHtml {
 				entry: Brc721Token::new(
-					Some(H160::from_str("0000000000000000000000000000000000001234").unwrap()),
+					Some(H160::from_str("0000000000000000000000000000000000000000").unwrap()),
 					None,
 				),
 			},
@@ -7074,7 +7074,7 @@ next
 
 		let token_id_parts = (
 			[3u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			H160::from_str("751e76e8199196d454941c45d1b3a323f1433bd6").unwrap().0,
+			H160::from_str("422dd7fc22339593e95681d096b2399cd4be9df2").unwrap().0,
 		);
 
 		let mut raw_token_id = [0u8; 32];

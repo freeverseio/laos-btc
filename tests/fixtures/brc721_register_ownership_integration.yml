@@ -1,0 +1,6 @@
+collection_id: 2:1
+initial_owner: bcrt1p45w7v40vaqfau777nmc455zsrrqhq58vxn95uetf4689ls4gw0qqshyhzw
+outputs:
+  - slots_bundle: [[0, 3], [4, 10]]
+    recipient: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m
+  - slots_bundle: [[340282366920938463463374607431768211455]] # by default no recipient means initial owner

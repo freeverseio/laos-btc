@@ -1,10 +1,20 @@
 use super::*;
-use ord::subcommand::wallet::{brc721::register_ownership, receive};
-use ordinals::brc721::{
-	address_mapping,
-	register_ownership::{RegisterOwnership, SlotsBundle},
+use ord::{
+	subcommand::wallet::{
+		brc721::{register_collection, register_ownership},
+		receive,
+	},
+	templates::{Brc721CollectionsHtml, Brc721TokenHtml},
 };
-use sp_core::H160;
+use ordinals::{
+	brc721::{
+		address_mapping,
+		register_ownership::{RegisterOwnership, SlotsBundle},
+		token::UtxoId,
+	},
+	Brc721Collection, Brc721Token,
+};
+use sp_core::{H160, U256};
 
 #[test]
 fn fixtures_file() {
@@ -191,4 +201,111 @@ fn initial_owner_not_in_wallet() {
 	.stderr_regex("(?s).*error: initial owner address bcrt1pe3p3nce9x258cuttetd4jl5f7398xge4mmafs3kxcfuqvuxec8rq63wsae is not controlled by wallet.*")
 		.expected_exit_code(1)
 		.run_and_extract_stdout();
+}
+
+#[test]
+fn register_ownership_command_indexer_integration() {
+	let core = mockcore::builder().network(Network::Regtest).build();
+	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
+
+	core.mine_blocks(1);
+	create_wallet(&core, &ord);
+
+	let alice = H160::from_slice(&[0; 20]);
+
+	CommandBuilder::new(format!(
+		"--regtest wallet brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
+		alice
+	))
+	.core(&core)
+	.ord(&ord)
+	.expected_exit_code(0)
+	.run_and_deserialize_output::<register_collection::Output>();
+
+	core.mine_blocks(1);
+	ord.assert_html(
+		"/brc721/collections",
+		Chain::Regtest,
+		Brc721CollectionsHtml {
+			entries: vec![Brc721Collection::new(
+				Brc721CollectionId { block: 2, tx: 1 },
+				H160::from_str("0x0000000000000000000000000000000000000000").unwrap(),
+				true,
+			)],
+			more: false,
+			prev: None,
+			next: None,
+		},
+	);
+
+	// Get initial owner address
+	let output = CommandBuilder::new("--regtest wallet receive")
+		.core(&core)
+		.ord(&ord)
+		.run_and_deserialize_output::<receive::Output>();
+
+	let initial_owner = output
+		.addresses
+		.first()
+		.unwrap()
+		.clone()
+		.require_network(Network::Regtest)
+		.unwrap();
+
+	assert_eq!(
+		initial_owner.to_string(),
+		"bcrt1p45w7v40vaqfau777nmc455zsrrqhq58vxn95uetf4689ls4gw0qqshyhzw"
+	);
+
+	let initial_owner_h160 = address_mapping::btc_address_to_h160(initial_owner.clone()).unwrap();
+	assert_eq!(
+		initial_owner_h160,
+		H160::from_slice(&hex::decode("096c87abcdca1b19d7c2c735dd7d5c0ba44bd190").unwrap())
+	);
+
+	let expected_owner = Address::from_str("mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
+		.unwrap()
+		.require_network(Network::Regtest)
+		.unwrap();
+
+	// Fund initial owner address
+	core.mine_blocks_to(3, initial_owner.clone());
+
+	// Call register ownership
+	let file_path = format!(
+		"{}/tests/fixtures/brc721_register_ownership_integration.yml",
+		env!("CARGO_MANIFEST_DIR")
+	);
+	let output = CommandBuilder::new(format!(
+		"--regtest wallet brc721 register-ownership --fee-rate 1 --file {}",
+		file_path
+	))
+	.core(&core)
+	.ord(&ord)
+	.expected_exit_code(0)
+	.run_and_deserialize_output::<register_ownership::Output>();
+
+	core.mine_blocks(1);
+
+	let token_id_parts = ([3u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], initial_owner_h160.0);
+
+	let mut raw_token_id = [0u8; 32];
+	raw_token_id[..12].copy_from_slice(&token_id_parts.0);
+	raw_token_id[12..].copy_from_slice(&token_id_parts.1);
+
+	let expected_token_id = U256::from_little_endian(&raw_token_id);
+
+	ord.assert_html(
+		format!("/brc721/token/2:1/{expected_token_id}"),
+		Chain::Regtest,
+		Brc721TokenHtml {
+			entry: Brc721Token::new(None, Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 0 })),
+		},
+	);
+
+	let tx = core.tx_by_id(output.tx_id);
+
+	let actual_owner = Address::from_script(&tx.output[1].script_pubkey, Network::Regtest).unwrap();
+
+	assert_eq!(expected_owner, actual_owner);
 }
