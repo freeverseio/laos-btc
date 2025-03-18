@@ -39,18 +39,17 @@ impl RegisterCollection {
 	pub fn from_script(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
 		let buffer = script.clone().into_bytes();
 
-		if buffer.len() < 25 {
+		if buffer.len() < 24 {
 			return Err(RegisterCollectionError::InvalidLength("script is too short".to_string()));
 		}
 
-		// Check the OP_RETURN opcode
-		if buffer[0..2] !=
+		if buffer[0..3] !=
 			[
 				opcodes::all::OP_RETURN.to_u8(),
 				BRC721_INIT_CODE.to_u8(),
 				Brc721Operation::RegisterCollection as u8,
 			] {
-			return Err(RegisterCollectionError::UnexpectedInstruction)
+			return Err(RegisterCollectionError::UnexpectedInstruction);
 		}
 
 		// get LAOS collection address
@@ -84,18 +83,21 @@ mod tests {
 	use std::str::FromStr;
 
 	#[test]
-	fn test_register_collection_serialize_size() {
+	fn test_serialized_length() {
 		let cmd = RegisterCollection::default();
 		let buf = cmd.to_script();
 		assert_eq!(buf.len(), 24);
 	}
 
 	#[test]
-	fn test_serialize_default() {
+	fn test_serialized_default() {
 		let cmd = RegisterCollection::default();
 		let buf = cmd.to_script();
 		assert_eq!(buf.len(), 24);
-		assert_eq!(hex::encode(buf.into_bytes()), "6a5f0000000000000000000000000000000000000");
+		assert_eq!(
+			hex::encode(buf.into_bytes()),
+			"6a5f00000000000000000000000000000000000000000000"
+		);
 	}
 
 	#[test]

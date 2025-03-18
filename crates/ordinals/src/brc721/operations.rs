@@ -9,12 +9,3 @@ pub(crate) enum Brc721Operation {
 	#[allow(dead_code)]
 	RegisterOwnership = 1,
 }
-
-impl Brc721Operation {
-	pub(crate) fn byte_slice(self) -> [u8; BRC721_OPERATION_LENGTH] {
-		[self as u8]
-	}
-}
-
-/// The size of a brc721 flag in bytes
-pub(crate) const BRC721_OPERATION_LENGTH: usize = 1;

@@ -61,7 +61,7 @@ where
 		let first_output: TxOut = tx.output[0].clone();
 		let script = first_output.script_pubkey;
 
-		// early return if the script is not a BRC721 script.
+		// // early return if the script is not a BRC721 script.
 		if !is_brc721_script(&script) {
 			return Ok(());
 		}
@@ -140,6 +140,7 @@ mod tests {
 			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
 		let tx = brc721_collection_tx(expected_rebaseable);
+		assert_eq!(tx.output.len(), 1);
 
 		updater.index_collections(expected_tx_index, &tx).unwrap();
 
