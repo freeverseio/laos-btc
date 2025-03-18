@@ -1,11 +1,8 @@
-use crate::brc721::{operations::Brc721Operation, BRC721_INIT_CODE};
-use bitcoin::{opcodes, script, ScriptBuf};
+use crate::brc721::{Brc721Operation, BRC721_INIT_SEQUENCE};
+use bitcoin::{script, ScriptBuf};
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
 use thiserror::Error;
-
-/// Constant representing the length of a collection address in bytes.
-pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
 
 /// Struct to represent a register collection with an address and rebaseability status.
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
@@ -24,8 +21,7 @@ impl RegisterCollection {
 	/// collection flag, the collection address, and the rebaseable flag.
 	pub fn to_script(&self) -> ScriptBuf {
 		let mut buffer = Vec::new();
-		buffer.push(opcodes::all::OP_RETURN.to_u8());
-		buffer.push(BRC721_INIT_CODE.to_u8());
+		buffer.extend_from_slice(BRC721_INIT_SEQUENCE.as_slice());
 		buffer.push(Brc721Operation::RegisterCollection as u8);
 		buffer.extend_from_slice(self.address.as_bytes());
 		buffer.push(self.rebaseable as u8);
@@ -45,8 +41,8 @@ impl RegisterCollection {
 
 		if buffer[0..3] !=
 			[
-				opcodes::all::OP_RETURN.to_u8(),
-				BRC721_INIT_CODE.to_u8(),
+				BRC721_INIT_SEQUENCE[0],
+				BRC721_INIT_SEQUENCE[1],
 				Brc721Operation::RegisterCollection as u8,
 			] {
 			return Err(RegisterCollectionError::UnexpectedInstruction);
