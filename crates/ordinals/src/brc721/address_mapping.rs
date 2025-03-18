@@ -66,9 +66,7 @@ pub fn h160_to_btc_address(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bitcoin::{
-		blockdata::opcodes::all::OP_CHECKSIG, script::Builder, Network, Script, Witness,
-	};
+	use bitcoin::Network;
 	use std::str::FromStr;
 
 	#[test]
