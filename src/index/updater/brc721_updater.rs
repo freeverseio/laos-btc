@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-use ordinals::{brc721::is_brc721_script, RegisterCollection};
+use ordinals::{brc721, RegisterCollection};
 
 use super::*;
 
@@ -61,23 +61,27 @@ where
 		let first_output: TxOut = tx.output[0].clone();
 		let script = first_output.script_pubkey;
 
-		// early return if the script is not a BRC721 script.
-		if !is_brc721_script(&script) {
+		let op = brc721::get_operation(&script);
+		if op.is_none() {
+			// no Brc721 operation found
 			return Ok(());
 		}
 
-		// Decode the register collection from the first output's script public key.
-		match RegisterCollection::from_script(&script) {
-			Ok(register_collection) => {
-				self.collection_table.insert(
-					(self.height.into(), tx_index),
-					(register_collection.address.into(), register_collection.rebaseable),
-				)?;
-			},
-			Err(e) => {
-				log::warn!("Failed to decode register collection: {:?}", e);
-			},
+		match op.unwrap() {
+			brc721::Brc721Operation::RegisterCollection =>
+				match RegisterCollection::from_script(&script) {
+					Ok(register_collection) => {
+						self.collection_table.insert(
+							(self.height.into(), tx_index),
+							(register_collection.address.into(), register_collection.rebaseable),
+						)?;
+					},
+					Err(e) => {
+						log::warn!("Failed to decode register collection: {:?}", e);
+					},
+				},
 		}
+
 		Ok(())
 	}
 }
@@ -140,6 +144,7 @@ mod tests {
 			Brc721Updater { height: expected_height, collection_table: &mut id_to_collection };
 
 		let tx = brc721_collection_tx(expected_rebaseable);
+		assert_eq!(tx.output.len(), 1);
 
 		updater.index_collections(expected_tx_index, &tx).unwrap();
 

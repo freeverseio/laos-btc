@@ -3,18 +3,17 @@
 /// error otherwise.
 #[derive(Debug, Clone, PartialEq)]
 #[repr(u8)]
-pub(crate) enum Brc721Operation {
-	RegisterCollection = 0,
-	// TODO: Remove this attribute as soon as register ownership flow is introduced
-	#[allow(dead_code)]
-	RegisterOwnership = 1,
+pub enum Brc721Operation {
+	RegisterCollection = 0x00,
 }
 
-impl Brc721Operation {
-	pub(crate) fn byte_slice(self) -> [u8; BRC721_OPERATION_LENGTH] {
-		[self as u8]
+impl TryFrom<u8> for Brc721Operation {
+	type Error = ();
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
+			0x00 => Ok(Brc721Operation::RegisterCollection),
+			_ => Err(()),
+		}
 	}
 }
-
-/// The size of a brc721 flag in bytes
-pub(crate) const BRC721_OPERATION_LENGTH: usize = 1;
