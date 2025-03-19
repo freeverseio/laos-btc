@@ -110,12 +110,12 @@ impl SlotsBundle {
 		encoded.drain(0..consumed);
 		for _ in 0..num_ranges {
 			let (start, consumed) = varint::decode(encoded)?;
-			if start > (1u128 << 96) {
+			if start >= (1u128 << 96) {
 				return Err(varint::Error::Overflow);
 			}
 			encoded.drain(0..consumed);
 			let (end, consumed) = varint::decode(encoded)?;
-			if end > (1u128 << 96) {
+			if end >= (1u128 << 96) {
 				return Err(varint::Error::Overflow);
 			}
 			encoded.drain(0..consumed);
@@ -248,11 +248,11 @@ mod tests {
 	fn slot_start_overflow() {
 		let command = RegisterOwnership {
 			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
-			slots_bundles: vec![SlotsBundle(vec![1u128 << (96 + 1)..=1u128 << (96 + 1)])],
+			slots_bundles: vec![SlotsBundle(vec![1u128 << 96..=1u128 << 96])],
 		};
 		let encoded = ScriptBuf::from(command.clone());
 		assert_eq!(
-			"6a5f010507010180808080808080808080808080408080808080808080808080808040",
+			"6a5f010507010180808080808080808080808080208080808080808080808080808020",
 			encoded.to_hex_string()
 		);
 		let decoded = RegisterOwnership::try_from(encoded);
@@ -266,11 +266,11 @@ mod tests {
 	fn slot_end_overflow() {
 		let command = RegisterOwnership {
 			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
-			slots_bundles: vec![SlotsBundle(vec![(1u128 << 96)..=1u128 << (96 + 1)])],
+			slots_bundles: vec![SlotsBundle(vec![(1u128 << (96 - 1))..=1u128 << 96])],
 		};
 		let encoded = ScriptBuf::from(command.clone());
 		assert_eq!(
-			"6a5f010507010180808080808080808080808080208080808080808080808080808040",
+			"6a5f010507010180808080808080808080808080108080808080808080808080808020",
 			encoded.to_hex_string()
 		);
 		let decoded = RegisterOwnership::try_from(encoded);
