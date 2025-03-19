@@ -134,7 +134,6 @@ mod tests {
 		assert_eq!(encoded.len(), 2);
 		let decoded = Brc721CollectionId::from_leb128(&mut encoded).unwrap();
 		assert_eq!(decoded, collection_id);
-		assert_eq!("1:1".as_bytes().len(), 3);
 	}
 
 	#[test]
@@ -146,7 +145,6 @@ mod tests {
 		assert_eq!(encoded.len(), 15);
 		let decoded = Brc721CollectionId::from_leb128(&mut encoded).unwrap();
 		assert_eq!(decoded, collection_id);
-		assert_eq!("18446744073709551615:4294967295".as_bytes().len(), 31);
 	}
 
 	#[test]
