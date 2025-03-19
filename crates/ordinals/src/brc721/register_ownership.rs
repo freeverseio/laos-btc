@@ -1,6 +1,6 @@
 use bitcoin::{
 	opcodes,
-	script::{self, PushBytes},
+	script::{self},
 	ScriptBuf,
 };
 
@@ -9,11 +9,7 @@ use crate::{
 	Brc721CollectionId,
 };
 
-use super::{
-	bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError},
-	operations::{Brc721Operation, BRC721_OPERATION_LENGTH},
-	BRC721_INIT_CODE,
-};
+use super::{bitcoin_script::BitcoinScriptError, operations::Brc721Operation, BRC721_INIT_CODE};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct RegisterOwnership {
@@ -24,10 +20,6 @@ pub struct RegisterOwnership {
 impl From<RegisterOwnership> for ScriptBuf {
 	fn from(register_ownership: RegisterOwnership) -> Self {
 		let collection_id = register_ownership.collection_id.to_leb128();
-		let collection_id: &PushBytes = collection_id
-			.as_slice()
-			.try_into()
-			.expect("qed; collection_id slice should convert to PushBytes");
 
 		let mut slots_bundles = Vec::<u8>::new();
 		varint::encode_to_vec(
@@ -41,51 +33,51 @@ impl From<RegisterOwnership> for ScriptBuf {
 		for slots_bundle in &register_ownership.slots_bundles {
 			slots_bundles.extend_from_slice(&slots_bundle.to_leb128());
 		}
-		let slots_bundles: &PushBytes = slots_bundles
-			.as_slice()
-			.try_into()
-			.expect("qed; slots slice should convert to PushBytes");
 
-		script::Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(BRC721_INIT_CODE)
-			.push_slice(Brc721Operation::RegisterOwnership.byte_slice())
-			.push_slice(collection_id)
-			.push_slice(slots_bundles)
-			.into_script()
+		let mut buffer = Vec::<u8>::new();
+		buffer.push(opcodes::all::OP_RETURN.to_u8());
+		buffer.push(BRC721_INIT_CODE.to_u8());
+		buffer.push(Brc721Operation::RegisterOwnership as u8);
+		buffer.extend_from_slice(&collection_id);
+		buffer.extend_from_slice(&slots_bundles);
+		script::ScriptBuf::from_bytes(buffer)
 	}
 }
 
 impl TryFrom<ScriptBuf> for RegisterOwnership {
 	type Error = BitcoinScriptError;
 	fn try_from(payload: ScriptBuf) -> Result<Self, BitcoinScriptError> {
-		let mut instructions = payload.instructions();
+		let buffer = payload.clone().into_bytes();
 
-		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
-		expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
-
-		match expect_push_bytes(
-			&mut instructions,
-			Some(BRC721_OPERATION_LENGTH),
-			"Register ownership operation",
-		) {
-			Ok(byte) if byte == Brc721Operation::RegisterOwnership.byte_slice() => (),
-			Err(err) => return Err(err),
-			_ => return Err(BitcoinScriptError::UnexpectedInstruction),
+		if buffer.len() < 9 {
+			return Err(BitcoinScriptError::InvalidLength("script is too short".to_string()));
 		}
 
-		let collection_id = expect_push_bytes(&mut instructions, None, "collection id")?;
-		let collection_id = Brc721CollectionId::from_leb128(&collection_id)
-			.map_err(|e| BitcoinScriptError::Decode(e.to_string()))?;
+		if buffer[0..3] !=
+			[
+				opcodes::all::OP_RETURN.to_u8(),
+				BRC721_INIT_CODE.to_u8(),
+				Brc721Operation::RegisterOwnership as u8,
+			] {
+			return Err(BitcoinScriptError::UnexpectedInstruction);
+		}
 
-		let mut slots_bundles_encoded: Vec<u8> =
-			expect_push_bytes(&mut instructions, None, "slots bundles")?;
-		let (num_bundles, consumed) = varint::decode(&slots_bundles_encoded)
-			.map_err(|e| BitcoinScriptError::Decode(e.to_string()))?;
-		slots_bundles_encoded.drain(0..consumed);
+		let mut buffer = buffer[3..].to_vec();
+		let collection_id = Brc721CollectionId::from_leb128(&mut buffer).map_err(
+			|e: super::collection_id::Error| {
+				BitcoinScriptError::Decode(format!("{} while extracting collection_id", e))
+			},
+		)?;
+
+		let (num_bundles, consumed) = varint::decode(&buffer).map_err(|e| {
+			BitcoinScriptError::Decode(format!("{} while extracting num_bundles", e))
+		})?;
+		buffer.drain(0..consumed);
 		let mut slots_bundles: Vec<SlotsBundle> = Vec::with_capacity(num_bundles as usize);
-		for _ in 0..num_bundles {
-			let ranges = SlotsBundle::from_leb128(&mut slots_bundles_encoded).unwrap();
+		for i in 0..num_bundles {
+			let ranges = SlotsBundle::from_leb128(&mut buffer).map_err(|e: varint::Error| {
+				BitcoinScriptError::Decode(format!("{} while extracting range {}", e, i))
+			})?;
 			slots_bundles.push(ranges);
 		}
 
@@ -118,8 +110,14 @@ impl SlotsBundle {
 		encoded.drain(0..consumed);
 		for _ in 0..num_ranges {
 			let (start, consumed) = varint::decode(encoded)?;
+			if start > (1u128 << 96) {
+				return Err(varint::Error::Overflow);
+			}
 			encoded.drain(0..consumed);
 			let (end, consumed) = varint::decode(encoded)?;
+			if end > (1u128 << 96) {
+				return Err(varint::Error::Overflow);
+			}
 			encoded.drain(0..consumed);
 			slots_bundle.push(start..=end);
 		}
@@ -133,18 +131,152 @@ mod tests {
 	use std::str::FromStr;
 
 	#[test]
-	fn register_ownership_encodes_decodes_correctly() {
+	fn slots_bundle_to_leb128() {
+		let bundle = SlotsBundle(vec![(10..=11), (2..=5), (8..=8)]);
+		let encoded = bundle.to_leb128();
+		assert_eq!("030a0b02050808", hex::encode(encoded));
+
+		let bundle = SlotsBundle(vec![(20..=22)]);
+		let encoded = bundle.to_leb128();
+		assert_eq!("011416", hex::encode(encoded));
+	}
+
+	#[test]
+	fn slots_bundle_from_leb128() {
+		let encoded = "030a0b02050808";
+		let bundle = SlotsBundle::from_leb128(&mut hex::decode(encoded).unwrap()).unwrap();
+		assert_eq!(bundle, SlotsBundle(vec![(10..=11), (2..=5), (8..=8)]));
+
+		let encoded = "011416";
+		let bundle = SlotsBundle::from_leb128(&mut hex::decode(encoded).unwrap()).unwrap();
+		assert_eq!(bundle, SlotsBundle(vec![(20..=22)]));
+	}
+
+	#[test]
+	fn script_min_len() {
 		let command = RegisterOwnership {
-			collection_id: Brc721CollectionId::from_str("1:1").unwrap(),
+			collection_id: Brc721CollectionId::default(),
+			slots_bundles: vec![SlotsBundle(vec![(0..=0)])],
+		};
+		let encoded = ScriptBuf::from(command);
+		assert_eq!("6a5f01000001010000", encoded.to_hex_string());
+		assert_eq!(encoded.len(), 9);
+	}
+
+	#[test]
+	fn register_ownership_from_script_fails_short_script() {
+		let encoded = ScriptBuf::from_hex("").unwrap();
+		let decoded = RegisterOwnership::try_from(encoded);
+		assert_eq!(decoded.unwrap_err().to_string(), "Invalid length: `script is too short`");
+	}
+
+	#[test]
+	fn register_ownership_from_script_and_back() {
+		let command = RegisterOwnership {
+			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
 			slots_bundles: vec![
-				SlotsBundle(vec![(0..=3), (4..=10)]),
-				SlotsBundle(vec![(15..=15), (40..=50)]),
+				SlotsBundle(vec![(16..=17), (2..=5), (8..=8)]),
+				SlotsBundle(vec![(32..=34)]),
 			],
 		};
 		let encoded = ScriptBuf::from(command.clone());
-		assert_eq!(encoded.len(), 19);
+		assert_eq!("6a5f0105070203101102050808012022", encoded.to_hex_string());
+		assert_eq!(encoded.len(), 16);
+
 		let decoded = RegisterOwnership::try_from(encoded).unwrap();
 		assert_eq!(command.collection_id, decoded.collection_id);
 		assert_eq!(command.slots_bundles, decoded.slots_bundles);
+	}
+
+	#[test]
+	fn register_ownership_from_script_and_back_extra_bytes_are_ignored() {
+		let command = RegisterOwnership {
+			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
+			slots_bundles: vec![
+				SlotsBundle(vec![(16..=17), (2..=5), (8..=8)]),
+				SlotsBundle(vec![(32..=34)]),
+			],
+		};
+		let encoded = ScriptBuf::from(command.clone());
+		assert_eq!("6a5f0105070203101102050808012022", encoded.to_hex_string());
+		assert_eq!(encoded.len(), 16);
+		let mut encoded_with_extra_bytes = encoded.clone().into_bytes();
+		encoded_with_extra_bytes.extend_from_slice(&[0x00; 10]);
+		let encoded_with_extra_bytes = ScriptBuf::from_bytes(encoded_with_extra_bytes);
+		assert_eq!(
+			"6a5f010507020310110205080801202200000000000000000000",
+			encoded_with_extra_bytes.to_hex_string()
+		);
+
+		let decoded = RegisterOwnership::try_from(encoded_with_extra_bytes).unwrap();
+		assert_eq!(command.collection_id, decoded.collection_id);
+		assert_eq!(command.slots_bundles, decoded.slots_bundles);
+	}
+
+	#[test]
+	fn register_ownership_from_script_and_back_big_numbers() {
+		let block = u64::MAX;
+		let tx = u32::MAX;
+		let collection_id = Brc721CollectionId::new(block, tx).unwrap();
+		let command = RegisterOwnership {
+			collection_id,
+			slots_bundles: {
+				// Create a vector with single-number slots from 0 to 2^96
+				let mut bundles = Vec::new();
+				let slots = vec![
+					0u128,             // Min value
+					1u128 << 32,       // 2^32
+					1u128 << 64,       // 2^64
+					1u128 << 95,       // 2^95
+					(1u128 << 96) - 1, // Max allowed value (2^96 - 1)
+				];
+				for slot in slots {
+					bundles.push(SlotsBundle(vec![(slot..=slot)]));
+				}
+				bundles
+			},
+		};
+		let encoded = ScriptBuf::from(command.clone());
+		assert_eq!(encoded.len(), 112);
+		assert_eq!("6a5f01ffffffffffffffffff01ffffffff0f050100000180808080108080808010018080808080808080800280808080808080808002018080808080808080808080808010808080808080808080808080801001ffffffffffffffffffffffffff1fffffffffffffffffffffffffff1f", encoded.to_hex_string());
+		let decoded = RegisterOwnership::try_from(encoded).unwrap();
+		assert_eq!(command.collection_id, decoded.collection_id);
+		assert_eq!(command.slots_bundles, decoded.slots_bundles);
+	}
+
+	#[test]
+	fn slot_start_overflow() {
+		let command = RegisterOwnership {
+			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
+			slots_bundles: vec![SlotsBundle(vec![(1u128 << 96 + 1)..=(1u128 << 96 + 1)])],
+		};
+		let encoded = ScriptBuf::from(command.clone());
+		assert_eq!(
+			"6a5f010507010180808080808080808080808080408080808080808080808080808040",
+			encoded.to_hex_string()
+		);
+		let decoded = RegisterOwnership::try_from(encoded);
+		assert_eq!(
+			decoded.unwrap_err().to_string(),
+			"Decoding error: `overflow while extracting range 0`"
+		);
+	}
+
+	#[test]
+	fn slot_end_overflow() {
+		let command = RegisterOwnership {
+			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
+			slots_bundles: vec![SlotsBundle(vec![(1u128 << 96)..=(1u128 << 96 + 1)])],
+		};
+		let encoded = ScriptBuf::from(command.clone());
+		assert_eq!(
+			"6a5f010507010180808080808080808080808080208080808080808080808080808040",
+			encoded.to_hex_string()
+		);
+		let decoded = RegisterOwnership::try_from(encoded);
+		assert_eq!(
+			decoded.unwrap_err().to_string(),
+			"Decoding error: `overflow while extracting range 0`"
+		);
 	}
 }
