@@ -248,7 +248,7 @@ mod tests {
 	fn slot_start_overflow() {
 		let command = RegisterOwnership {
 			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
-			slots_bundles: vec![SlotsBundle(vec![(1u128 << 96 + 1)..=(1u128 << 96 + 1)])],
+			slots_bundles: vec![SlotsBundle(vec![1u128 << (96 + 1)..=1u128 << (96 + 1)])],
 		};
 		let encoded = ScriptBuf::from(command.clone());
 		assert_eq!(
@@ -266,7 +266,7 @@ mod tests {
 	fn slot_end_overflow() {
 		let command = RegisterOwnership {
 			collection_id: Brc721CollectionId::from_str("5:7").unwrap(),
-			slots_bundles: vec![SlotsBundle(vec![(1u128 << 96)..=(1u128 << 96 + 1)])],
+			slots_bundles: vec![SlotsBundle(vec![(1u128 << 96)..=1u128 << (96 + 1)])],
 		};
 		let encoded = ScriptBuf::from(command.clone());
 		assert_eq!(
