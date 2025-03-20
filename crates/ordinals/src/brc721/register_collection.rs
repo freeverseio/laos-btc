@@ -1,5 +1,9 @@
 use crate::brc721::{operations::Brc721Operation, BRC721_INIT_CODE};
-use bitcoin::{opcodes, script, ScriptBuf};
+use bitcoin::{
+	opcodes::all::{OP_PUSHNUM_15, OP_RETURN},
+	script,
+	ScriptBuf,
+};
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
 use thiserror::Error;
@@ -23,13 +27,16 @@ impl RegisterCollection {
 	/// The encoded script includes an OP_RETURN opcode, the BRC721_INIT_CODE, the register
 	/// collection flag, the collection address, and the rebaseable flag.
 	pub fn to_script(&self) -> ScriptBuf {
+		let mut script = ScriptBuf::new();
+		script.push_opcode(OP_RETURN);
+		script.push_opcode(OP_PUSHNUM_15);
 		let mut buffer = Vec::new();
-		buffer.push(opcodes::all::OP_RETURN.to_u8());
-		buffer.push(BRC721_INIT_CODE.to_u8());
 		buffer.push(Brc721Operation::RegisterCollection as u8);
 		buffer.extend_from_slice(self.address.as_bytes());
 		buffer.push(self.rebaseable as u8);
-		script::ScriptBuf::from_bytes(buffer)
+		let buffer: &script::PushBytes = buffer.as_slice().try_into().unwrap();
+		script.push_slice(buffer);
+		script
 	}
 
 	/// Decodes a Bitcoin script into a `RegisterCollection` instance.
@@ -45,7 +52,7 @@ impl RegisterCollection {
 
 		if buffer[0..3] !=
 			[
-				opcodes::all::OP_RETURN.to_u8(),
+				OP_RETURN.to_u8(),
 				BRC721_INIT_CODE.to_u8(),
 				Brc721Operation::RegisterCollection as u8,
 			] {
@@ -83,20 +90,13 @@ mod tests {
 	use std::str::FromStr;
 
 	#[test]
-	fn test_serialized_length() {
-		let cmd = RegisterCollection::default();
-		let buf = cmd.to_script();
-		assert_eq!(buf.len(), 24);
-	}
-
-	#[test]
 	fn test_serialized_default() {
 		let cmd = RegisterCollection::default();
 		let buf = cmd.to_script();
-		assert_eq!(buf.len(), 24);
+		assert_eq!(buf.len(), 25);
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
-			"6a5f00000000000000000000000000000000000000000000"
+			"6a5f1600000000000000000000000000000000000000000000"
 		);
 	}
 
@@ -107,7 +107,7 @@ mod tests {
 		let buf = cmd.to_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
-			"6a5f00abcffffffffffffffffffffffffffffffffffcba01"
+			"6a5f1600abcffffffffffffffffffffffffffffffffffcba01"
 		);
 	}
 
