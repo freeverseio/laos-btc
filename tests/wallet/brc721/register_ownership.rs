@@ -23,16 +23,10 @@ fn fixtures_file() {
 
 	core.mine_blocks(1);
 
-	// Restore `test` wallet
-	let mnemonic = "taste pole august obvious estate hurry illness bread match farm ready indicate"
-		.to_string();
-	CommandBuilder::new(["--regtest", "wallet", "--name", "test", "restore", "--from", "mnemonic"])
-		.stdin(mnemonic.into())
-		.core(&core)
-		.run_and_extract_stdout();
+	create_wallet(&core, &ord);
 
 	// Get initial owner address
-	let output = CommandBuilder::new("--regtest wallet --name test receive")
+	let output = CommandBuilder::new("--regtest wallet receive")
 		.core(&core)
 		.ord(&ord)
 		.run_and_deserialize_output::<receive::Output>();
@@ -62,7 +56,7 @@ fn fixtures_file() {
 	let file_path =
 		format!("{}/tests/fixtures/brc721_register_ownership.yml", env!("CARGO_MANIFEST_DIR"));
 	let output = CommandBuilder::new(format!(
-		"--regtest wallet --name test brc721 register-ownership --fee-rate 1 --file {}",
+		"--regtest wallet brc721 register-ownership --fee-rate 1 --file {}",
 		file_path
 	))
 	.core(&core)
@@ -78,7 +72,7 @@ fn fixtures_file() {
 	// UTXO 0
 	let register_ownership =
 		RegisterOwnership::try_from(tx.output[0].script_pubkey.clone()).unwrap();
-	assert_eq!(register_ownership.collection_id, Brc721CollectionId::from_str("300:1").unwrap());
+	assert_eq!(register_ownership.collection_id, Brc721CollectionId::from_str("2:1").unwrap());
 	assert_eq!(register_ownership.slots_bundles.len(), 2);
 	assert_eq!(register_ownership.slots_bundles[0], SlotsBundle(vec![(0..=3), (4..=10)]));
 	assert_eq!(
