@@ -1,8 +1,7 @@
-use crate::brc721::{operations::Brc721Operation, BRC721_INIT_CODE};
+use crate::brc721::operations::Brc721Operation;
 use bitcoin::{
 	opcodes::all::{OP_PUSHNUM_15, OP_RETURN},
-	script,
-	ScriptBuf,
+	script, ScriptBuf,
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
@@ -45,43 +44,27 @@ impl RegisterCollection {
 	/// The function checks for the presence of OP_RETURN, BRC721_INIT_CODE, the register collection
 	/// flag, a 20-byte collection address, and a 1-byte rebaseable flag in the script.
 	pub fn from_script(script: &ScriptBuf) -> Result<Self, BitcoinScriptError> {
-		// let mut instructions = script.instructions();
+		let mut instructions = script.instructions();
 
-		// expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
-		// expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
+		expect_opcode(&mut instructions, OP_RETURN, "OP_RETURN")?;
+		expect_opcode(&mut instructions, OP_PUSHNUM_15, "BRC721_INIT_CODE")?;
 
-		// match expect_push_bytes(
-		// 	&mut instructions,
-		// 	Some(BRC721_OPERATION_LENGTH),
-		// 	"Register collection operation identifier",
-		// ) {
-		// 	Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
-		// 	Err(err) => return Err(err),
-		// 	_ => return Err(BitcoinScriptError::UnexpectedInstruction),
-		// }
+		let buffer =
+			expect_push_bytes(&mut instructions, Some(22), "Register ownership operation")?;
+		if buffer[0] != Brc721Operation::RegisterCollection as u8 {
+			return Err(BitcoinScriptError::UnexpectedInstruction);
+		}
 
-		// // Expect the collection address (20 bytes)
-		// let address_bytes = expect_push_bytes(
-		// 	&mut instructions,
-		// 	Some(COLLECTION_ADDRESS_LENGTH),
-		// 	"collection address",
-		// )?;
+		let address = H160::from_slice(&buffer[1..21]);
+		let flags = buffer[21];
 
-		// // Expect the rebaseable flag (1 byte)
-		// let rebaseable_bytes =
-		// 	expect_push_bytes(&mut instructions, Some(REBASEABLE_LENGTH), "rebaseable")?;
+		if flags != 0x00 && flags != 0x01 {
+			return Err(BitcoinScriptError::UnexpectedInstruction);
+		}
 
-		// if rebaseable_bytes[0] > 1 {
-		// 	return Err(BitcoinScriptError::UnexpectedInstruction);
-		// }
+		let rebaseable = flags == 0x01;
 
-		// // get LAOS collection address
-		// let address = H160::from_slice(&buffer[3..23]);
-		// let flags = buffer[23];
-		// let rebaseable = (flags & 0x01) == 0x01;
-
-		// Ok(Self { address, rebaseable })
-		Ok(Self::default())
+		Ok(Self { address, rebaseable })
 	}
 }
 
