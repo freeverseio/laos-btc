@@ -66,17 +66,19 @@ impl Brc721CollectionId {
 
 	pub fn to_leb128(&self) -> Vec<u8> {
 		let mut value = Vec::new();
-		let packed: u128 = ((self.block as u128) << 32) | (self.tx as u128);
-		varint::encode_to_vec(packed, &mut value);
+		varint::encode_to_vec(self.block as u128, &mut value);
+		varint::encode_to_vec(self.tx as u128, &mut value);
 		value
 	}
 
-	pub fn from_leb128(value: &[u8]) -> Result<Self, Error> {
-		let (n, _consumed) = varint::decode(value).map_err(Error::Decode)?;
-		// Extract block from the upper 64 bits of the lower 96 bits
-		let block = n >> 32;
-		// Extract tx from the lower 32 bits
-		let tx = n & 0xFFFF_FFFF;
+	pub fn from_leb128(encoded: &mut Vec<u8>) -> Result<Self, Error> {
+		// Decode the block number
+		let (block, consumed) = varint::decode(encoded).map_err(Error::Decode)?;
+		encoded.drain(0..consumed);
+		// Decode the tx number from the remaining bytes
+		let (tx, consumed) = varint::decode(encoded).map_err(Error::Decode)?;
+		encoded.drain(0..consumed);
+
 		Ok(Brc721CollectionId { block: block as u64, tx: tx as u32 })
 	}
 }
@@ -128,11 +130,10 @@ mod tests {
 	#[test]
 	fn leb128_encode_decode_small_number() {
 		let collection_id = Brc721CollectionId::from_str("1:1").unwrap();
-		let encoded = collection_id.to_leb128();
-		let decoded = Brc721CollectionId::from_leb128(&encoded).unwrap();
+		let mut encoded = collection_id.to_leb128();
+		assert_eq!(encoded.len(), 2);
+		let decoded = Brc721CollectionId::from_leb128(&mut encoded).unwrap();
 		assert_eq!(decoded, collection_id);
-		assert_eq!("1:1".as_bytes().len(), 3);
-		assert_eq!(encoded.len(), 5);
 	}
 
 	#[test]
@@ -140,11 +141,10 @@ mod tests {
 		let block = u64::MAX;
 		let tx = u32::MAX;
 		let collection_id = Brc721CollectionId::new(block, tx).unwrap();
-		let encoded = collection_id.to_leb128();
-		let decoded = Brc721CollectionId::from_leb128(&encoded).unwrap();
+		let mut encoded = collection_id.to_leb128();
+		assert_eq!(encoded.len(), 15);
+		let decoded = Brc721CollectionId::from_leb128(&mut encoded).unwrap();
 		assert_eq!(decoded, collection_id);
-		assert_eq!("18446744073709551615:4294967295".as_bytes().len(), 31);
-		assert_eq!(encoded.len(), 14);
 	}
 
 	#[test]

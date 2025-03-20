@@ -83,9 +83,7 @@ fn fixtures_file() {
 	assert_eq!(register_ownership.slots_bundles[0], SlotsBundle(vec![(0..=3), (4..=10)]));
 	assert_eq!(
 		register_ownership.slots_bundles[1],
-		SlotsBundle(vec![
-			(340282366920938463463374607431768211455..=340282366920938463463374607431768211455)
-		])
+		SlotsBundle(vec![(79228162514264337593543950335..=79228162514264337593543950335)])
 	);
 	// UTXO 1
 	assert_eq!(
