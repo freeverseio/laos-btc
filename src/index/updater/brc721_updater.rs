@@ -144,6 +144,7 @@ where
 		} else {
 			return Ok(());
 		};
+
 		let script_buf = tx_info.vout[tx.input[0].previous_output.vout.into_usize()]
 			.script_pub_key
 			.script()?;

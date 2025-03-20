@@ -207,9 +207,29 @@ fn register_ownership_command_indexer_integration() {
 	let ord = TestServer::spawn_with_server_args(&core, &["--regtest", "--index-brc721"], &[]);
 
 	core.mine_blocks(1);
+
 	create_wallet(&core, &ord);
 
 	let alice = H160::from_slice(&[0; 20]);
+
+	// Get initial owner address
+	let output = CommandBuilder::new("--regtest wallet receive")
+		.core(&core)
+		.ord(&ord)
+		.run_and_deserialize_output::<receive::Output>();
+
+	let initial_owner = output
+		.addresses
+		.first()
+		.unwrap()
+		.clone()
+		.require_network(Network::Regtest)
+		.unwrap();
+
+	assert_eq!(
+		initial_owner.to_string(),
+		"bcrt1pswcsgefgmts0esvgvw0hx3w3xf68ce8yf9tmsgu5ltlj5kmrcjlqd402f3"
+	);
 
 	CommandBuilder::new(format!(
 		"--regtest wallet brc721 register-collection --fee-rate 1 --address {:x} --rebaseable",
@@ -236,29 +256,10 @@ fn register_ownership_command_indexer_integration() {
 		},
 	);
 
-	// Get initial owner address
-	let output = CommandBuilder::new("--regtest wallet receive")
-		.core(&core)
-		.ord(&ord)
-		.run_and_deserialize_output::<receive::Output>();
-
-	let initial_owner = output
-		.addresses
-		.first()
-		.unwrap()
-		.clone()
-		.require_network(Network::Regtest)
-		.unwrap();
-
-	assert_eq!(
-		initial_owner.to_string(),
-		"bcrt1p45w7v40vaqfau777nmc455zsrrqhq58vxn95uetf4689ls4gw0qqshyhzw"
-	);
-
 	let initial_owner_h160 = address_mapping::btc_address_to_h160(initial_owner.clone()).unwrap();
 	assert_eq!(
 		initial_owner_h160,
-		H160::from_slice(&hex::decode("096c87abcdca1b19d7c2c735dd7d5c0ba44bd190").unwrap())
+		H160::from_slice(&hex::decode("4e7b5ee0272b429056a8c7de8d464c67aa17facf").unwrap())
 	);
 
 	let expected_owner = Address::from_str("mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m")
@@ -270,10 +271,8 @@ fn register_ownership_command_indexer_integration() {
 	core.mine_blocks_to(3, initial_owner.clone());
 
 	// Call register ownership
-	let file_path = format!(
-		"{}/tests/fixtures/brc721_register_ownership_integration.yml",
-		env!("CARGO_MANIFEST_DIR")
-	);
+	let file_path =
+		format!("{}/tests/fixtures/brc721_register_ownership.yml", env!("CARGO_MANIFEST_DIR"));
 	let output = CommandBuilder::new(format!(
 		"--regtest wallet brc721 register-ownership --fee-rate 1 --file {}",
 		file_path
