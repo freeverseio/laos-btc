@@ -6,7 +6,8 @@ use bitcoin::{
 };
 use serde::{Deserialize, Serialize};
 use sp_core::H160;
-use thiserror::Error;
+
+use super::bitcoin_script::{expect_opcode, expect_push_bytes, BitcoinScriptError};
 
 /// Constant representing the length of a collection address in bytes.
 pub const COLLECTION_ADDRESS_LENGTH: usize = 20;
@@ -43,45 +44,45 @@ impl RegisterCollection {
 	///
 	/// The function checks for the presence of OP_RETURN, BRC721_INIT_CODE, the register collection
 	/// flag, a 20-byte collection address, and a 1-byte rebaseable flag in the script.
-	pub fn from_script(script: &ScriptBuf) -> Result<Self, RegisterCollectionError> {
-		let buffer = script.clone().into_bytes();
+	pub fn from_script(script: &ScriptBuf) -> Result<Self, BitcoinScriptError> {
+		// let mut instructions = script.instructions();
 
-		if buffer.len() < 24 {
-			return Err(RegisterCollectionError::InvalidLength("script is too short".to_string()));
-		}
+		// expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
+		// expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
 
-		if buffer[0..3] !=
-			[
-				OP_RETURN.to_u8(),
-				BRC721_INIT_CODE.to_u8(),
-				Brc721Operation::RegisterCollection as u8,
-			] {
-			return Err(RegisterCollectionError::UnexpectedInstruction);
-		}
+		// match expect_push_bytes(
+		// 	&mut instructions,
+		// 	Some(BRC721_OPERATION_LENGTH),
+		// 	"Register collection operation identifier",
+		// ) {
+		// 	Ok(byte) if byte == Brc721Operation::RegisterCollection.byte_slice() => (),
+		// 	Err(err) => return Err(err),
+		// 	_ => return Err(BitcoinScriptError::UnexpectedInstruction),
+		// }
 
-		// get LAOS collection address
-		let address = H160::from_slice(&buffer[3..23]);
-		let flags = buffer[23];
-		let rebaseable = (flags & 0x01) == 0x01;
+		// // Expect the collection address (20 bytes)
+		// let address_bytes = expect_push_bytes(
+		// 	&mut instructions,
+		// 	Some(COLLECTION_ADDRESS_LENGTH),
+		// 	"collection address",
+		// )?;
 
-		Ok(Self { address, rebaseable })
+		// // Expect the rebaseable flag (1 byte)
+		// let rebaseable_bytes =
+		// 	expect_push_bytes(&mut instructions, Some(REBASEABLE_LENGTH), "rebaseable")?;
+
+		// if rebaseable_bytes[0] > 1 {
+		// 	return Err(BitcoinScriptError::UnexpectedInstruction);
+		// }
+
+		// // get LAOS collection address
+		// let address = H160::from_slice(&buffer[3..23]);
+		// let flags = buffer[23];
+		// let rebaseable = (flags & 0x01) == 0x01;
+
+		// Ok(Self { address, rebaseable })
+		Ok(Self::default())
 	}
-}
-
-/// Custom error type for errors related to register collection operations.
-#[derive(Debug, Error, PartialEq)]
-pub enum RegisterCollectionError {
-	/// An instruction of the expected type was not found in the script.
-	#[error("Instruction not found: `{0}`")]
-	InstructionNotFound(String),
-
-	/// An unexpected instruction was encountered during decoding.
-	#[error("Unexpected instruction")]
-	UnexpectedInstruction,
-
-	/// The length of a push operation in the script does not match the expected size.
-	#[error("Invalid length: `{0}`")]
-	InvalidLength(String),
 }
 
 #[cfg(test)]
@@ -136,7 +137,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			RegisterCollectionError::InvalidLength("script is too short".to_string())
+			BitcoinScriptError::InvalidLength("script is too short".to_string())
 		);
 	}
 }
