@@ -49,8 +49,12 @@ impl RegisterCollection {
 		expect_opcode(&mut instructions, OP_RETURN, "OP_RETURN")?;
 		expect_opcode(&mut instructions, OP_PUSHNUM_15, "BRC721_INIT_CODE")?;
 
-		let buffer =
-			expect_push_bytes(&mut instructions, Some(22), "Register ownership operation")?;
+		let buffer = expect_push_bytes(&mut instructions, None, "Register ownership operation")?;
+
+		if buffer.len() < 22 {
+			return Err(BitcoinScriptError::InvalidLength("short script".to_string()));
+		}
+
 		if buffer[0] != Brc721Operation::RegisterCollection as u8 {
 			return Err(BitcoinScriptError::UnexpectedInstruction);
 		}
@@ -107,7 +111,7 @@ mod tests {
 	#[test]
 	fn register_collection_decode_ignores_extra_bytes() {
 		let buf = ScriptBuf::from_bytes(
-			hex::decode("6a5f00abcffffffffffffffffffffffffffffffffffcba01FFFF").unwrap(),
+			hex::decode("6a5f1600abcffffffffffffffffffffffffffffffffffcba01FFFF").unwrap(),
 		);
 		RegisterCollection::from_script(&buf).unwrap();
 	}
