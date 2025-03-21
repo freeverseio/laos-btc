@@ -4,6 +4,6 @@
 #[derive(Debug, Clone, PartialEq)]
 #[repr(u8)]
 pub(crate) enum Brc721Operation {
-	RegisterCollection = 0,
-	RegisterOwnership = 1,
+	RegisterCollection = 0x00,
+	RegisterOwnership = 0x01,
 }
