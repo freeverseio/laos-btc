@@ -73,7 +73,7 @@ fn fixtures_file() {
 	let register_ownership =
 		RegisterOwnership::try_from(tx.output[0].script_pubkey.clone()).unwrap();
 	assert_eq!(register_ownership.collection_id, Brc721CollectionId::from_str("2:1").unwrap());
-	assert_eq!(register_ownership.slots_bundles.len(), 2);
+	assert_eq!(register_ownership.slots_bundles.len(), 4);
 	assert_eq!(register_ownership.slots_bundles[0], SlotsBundle(vec![(0..=3), (4..=10)]));
 	assert_eq!(
 		register_ownership.slots_bundles[1],
