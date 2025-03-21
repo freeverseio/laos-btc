@@ -3,16 +3,16 @@
 /// error otherwise.
 #[derive(Debug, Clone, PartialEq)]
 #[repr(u8)]
-pub(crate) enum Brc721Operation {
+pub enum Brc721Operation {
 	RegisterCollection = 0,
 	RegisterOwnership = 1,
 }
 
 impl Brc721Operation {
-	pub(crate) fn byte_slice(self) -> [u8; BRC721_OPERATION_LENGTH] {
+	pub fn byte_slice(self) -> [u8; BRC721_OPERATION_LENGTH] {
 		[self as u8]
 	}
 }
 
 /// The size of a brc721 flag in bytes
-pub(crate) const BRC721_OPERATION_LENGTH: usize = 1;
+pub const BRC721_OPERATION_LENGTH: usize = 1;

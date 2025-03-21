@@ -1,10 +1,12 @@
 pub mod address_mapping;
-mod bitcoin_script;
+pub mod bitcoin_script;
 pub mod collection;
 pub mod collection_id;
-pub(crate) mod operations;
+pub mod operations;
 pub mod register_collection;
 pub mod register_ownership;
+pub mod token;
+pub mod token_id;
 use super::*;
 
 use bitcoin::opcodes;
