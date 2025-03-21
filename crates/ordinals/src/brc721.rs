@@ -6,6 +6,7 @@ pub mod operations;
 pub mod register_collection;
 pub mod register_ownership;
 pub mod token;
+pub mod token_id;
 use super::*;
 
 use bitcoin::opcodes;
