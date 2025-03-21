@@ -2,7 +2,8 @@ use sp_core::{H160, U256};
 
 /// TokenId type
 /// every slot is identified by a unique `asset_id = concat(slot #, owner_address)`
-type TokenId = U256;
+#[allow(dead_code)] // TODO: remove this when used
+pub type TokenId = U256;
 
 /// Slot type - 96-bit unsigned integer
 #[derive(Eq, PartialEq, Clone, Copy, Default, PartialOrd, Ord, Hash, Debug)]
@@ -53,6 +54,7 @@ impl From<Slot> for u128 {
 /// owner_address)`
 ///
 /// Returns `Slot`
+#[allow(dead_code)] // TODO: remove this when used
 fn slot_and_owner_to_token_id(slot: Slot, owner: H160) -> TokenId {
 	let mut bytes = [0u8; 32];
 
