@@ -57,7 +57,7 @@ impl RegisterCollectionCmd {
 			RegisterCollection { address: self.address, rebaseable: self.rebaseable };
 
 		let bitcoin_tx =
-			wallet.build_brc721_tx(register_collection.to_script(), self.fee_rate, postage)?;
+			wallet.build_brc721_tx(register_collection.as_script(), self.fee_rate, postage)?;
 
 		let tx_id = wallet.bitcoin_client().send_raw_transaction(&bitcoin_tx)?;
 
