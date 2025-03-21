@@ -1153,9 +1153,14 @@ impl Index {
 
 		let utxo_table = db_read.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
 		let mut index = 0;
+		let mut vout_locator = 0;
 
 		while let Some(res) = utxo_table.get((owner.clone(), utxo_index))? {
 			let token_bundle: TokenBundles = res.value();
+			if vout_locator != token_bundle.3 {
+				vout_locator = token_bundle.3;
+				index = 0;
+			}
 
 			if collection_key == token_bundle.0 && token_id.1 == token_bundle.1 {
 				if token_id_slot >= token_bundle.4 && token_id_slot <= token_bundle.5 {

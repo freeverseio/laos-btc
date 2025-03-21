@@ -4,3 +4,5 @@ outputs:
   - slots_bundle: [[0, 3], [4, 10]]
     recipient: mrEqurom3cKudH7FaDrF3j1DJePLcjAU3m
   - slots_bundle: [[79228162514264337593543950335]] # by default no recipient means initial owner
+  - slots_bundle: [[21]]
+  - slots_bundle: [[23]]
