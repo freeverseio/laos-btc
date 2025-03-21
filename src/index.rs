@@ -1152,22 +1152,25 @@ impl Index {
 		let token_id_slot = u128::from_le_bytes(extended_token_id);
 
 		let utxo_table = db_read.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
+		let mut index = 0;
+
 		while let Some(res) = utxo_table.get((owner.clone(), utxo_index))? {
 			let token_bundle: TokenBundles = res.value();
 
-			if collection_key == token_bundle.0 &&
-				token_id.1 == token_bundle.1 &&
-				token_id_slot >= token_bundle.4 &&
-				token_id_slot <= token_bundle.5
-			{
-				return Ok(Some(Brc721Token::new(
-					None,
-					Some(UtxoId {
-						tx_idx: token_bundle.2,
-						tx_out_idx: token_bundle.3,
-						utxo_idx: utxo_index,
-					}),
-				)));
+			if collection_key == token_bundle.0 && token_id.1 == token_bundle.1 {
+				if token_id_slot >= token_bundle.4 && token_id_slot <= token_bundle.5 {
+					index += token_id_slot - token_bundle.4;
+					return Ok(Some(Brc721Token::new(
+						None,
+						Some(UtxoId {
+							tx_idx: token_bundle.2,
+							tx_out_idx: token_bundle.3,
+							utxo_idx: index,
+						}),
+					)));
+				} else {
+					index += token_bundle.5 - token_bundle.4 + 1;
+				}
 			}
 			utxo_index += 1;
 		}

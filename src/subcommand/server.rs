@@ -7088,7 +7088,7 @@ next
 			Brc721TokenHtml {
 				entry: Brc721Token::new(
 					None,
-					Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 0 }),
+					Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 3 }),
 				),
 			},
 		);

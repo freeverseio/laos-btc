@@ -290,7 +290,7 @@ fn register_ownership_command_indexer_integration() {
 		format!("/brc721/token/2:1/{expected_token_id}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
-			entry: Brc721Token::new(None, Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 0 })),
+			entry: Brc721Token::new(None, Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 3 })),
 		},
 	);
 
@@ -299,4 +299,20 @@ fn register_ownership_command_indexer_integration() {
 	let actual_owner = Address::from_script(&tx.output[1].script_pubkey, Network::Regtest).unwrap();
 
 	assert_eq!(expected_owner, actual_owner);
+
+	let token_id_parts = ([6u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], initial_owner_h160.0);
+
+	let mut raw_token_id = [0u8; 32];
+	raw_token_id[..12].copy_from_slice(&token_id_parts.0);
+	raw_token_id[12..].copy_from_slice(&token_id_parts.1);
+
+	let expected_token_id = U256::from_little_endian(&raw_token_id);
+
+	ord.assert_html(
+		format!("/brc721/token/2:1/{expected_token_id}"),
+		Chain::Regtest,
+		Brc721TokenHtml {
+			entry: Brc721Token::new(None, Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 6 })),
+		},
+	);
 }
