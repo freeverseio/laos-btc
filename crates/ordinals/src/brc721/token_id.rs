@@ -2,11 +2,12 @@ use sp_core::{H160, U256};
 
 /// TokenId type
 /// every slot is identified by a unique `asset_id = concat(slot #, owner_address)`
-pub type TokenId = U256;
+#[derive(Debug, PartialEq)]
+pub struct TokenId(pub ([u8; 12], [u8; 20]));
 
 /// Slot type - 96-bit unsigned integer
 #[derive(Eq, PartialEq, Clone, Copy, Default, PartialOrd, Ord, Hash, Debug)]
-pub struct Slot([u8; 12]);
+pub struct Slot(pub [u8; 12]);
 impl Slot {
 	/// Maximum value for a 96-bit unsigned integer
 	pub const MAX_SLOT: Slot = Slot([0xFF; 12]);
@@ -39,23 +40,36 @@ impl From<Slot> for u128 {
 	}
 }
 
-/// Converts `Slot` and `H160` to `TokenId`
-///
-/// Every slot is identified by a unique `token_id` where `token_id = concat(slot #,
-/// owner_address)`
-///
-/// Returns `Slot`
-pub fn slot_and_owner_to_token_id(slot: Slot, owner: H160) -> TokenId {
-	let mut bytes = [0u8; 32];
+impl From<(Slot, H160)> for TokenId {
+	fn from(input: (Slot, H160)) -> Self {
+		Self((input.0 .0, input.1 .0))
+	}
+}
 
-	let slot_bytes = slot.0;
+impl From<TokenId> for U256 {
+	fn from(input: TokenId) -> Self {
+		let mut bytes = [0u8; 32];
 
-	// Copy the slot into the first 12 bytes of the array
-	bytes[..12].copy_from_slice(&slot_bytes);
-	// Copy the owner address bytes into the array
-	bytes[12..].copy_from_slice(&owner.0);
+		let slot_bytes = input.0 .0;
+		let owner = input.0 .1;
+		// Copy the slot into the first 12 bytes of the array
+		bytes[..12].copy_from_slice(&slot_bytes);
+		// Copy the owner address bytes into the array
+		bytes[12..].copy_from_slice(&owner);
 
-	TokenId::from_little_endian(&bytes)
+		Self::from_little_endian(&bytes)
+	}
+}
+
+impl From<U256> for TokenId {
+	fn from(input: U256) -> Self {
+		let num = input.to_little_endian();
+		let mut slot = [0u8; 12];
+		slot.copy_from_slice(&num[..12]);
+		let mut owner: [u8; 20] = [0u8; 20];
+		owner.copy_from_slice(&num[12..]);
+		Self((slot, owner))
+	}
 }
 
 #[cfg(test)]
@@ -86,14 +100,19 @@ mod test {
 	}
 
 	#[test]
-	fn slot_and_owner_to_token_id_works() {
+	fn token_id_conversions() {
 		let slot = Slot::try_from(1).unwrap();
 		let owner = H160::from_str("0xf2188656f04bc18138144c734bed1bf3782e59b8").unwrap();
-		let token_id = slot_and_owner_to_token_id(slot, owner);
+		let token_id = TokenId::from((slot, owner));
+		assert_eq!(token_id, TokenId((slot.0, owner.0)));
+
+		let token_id_as_u256 = U256::from(token_id);
 		assert_eq!(
-			format!("0x{:064x}", token_id),
-			"0x000000000000000000000001f2188656f04bc18138144c734bed1bf3782e59b8"
+			token_id_as_u256.to_string(),
+			"83383134269214219439183069068932609969461089732144997588386360420266972020737"
 		);
-		assert_eq!(token_id.to_string(), "2843624324385043295092873104609319246794557643192");
+
+		let recovered_token_id = TokenId::from(token_id_as_u256);
+		assert_eq!(recovered_token_id, token_id);
 	}
 }

@@ -15,7 +15,8 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use ordinals::{
-	brc721::is_brc721_script, btc_address_to_h160, RegisterCollection, RegisterOwnership,
+	brc721::is_brc721_script, btc_address_to_h160, RegisterCollection, RegisterOwnership, Slot,
+	TokenId,
 };
 
 use super::*;
@@ -178,10 +179,11 @@ where
 				let slot_end = *slot_range.end();
 
 				for slot in slot_range {
-					let mut slot_bytes = [0u8; 12];
-					slot_bytes.copy_from_slice(&slot.to_le_bytes()[..12]);
-					let token_id = (slot_bytes, h160_address.0);
-					if self.token_owners.get_value((token_id, collection_id_value)).is_some() {
+					let token_id = TokenId::from((
+						Slot::try_from(slot).map_err(|err| anyhow::anyhow!(err))?,
+						h160_address,
+					));
+					if self.token_owners.get_value((token_id.0, collection_id_value)).is_some() {
 						return Err(anyhow::anyhow!(format!(
 							"Token {:?} already registered",
 							(token_id, collection_id_value)
@@ -189,7 +191,7 @@ where
 					}
 
 					self.token_owners
-						.insert((token_id, collection_id_value), owner_bytes.clone())?;
+						.insert((token_id.0, collection_id_value), owner_bytes.clone())?;
 				}
 
 				let tx_out_idx = u32::try_from(index + 1)?;

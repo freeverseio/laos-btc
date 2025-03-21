@@ -12,9 +12,9 @@ use ordinals::{
 		register_ownership::{RegisterOwnership, SlotsBundle},
 		token::Brc721Output,
 	},
-	slot_and_owner_to_token_id, Brc721Collection, Brc721TokenOwnership, Slot,
+	Brc721Collection, Brc721TokenOwnership, Slot, TokenId,
 };
-use sp_core::H160;
+use sp_core::{H160, U256};
 
 #[test]
 fn fixtures_file() {
@@ -278,11 +278,12 @@ fn register_ownership_command_indexer_integration() {
 
 	core.mine_blocks(1);
 
-	let expected_token_id =
-		slot_and_owner_to_token_id(Slot::try_from(3).unwrap(), initial_owner_h160);
+	let expected_token_id = TokenId::from((Slot::try_from(3).unwrap(), initial_owner_h160));
+
+	let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id}"),
+		format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
 			entry: Brc721TokenOwnership::NftId(Brc721Output {
@@ -298,11 +299,11 @@ fn register_ownership_command_indexer_integration() {
 
 	assert_eq!(expected_owner, actual_owner);
 
-	let expected_token_id =
-		slot_and_owner_to_token_id(Slot::try_from(6).unwrap(), initial_owner_h160);
+	let expected_token_id = TokenId::from((Slot::try_from(6).unwrap(), initial_owner_h160));
+	let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id}"),
+		format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
 			entry: Brc721TokenOwnership::NftId(Brc721Output {
@@ -312,11 +313,11 @@ fn register_ownership_command_indexer_integration() {
 		},
 	);
 
-	let expected_token_id =
-		slot_and_owner_to_token_id(Slot::try_from(21).unwrap(), initial_owner_h160);
+	let expected_token_id = TokenId::from((Slot::try_from(21).unwrap(), initial_owner_h160));
+	let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id}"),
+		format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
 			entry: Brc721TokenOwnership::NftId(Brc721Output {

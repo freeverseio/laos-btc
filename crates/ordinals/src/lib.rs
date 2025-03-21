@@ -46,7 +46,7 @@ pub use brc721::{
 	register_collection::{RegisterCollection, COLLECTION_ADDRESS_LENGTH},
 	register_ownership::{RegisterOwnership, SlotsBundle},
 	token::Brc721TokenOwnership,
-	token_id::{slot_and_owner_to_token_id, Slot, TokenId},
+	token_id::{Slot, TokenId},
 };
 pub use cenotaph::Cenotaph;
 pub use charm::Charm;

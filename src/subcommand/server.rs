@@ -38,6 +38,7 @@ use axum::{
 };
 use axum_server::Handle;
 use brotli::Decompressor;
+use ordinals::TokenId;
 use rust_embed::RustEmbed;
 use rustls_acme::{
 	acme::{LETS_ENCRYPT_PRODUCTION_DIRECTORY, LETS_ENCRYPT_STAGING_DIRECTORY},
@@ -1919,14 +1920,9 @@ impl Server {
 	) -> ServerResult {
 		// check if token_id is a valid number
 		let num = U256::from_dec_str(&token_id)
-			.map_err(|_| ServerError::BadRequest("token_id is not a valid number".to_string()))?
-			.to_little_endian();
+			.map_err(|_| ServerError::BadRequest("token_id is not a valid number".to_string()))?;
 
-		let mut slot = [0u8; 12];
-		slot.copy_from_slice(&num[..12]);
-		let mut owner: [u8; 20] = [0u8; 20];
-		owner.copy_from_slice(&num[12..]);
-		let token_id = (slot, owner);
+		let token_id = TokenId::from(num);
 
 		let entry = index
 			.get_brc721_token_by_id(collection_id, token_id)?
@@ -2135,7 +2131,8 @@ mod tests {
 
 	use super::*;
 	use ordinals::{
-		brc721::token::Brc721Output, RegisterCollection, RegisterOwnership, SlotsBundle,
+		brc721::token::Brc721Output, RegisterCollection, RegisterOwnership, Slot, SlotsBundle,
+		TokenId,
 	};
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
@@ -7075,13 +7072,15 @@ next
 
 		server.mine_blocks(1);
 
-		let expected_token_id = slot_and_owner_to_token_id(
+		let expected_token_id = TokenId::from((
 			Slot::try_from(3).unwrap(),
 			H160::from_str("422dd7fc22339593e95681d096b2399cd4be9df2").unwrap(),
-		);
+		));
+
+		let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 		server.assert_html(
-			format!("/brc721/token/2:1/{expected_token_id}"),
+			format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
 			Brc721TokenHtml {
 				entry: Brc721TokenOwnership::NftId(Brc721Output {
 					outpoint: OutPoint { txid, vout: 1 },

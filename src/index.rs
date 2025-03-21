@@ -24,8 +24,8 @@ use self::{
 	lot::Lot,
 	reorg::Reorg,
 	updater::{
-		Brc721TokenId, Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue,
-		TokenBundles, TokenScriptOwner, Updater,
+		Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue, TokenBundles,
+		TokenScriptOwner, Updater,
 	},
 	utxo_entry::{ParsedUtxoEntry, UtxoEntry, UtxoEntryBuf},
 };
@@ -43,7 +43,7 @@ use bitcoincore_rpc::{
 use chrono::SubsecRound;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
-use ordinals::brc721::token::Brc721Output;
+use ordinals::{brc721::token::Brc721Output, Slot, TokenId};
 use redb::{
 	Database, DatabaseError, MultimapTable, MultimapTableDefinition, MultimapTableHandle,
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
@@ -1127,7 +1127,7 @@ impl Index {
 	pub fn get_brc721_token_by_id(
 		&self,
 		collection_id: Brc721CollectionId,
-		token_id: Brc721TokenId,
+		token_id: TokenId,
 	) -> Result<Option<Brc721TokenOwnership>> {
 		let maybe_collection = self.get_brc721_collection_by_id(collection_id)?;
 		if maybe_collection.is_none() {
@@ -1138,18 +1138,16 @@ impl Index {
 		let collection_key = (collection.id.block, collection.id.tx);
 		let db_read = self.database.begin_read()?;
 
-		let res = db_read.open_table(BRC721_TOKEN_TO_OWNER)?.get((token_id, collection_key))?;
+		let res = db_read.open_table(BRC721_TOKEN_TO_OWNER)?.get((token_id.0, collection_key))?;
 
 		if res.is_none() {
-			return Ok(Some(Brc721TokenOwnership::InitialOwner(token_id.1.into())));
+			return Ok(Some(Brc721TokenOwnership::InitialOwner(token_id.0 .1.into())));
 		}
 
 		let owner = hex::encode(res.unwrap().value());
 		let mut utxo_index = 0;
 
-		let mut extended_token_id = [0u8; 16];
-		extended_token_id[..12].copy_from_slice(&token_id.0);
-		let token_id_slot = u128::from_le_bytes(extended_token_id);
+		let token_id_slot: u128 = Slot(token_id.0 .0).into();
 
 		let utxo_table = db_read.open_table(BRC721_UTXO_TO_TOKEN_ID)?;
 		let mut index = 0;
@@ -1162,7 +1160,7 @@ impl Index {
 				index = 0;
 			}
 
-			if collection_key == token_bundle.0 && token_id.1 == token_bundle.1 {
+			if collection_key == token_bundle.0 && token_id.0 .1 == token_bundle.1 {
 				if token_id_slot >= token_bundle.4 && token_id_slot <= token_bundle.5 {
 					index += token_id_slot - token_bundle.4;
 					return Ok(Some(Brc721TokenOwnership::NftId(Brc721Output {
@@ -1181,7 +1179,7 @@ impl Index {
 			utxo_index += 1;
 		}
 
-		Ok(Some(Brc721TokenOwnership::InitialOwner(H160::from_slice(&token_id.1))))
+		Ok(Some(Brc721TokenOwnership::InitialOwner(H160::from_slice(&token_id.0 .1))))
 	}
 
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {

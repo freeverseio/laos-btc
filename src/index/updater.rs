@@ -26,7 +26,7 @@ use tokio::sync::{
 };
 
 pub(crate) use brc721_updater::{
-	Brc721TokenId, Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue, TokenBundles,
+	Brc721TokenInCollection, OwnerUTXOIndex, RegisterCollectionValue, TokenBundles,
 	TokenScriptOwner,
 };
 
