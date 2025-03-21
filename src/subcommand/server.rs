@@ -63,6 +63,8 @@ mod error;
 pub mod query;
 mod server_config;
 
+const UNEXISTING_COLLECTION: &str = "unexisting collection";
+
 enum SpawnConfig {
 	Https(AxumAcceptor),
 	Http,
@@ -1901,7 +1903,7 @@ impl Server {
 		// If the collection does not exist, return a `NotFound` error.
 		let collection = index
 			.get_brc721_collection_by_id(collection_id)?
-			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
+			.ok_or_else(|| ServerError::NotFound(UNEXISTING_COLLECTION.to_string()))?;
 
 		let response_data = serde_json::to_value(collection).unwrap();
 
@@ -1928,7 +1930,7 @@ impl Server {
 
 		let entry = index
 			.get_brc721_token_by_id(collection_id, token_id)?
-			.ok_or_else(|| ServerError::NotFound(Brc721Token::default().to_string()))?;
+			.ok_or_else(|| ServerError::NotFound(UNEXISTING_COLLECTION.to_string()))?;
 
 		Ok(if accept_json {
 			Json(Brc721TokenHtml { entry }).into_response()
@@ -2132,7 +2134,7 @@ mod tests {
 	use crate::templates::Brc721TokenHtml;
 
 	use super::*;
-	use ordinals::{brc721::token::UtxoId, RegisterCollection, RegisterOwnership, SlotsBundle};
+	use ordinals::{brc721::token::UtxoOutput, RegisterCollection, RegisterOwnership, SlotsBundle};
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
 	use sp_core::H160;
@@ -6971,7 +6973,7 @@ next
 		server.assert_response(
 			"/brc721/token/1:1/1234",
 			StatusCode::NOT_FOUND,
-			&Brc721Token::default().to_string(),
+			UNEXISTING_COLLECTION,
 		);
 	}
 
@@ -7025,9 +7027,8 @@ next
 		server.assert_html(
 			"/brc721/token/2:1/1234",
 			Brc721TokenHtml {
-				entry: Brc721Token::new(
-					Some(H160::from_str("0000000000000000000000000000000000000000").unwrap()),
-					None,
+				entry: Brc721TokenOwnership::InitialOwner(
+					H160::from_str("0000000000000000000000000000000000000000").unwrap(),
 				),
 			},
 		);
@@ -7061,7 +7062,7 @@ next
 		let pubkey_bytes = hex::decode(pubkey_hex).unwrap();
 		let signature = vec![0x30, 0x45, 0x02, 0x21];
 
-		let _ = server.core.broadcast_tx(TransactionTemplate {
+		let txid = server.core.broadcast_tx(TransactionTemplate {
 			inputs: &[(1, 0, 0, vec![signature, pubkey_bytes.clone()].into())],
 			outputs: 1,
 			op_return_index: Some(0),
@@ -7086,10 +7087,10 @@ next
 		server.assert_html(
 			format!("/brc721/token/2:1/{expected_token_id}"),
 			Brc721TokenHtml {
-				entry: Brc721Token::new(
-					None,
-					Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 3 }),
-				),
+				entry: Brc721TokenOwnership::NftId(UtxoOutput {
+					outpoint: OutPoint { txid, vout: 1 },
+					nft_idx: 3,
+				}),
 			},
 		);
 	}
@@ -7228,7 +7229,7 @@ next
 		server.assert_response(
 			"/brc721/collection/1020:1",
 			StatusCode::NOT_FOUND,
-			"unexistent collection",
+			UNEXISTING_COLLECTION,
 		);
 	}
 

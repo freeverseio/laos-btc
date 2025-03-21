@@ -10,9 +10,9 @@ use ordinals::{
 	brc721::{
 		address_mapping,
 		register_ownership::{RegisterOwnership, SlotsBundle},
-		token::UtxoId,
+		token::UtxoOutput,
 	},
-	Brc721Collection, Brc721Token,
+	Brc721Collection, Brc721TokenOwnership,
 };
 use sp_core::{H160, U256};
 
@@ -290,7 +290,10 @@ fn register_ownership_command_indexer_integration() {
 		format!("/brc721/token/2:1/{expected_token_id}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
-			entry: Brc721Token::new(None, Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 3 })),
+			entry: Brc721TokenOwnership::NftId(UtxoOutput {
+				outpoint: OutPoint { txid: output.tx_id, vout: 1 },
+				nft_idx: 3,
+			}),
 		},
 	);
 
@@ -312,7 +315,10 @@ fn register_ownership_command_indexer_integration() {
 		format!("/brc721/token/2:1/{expected_token_id}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
-			entry: Brc721Token::new(None, Some(UtxoId { tx_idx: 1, tx_out_idx: 1, utxo_idx: 6 })),
+			entry: Brc721TokenOwnership::NftId(UtxoOutput {
+				outpoint: OutPoint { txid: output.tx_id, vout: 1 },
+				nft_idx: 6,
+			}),
 		},
 	);
 }

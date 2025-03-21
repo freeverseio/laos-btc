@@ -18,7 +18,7 @@ use super::*;
 
 #[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brc721TokenHtml {
-	pub entry: Brc721Token,
+	pub entry: Brc721TokenOwnership,
 }
 
 impl PageContent for Brc721TokenHtml {
@@ -29,7 +29,7 @@ impl PageContent for Brc721TokenHtml {
 
 #[cfg(test)]
 mod tests {
-	use ordinals::brc721::token::UtxoId;
+	use ordinals::brc721::token::UtxoOutput;
 	use sp_core::H160;
 
 	use super::*;
@@ -38,32 +38,29 @@ mod tests {
 	fn display_utxo_id() {
 		assert_eq!(
 			Brc721TokenHtml {
-				entry: Brc721Token::new(
-					None,
-					Some(UtxoId { tx_idx: 0, tx_out_idx: 0, utxo_idx: 0 })
-				)
+				entry: Brc721TokenOwnership::NftId(UtxoOutput {
+					outpoint: OutPoint {
+						txid: Txid::from_str(
+							"c8cdf720db5562a039be5d81c51a07c5120eaf0bf142b2144f1a1eb7a95678d3"
+						)
+						.unwrap(),
+						vout: 0
+					},
+					nft_idx: 0
+				})
 			}
 			.to_string(),
 			"<h1>Token</h1>
-<p>0 - 0 - 0</p>"
+<p>c8cdf720db5562a039be5d81c51a07c5120eaf0bf142b2144f1a1eb7a95678d3 - 0 - 0</p>"
 		);
 	}
 
 	#[test]
 	fn display_owner() {
 		assert_eq!(
-			Brc721TokenHtml { entry: Brc721Token::new(Some(H160::zero()), None,) }.to_string(),
+			Brc721TokenHtml { entry: Brc721TokenOwnership::InitialOwner(H160::zero()) }.to_string(),
 			"<h1>Token</h1>
 <p>0x0000000000000000000000000000000000000000</p>"
-		);
-	}
-
-	#[test]
-	fn display_none() {
-		assert_eq!(
-			Brc721TokenHtml { entry: Brc721Token::new(None, None,) }.to_string(),
-			"<h1>Token</h1>
-<p>unexisting collection</p>"
 		);
 	}
 }

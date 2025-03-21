@@ -51,11 +51,11 @@ pub(crate) type Brc721TokenInCollection = (Brc721TokenId, Brc721CollectionIdValu
 pub(crate) type TokenScriptOwner = Vec<u8>;
 
 pub(crate) type OwnerUTXOIndex = (String, u128);
-// u32  (token_bundle.2) is the tx_index
-// u128 (token_bundle.3) is the tx output index
-// u128 (token_bundle.4) is the slot start
-// u128 (token_bundle.5) is the slot end
-pub(crate) type TokenBundles = (Brc721CollectionIdValue, [u8; 20], u32, u128, u128, u128);
+// [u8; 32] (token_bundle.2) is the tx hash
+// u32      (token_bundle.3) is the tx output index
+// u128     (token_bundle.4) is the slot start
+// u128     (token_bundle.5) is the slot end
+pub(crate) type TokenBundles = (Brc721CollectionIdValue, [u8; 20], [u8; 32], u32, u128, u128);
 
 impl_brc721_table!(Brc721CollectionIdValue, RegisterCollectionValue);
 impl_brc721_table!(Brc721TokenInCollection, TokenScriptOwner);
@@ -97,7 +97,7 @@ where
 		if let Ok(register_collection) = RegisterCollection::from_script(&first_output_script) {
 			self.index_register_collections(tx_index, register_collection)?;
 		} else if let Ok(register_ownership) = first_output_script.try_into() {
-			self.index_register_ownership(tx, tx_index, register_ownership)?;
+			self.index_register_ownership(tx, register_ownership)?;
 		}
 
 		Ok(())
@@ -121,7 +121,6 @@ where
 	fn index_register_ownership(
 		&mut self,
 		tx: &Transaction,
-		tx_index: u32,
 		register_ownership: RegisterOwnership,
 	) -> Result<()> {
 		let collection_id_value =
@@ -168,7 +167,6 @@ where
 			return Ok(());
 		};
 
-		println!("{:?}", h160_address);
 		for (index, slot_bundle) in register_ownership.slots_bundles.into_iter().enumerate() {
 			for slot_range in slot_bundle.0.into_iter() {
 				let owner_bytes = tx.output[index + 1].clone().script_pubkey.into_bytes();
@@ -194,13 +192,14 @@ where
 						.insert((token_id, collection_id_value), owner_bytes.clone())?;
 				}
 
+				let tx_out_idx = u32::try_from(index + 1)?;
 				self.token_by_owner.insert(
 					(hex_encoded_owner.clone(), slot_range_owned_by_owner),
 					(
 						collection_id_value,
 						h160_address.0,
-						tx_index,
-						(index + 1) as u128,
+						*tx.compute_txid().as_ref(),
+						tx_out_idx,
 						slot_start,
 						slot_end,
 					),

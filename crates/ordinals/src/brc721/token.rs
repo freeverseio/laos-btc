@@ -1,35 +1,30 @@
+use bitcoin::OutPoint;
 use sp_core::H160;
 
 use crate::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Brc721Token {
-	pub owner: Option<H160>,
-	pub utxo_id: Option<UtxoId>,
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub enum Brc721TokenOwnership {
+	InitialOwner(H160),
+	NftId(UtxoOutput),
 }
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UtxoId {
-	pub tx_idx: u32,
-	pub tx_out_idx: u128,
-	pub utxo_idx: u128,
+pub struct UtxoOutput {
+	pub outpoint: OutPoint,
+	pub nft_idx: u128,
 }
 
-impl Brc721Token {
-	pub fn new(owner: Option<H160>, utxo_id: Option<UtxoId>) -> Self {
-		Brc721Token { owner, utxo_id }
-	}
-}
-
-impl fmt::Display for Brc721Token {
+impl fmt::Display for Brc721TokenOwnership {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		if let Some(owner) = &self.owner {
-			write!(f, "{:?}", owner)
-		} else if let Some(utxo_id) = &self.utxo_id {
-			write!(f, "{} - {} - {}", utxo_id.tx_idx, utxo_id.tx_out_idx, utxo_id.utxo_idx)
-		} else {
-			write!(f, "unexisting collection")
+		match self {
+			Brc721TokenOwnership::InitialOwner(owner) => write!(f, "{:?}", owner),
+			Brc721TokenOwnership::NftId(utxo_id) => write!(
+				f,
+				"{} - {} - {}",
+				utxo_id.outpoint.txid, utxo_id.outpoint.vout, utxo_id.nft_idx
+			),
 		}
 	}
 }
@@ -39,22 +34,15 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn brc721_token_display_none() {
-		let token = Brc721Token::new(None, None);
-
-		assert_eq!(format!("{}", token), "unexisting collection");
-	}
-
-	#[test]
 	fn brc721_token_display_utxo_id() {
-		let token = Brc721Token::new(None, Some(UtxoId::default()));
+		let token = Brc721TokenOwnership::NftId(UtxoOutput::default());
 
 		assert_eq!(format!("{}", token), "0 - 0 - 0");
 	}
 
 	#[test]
 	fn brc721_token_display_owner() {
-		let token = Brc721Token::new(Some(H160::zero()), None);
+		let token = Brc721TokenOwnership::InitialOwner(H160::zero());
 
 		assert_eq!(format!("{}", token), "0x0000000000000000000000000000000000000000");
 	}

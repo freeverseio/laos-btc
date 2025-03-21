@@ -43,7 +43,7 @@ use bitcoincore_rpc::{
 use chrono::SubsecRound;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
-use ordinals::brc721::token::UtxoId;
+use ordinals::brc721::token::UtxoOutput;
 use redb::{
 	Database, DatabaseError, MultimapTable, MultimapTableDefinition, MultimapTableHandle,
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
@@ -1128,7 +1128,7 @@ impl Index {
 		&self,
 		collection_id: Brc721CollectionId,
 		token_id: Brc721TokenId,
-	) -> Result<Option<Brc721Token>> {
+	) -> Result<Option<Brc721TokenOwnership>> {
 		let maybe_collection = self.get_brc721_collection_by_id(collection_id)?;
 		if maybe_collection.is_none() {
 			return Ok(None);
@@ -1141,7 +1141,7 @@ impl Index {
 		let res = db_read.open_table(BRC721_TOKEN_TO_OWNER)?.get((token_id, collection_key))?;
 
 		if res.is_none() {
-			return Ok(Some(Brc721Token::new(Some(token_id.1.into()), None)));
+			return Ok(Some(Brc721TokenOwnership::InitialOwner(token_id.1.into())));
 		}
 
 		let owner = hex::encode(res.unwrap().value());
@@ -1160,14 +1160,15 @@ impl Index {
 			if collection_key == token_bundle.0 && token_id.1 == token_bundle.1 {
 				if token_id_slot >= token_bundle.4 && token_id_slot <= token_bundle.5 {
 					index += token_id_slot - token_bundle.4;
-					return Ok(Some(Brc721Token::new(
-						None,
-						Some(UtxoId {
-							tx_idx: token_bundle.2,
-							tx_out_idx: token_bundle.3,
-							utxo_idx: index,
-						}),
-					)));
+					return Ok(Some(Brc721TokenOwnership::NftId(UtxoOutput {
+						outpoint: OutPoint {
+							txid: Txid::from_raw_hash(
+								bitcoin::hashes::sha256d::Hash::from_byte_array(token_bundle.2),
+							),
+							vout: token_bundle.3,
+						},
+						nft_idx: index,
+					})));
 				} else {
 					index += token_bundle.5 - token_bundle.4 + 1;
 				}
@@ -1175,7 +1176,7 @@ impl Index {
 			utxo_index += 1;
 		}
 
-		Ok(Some(Brc721Token::new(Some(H160::from_slice(&token_id.1)), None)))
+		Ok(Some(Brc721TokenOwnership::InitialOwner(H160::from_slice(&token_id.1))))
 	}
 
 	pub fn block_header(&self, hash: BlockHash) -> Result<Option<Header>> {
