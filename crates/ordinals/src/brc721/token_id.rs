@@ -2,7 +2,7 @@ use sp_core::{H160, U256};
 
 /// TokenId type
 /// every slot is identified by a unique `asset_id = concat(slot #, owner_address)`
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TokenId(pub ([u8; 12], [u8; 20]));
 
 /// Slot type - 96-bit unsigned integer
@@ -104,9 +104,9 @@ mod test {
 		let slot = Slot::try_from(1).unwrap();
 		let owner = H160::from_str("0xf2188656f04bc18138144c734bed1bf3782e59b8").unwrap();
 		let token_id = TokenId::from((slot, owner));
-		assert_eq!(token_id, TokenId((slot.0, owner.0)));
+		assert_eq!(token_id.clone(), TokenId((slot.0, owner.0)));
 
-		let token_id_as_u256 = U256::from(token_id);
+		let token_id_as_u256 = U256::from(token_id.clone());
 		assert_eq!(
 			token_id_as_u256.to_string(),
 			"83383134269214219439183069068932609969461089732144997588386360420266972020737"
