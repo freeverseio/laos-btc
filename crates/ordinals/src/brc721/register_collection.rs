@@ -124,7 +124,7 @@ mod tests {
 		let result = RegisterCollection::from_script(&script);
 		assert_eq!(
 			result.unwrap_err(),
-			BitcoinScriptError::InvalidLength("script is too short".to_string())
+			BitcoinScriptError::InstructionNotFound("OP_RETURN".to_string())
 		);
 	}
 }
