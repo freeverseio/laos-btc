@@ -7,11 +7,11 @@ use std::fmt;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Brc721TokenOwnership {
 	InitialOwner(H160),
-	NftId(UtxoOutput),
+	NftId(Brc721Output),
 }
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UtxoOutput {
+pub struct Brc721Output {
 	pub outpoint: OutPoint,
 	pub nft_idx: u128,
 }
@@ -35,7 +35,7 @@ mod tests {
 
 	#[test]
 	fn brc721_token_display_utxo_id() {
-		let token = Brc721TokenOwnership::NftId(UtxoOutput::default());
+		let token = Brc721TokenOwnership::NftId(Brc721Output::default());
 
 		assert_eq!(format!("{}", token), "0 - 0 - 0");
 	}

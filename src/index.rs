@@ -43,7 +43,7 @@ use bitcoincore_rpc::{
 use chrono::SubsecRound;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
-use ordinals::brc721::token::UtxoOutput;
+use ordinals::brc721::token::Brc721Output;
 use redb::{
 	Database, DatabaseError, MultimapTable, MultimapTableDefinition, MultimapTableHandle,
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
@@ -1165,7 +1165,7 @@ impl Index {
 			if collection_key == token_bundle.0 && token_id.1 == token_bundle.1 {
 				if token_id_slot >= token_bundle.4 && token_id_slot <= token_bundle.5 {
 					index += token_id_slot - token_bundle.4;
-					return Ok(Some(Brc721TokenOwnership::NftId(UtxoOutput {
+					return Ok(Some(Brc721TokenOwnership::NftId(Brc721Output {
 						outpoint: OutPoint {
 							txid: Txid::from_raw_hash(
 								bitcoin::hashes::sha256d::Hash::from_byte_array(token_bundle.2),

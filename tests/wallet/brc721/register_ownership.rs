@@ -10,11 +10,11 @@ use ordinals::{
 	brc721::{
 		address_mapping,
 		register_ownership::{RegisterOwnership, SlotsBundle},
-		token::UtxoOutput,
+		token::Brc721Output,
 	},
-	Brc721Collection, Brc721TokenOwnership,
+	slot_and_owner_to_token_id, Brc721Collection, Brc721TokenOwnership, Slot,
 };
-use sp_core::{H160, U256};
+use sp_core::H160;
 
 #[test]
 fn fixtures_file() {
@@ -67,7 +67,7 @@ fn fixtures_file() {
 	core.mine_blocks(1);
 
 	let tx = core.tx_by_id(output.tx_id);
-	assert_eq!(tx.output.len(), 4);
+	assert_eq!(tx.output.len(), 6);
 
 	// UTXO 0
 	let register_ownership =
@@ -278,19 +278,14 @@ fn register_ownership_command_indexer_integration() {
 
 	core.mine_blocks(1);
 
-	let token_id_parts = ([3u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], initial_owner_h160.0);
-
-	let mut raw_token_id = [0u8; 32];
-	raw_token_id[..12].copy_from_slice(&token_id_parts.0);
-	raw_token_id[12..].copy_from_slice(&token_id_parts.1);
-
-	let expected_token_id = U256::from_little_endian(&raw_token_id);
+	let expected_token_id =
+		slot_and_owner_to_token_id(Slot::try_from(3).unwrap(), initial_owner_h160);
 
 	ord.assert_html(
 		format!("/brc721/token/2:1/{expected_token_id}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
-			entry: Brc721TokenOwnership::NftId(UtxoOutput {
+			entry: Brc721TokenOwnership::NftId(Brc721Output {
 				outpoint: OutPoint { txid: output.tx_id, vout: 1 },
 				nft_idx: 3,
 			}),
@@ -303,58 +298,29 @@ fn register_ownership_command_indexer_integration() {
 
 	assert_eq!(expected_owner, actual_owner);
 
-	let token_id_parts = ([6u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], initial_owner_h160.0);
-
-	let mut raw_token_id = [0u8; 32];
-	raw_token_id[..12].copy_from_slice(&token_id_parts.0);
-	raw_token_id[12..].copy_from_slice(&token_id_parts.1);
-
-	let expected_token_id = U256::from_little_endian(&raw_token_id);
+	let expected_token_id =
+		slot_and_owner_to_token_id(Slot::try_from(6).unwrap(), initial_owner_h160);
 
 	ord.assert_html(
 		format!("/brc721/token/2:1/{expected_token_id}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
-			entry: Brc721TokenOwnership::NftId(UtxoOutput {
+			entry: Brc721TokenOwnership::NftId(Brc721Output {
 				outpoint: OutPoint { txid: output.tx_id, vout: 1 },
 				nft_idx: 6,
 			}),
 		},
 	);
 
-	let token_id_parts = ([21u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], initial_owner_h160.0);
-
-	let mut raw_token_id = [0u8; 32];
-	raw_token_id[..12].copy_from_slice(&token_id_parts.0);
-	raw_token_id[12..].copy_from_slice(&token_id_parts.1);
-
-	let expected_token_id = U256::from_little_endian(&raw_token_id);
+	let expected_token_id =
+		slot_and_owner_to_token_id(Slot::try_from(21).unwrap(), initial_owner_h160);
 
 	ord.assert_html(
 		format!("/brc721/token/2:1/{expected_token_id}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
-			entry: Brc721TokenOwnership::NftId(UtxoOutput {
+			entry: Brc721TokenOwnership::NftId(Brc721Output {
 				outpoint: OutPoint { txid: output.tx_id, vout: 3 },
-				nft_idx: 0,
-			}),
-		},
-	);
-
-	let token_id_parts = ([23u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], initial_owner_h160.0);
-
-	let mut raw_token_id = [0u8; 32];
-	raw_token_id[..12].copy_from_slice(&token_id_parts.0);
-	raw_token_id[12..].copy_from_slice(&token_id_parts.1);
-
-	let expected_token_id = U256::from_little_endian(&raw_token_id);
-
-	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id}"),
-		Chain::Regtest,
-		Brc721TokenHtml {
-			entry: Brc721TokenOwnership::NftId(UtxoOutput {
-				outpoint: OutPoint { txid: output.tx_id, vout: 4 },
 				nft_idx: 0,
 			}),
 		},

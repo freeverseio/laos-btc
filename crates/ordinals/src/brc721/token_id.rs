@@ -2,7 +2,6 @@ use sp_core::{H160, U256};
 
 /// TokenId type
 /// every slot is identified by a unique `asset_id = concat(slot #, owner_address)`
-#[allow(dead_code)] // TODO: remove this when used
 pub type TokenId = U256;
 
 /// Slot type - 96-bit unsigned integer
@@ -15,14 +14,6 @@ impl Slot {
 	pub fn new(bytes: [u8; 12]) -> Self {
 		Slot(bytes)
 	}
-
-	pub fn to_be_bytes(&self) -> [u8; 12] {
-		let mut bytes = [0u8; 12];
-		let slot_u128: u128 = (*self).into();
-		let slot_bytes = slot_u128.to_be_bytes();
-		bytes.copy_from_slice(&slot_bytes[4..]); // Copy the last 12 bytes
-		bytes
-	}
 }
 
 impl TryFrom<u128> for Slot {
@@ -32,9 +23,9 @@ impl TryFrom<u128> for Slot {
 		if value > ((1u128 << 96) - 1) {
 			Err("Value exceeds 96-bit limit")
 		} else {
-			let bytes = value.to_be_bytes();
+			let bytes = value.to_le_bytes();
 			let slot_bytes: [u8; 12] =
-				bytes[4..].try_into().map_err(|_| "Slice conversion failed")?;
+				bytes[..12].try_into().map_err(|_| "Slice conversion failed")?;
 			Ok(Slot(slot_bytes))
 		}
 	}
@@ -43,8 +34,8 @@ impl TryFrom<u128> for Slot {
 impl From<Slot> for u128 {
 	fn from(slot: Slot) -> u128 {
 		let mut bytes = [0u8; 16];
-		bytes[4..].copy_from_slice(&slot.0);
-		u128::from_be_bytes(bytes)
+		bytes[..12].copy_from_slice(&slot.0);
+		u128::from_le_bytes(bytes)
 	}
 }
 
@@ -54,18 +45,17 @@ impl From<Slot> for u128 {
 /// owner_address)`
 ///
 /// Returns `Slot`
-#[allow(dead_code)] // TODO: remove this when used
-fn slot_and_owner_to_token_id(slot: Slot, owner: H160) -> TokenId {
+pub fn slot_and_owner_to_token_id(slot: Slot, owner: H160) -> TokenId {
 	let mut bytes = [0u8; 32];
 
-	let slot_bytes = slot.to_be_bytes();
+	let slot_bytes = slot.0;
 
 	// Copy the slot into the first 12 bytes of the array
 	bytes[..12].copy_from_slice(&slot_bytes);
 	// Copy the owner address bytes into the array
 	bytes[12..].copy_from_slice(&owner.0);
 
-	TokenId::from_big_endian(&bytes)
+	TokenId::from_little_endian(&bytes)
 }
 
 #[cfg(test)]

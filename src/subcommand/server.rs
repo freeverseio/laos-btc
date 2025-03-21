@@ -2134,7 +2134,9 @@ mod tests {
 	use crate::templates::Brc721TokenHtml;
 
 	use super::*;
-	use ordinals::{brc721::token::UtxoOutput, RegisterCollection, RegisterOwnership, SlotsBundle};
+	use ordinals::{
+		brc721::token::Brc721Output, RegisterCollection, RegisterOwnership, SlotsBundle,
+	};
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
 	use sp_core::H160;
@@ -7073,21 +7075,15 @@ next
 
 		server.mine_blocks(1);
 
-		let token_id_parts = (
-			[3u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			H160::from_str("422dd7fc22339593e95681d096b2399cd4be9df2").unwrap().0,
+		let expected_token_id = slot_and_owner_to_token_id(
+			Slot::try_from(3).unwrap(),
+			H160::from_str("422dd7fc22339593e95681d096b2399cd4be9df2").unwrap(),
 		);
-
-		let mut raw_token_id = [0u8; 32];
-		raw_token_id[..12].copy_from_slice(&token_id_parts.0);
-		raw_token_id[12..].copy_from_slice(&token_id_parts.1);
-
-		let expected_token_id = U256::from_little_endian(&raw_token_id);
 
 		server.assert_html(
 			format!("/brc721/token/2:1/{expected_token_id}"),
 			Brc721TokenHtml {
-				entry: Brc721TokenOwnership::NftId(UtxoOutput {
+				entry: Brc721TokenOwnership::NftId(Brc721Output {
 					outpoint: OutPoint { txid, vout: 1 },
 					nft_idx: 3,
 				}),

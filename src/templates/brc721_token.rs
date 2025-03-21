@@ -29,7 +29,7 @@ impl PageContent for Brc721TokenHtml {
 
 #[cfg(test)]
 mod tests {
-	use ordinals::brc721::token::UtxoOutput;
+	use ordinals::brc721::token::Brc721Output;
 	use sp_core::H160;
 
 	use super::*;
@@ -38,7 +38,7 @@ mod tests {
 	fn display_utxo_id() {
 		assert_eq!(
 			Brc721TokenHtml {
-				entry: Brc721TokenOwnership::NftId(UtxoOutput {
+				entry: Brc721TokenOwnership::NftId(Brc721Output {
 					outpoint: OutPoint {
 						txid: Txid::from_str(
 							"c8cdf720db5562a039be5d81c51a07c5120eaf0bf142b2144f1a1eb7a95678d3"
