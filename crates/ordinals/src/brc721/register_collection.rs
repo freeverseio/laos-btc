@@ -49,7 +49,7 @@ impl RegisterCollection {
 		expect_opcode(&mut instructions, OP_RETURN, "OP_RETURN")?;
 		expect_opcode(&mut instructions, OP_PUSHNUM_15, "BRC721_INIT_CODE")?;
 
-		let buffer = expect_push_bytes(&mut instructions, None, "Register ownership operation")?;
+		let buffer = expect_push_bytes(&mut instructions, "Register ownership operation")?;
 
 		if buffer.len() < 22 {
 			return Err(BitcoinScriptError::InvalidLength("short script".to_string()));

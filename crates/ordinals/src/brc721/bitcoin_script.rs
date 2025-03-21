@@ -38,23 +38,19 @@ pub fn expect_opcode<'a>(
 	}
 }
 
-/// Helper function to ensure the next instruction is a push operation of the expected length.
+/// Helper function to ensure the next instruction is a push operation.
 ///
-/// Returns an error if the expected length is not met or if there are no more instructions.
+/// Returns an error if there are no more instructions or if the next instruction is not a push
+/// operation.
 pub fn expect_push_bytes<'a>(
 	instructions: &mut impl Iterator<Item = Result<Instruction<'a>, bitcoin::script::Error>>,
-	expected_len: Option<usize>,
 	desc: &str,
 ) -> Result<Vec<u8>, BitcoinScriptError> {
-	match (
-		instructions
-			.next()
-			.ok_or_else(|| BitcoinScriptError::InstructionNotFound(desc.into()))?,
-		expected_len,
-	) {
-		(Ok(Instruction::PushBytes(bytes)), Some(expected)) if bytes.len() != expected =>
-			Err(BitcoinScriptError::InvalidLength(desc.into())),
-		(Ok(Instruction::PushBytes(bytes)), _) => Ok(bytes.as_bytes().to_vec()),
+	match instructions
+		.next()
+		.ok_or_else(|| BitcoinScriptError::InstructionNotFound(desc.into()))?
+	{
+		Ok(Instruction::PushBytes(bytes)) => Ok(bytes.as_bytes().to_vec()),
 		_ => Err(BitcoinScriptError::UnexpectedInstruction),
 	}
 }
