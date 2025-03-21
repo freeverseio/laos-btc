@@ -109,7 +109,7 @@ mod tests {
 			RegisterCollection { address: H160::from_slice(&COLLECTION_ADDRESS), rebaseable };
 
 		let output =
-			TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().to_script() };
+			TxOut { value: Amount::ONE_SAT, script_pubkey: collection.clone().as_script() };
 
 		Transaction {
 			version: Version(1),

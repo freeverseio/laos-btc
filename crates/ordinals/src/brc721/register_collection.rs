@@ -26,7 +26,7 @@ impl RegisterCollection {
 	///
 	/// The encoded script includes an OP_RETURN opcode, the BRC721_INIT_CODE, the register
 	/// collection flag, the collection address, and the rebaseable flag.
-	pub fn to_script(&self) -> ScriptBuf {
+	pub fn as_script(&self) -> ScriptBuf {
 		let mut script = ScriptBuf::new();
 		script.push_opcode(OP_RETURN);
 		script.push_opcode(OP_PUSHNUM_15);
@@ -80,7 +80,7 @@ mod tests {
 	#[test]
 	fn test_serialized_default() {
 		let cmd = RegisterCollection::default();
-		let buf = cmd.to_script();
+		let buf = cmd.as_script();
 		assert_eq!(buf.len(), 25);
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
@@ -92,7 +92,7 @@ mod tests {
 	fn register_collection_serialize_correctly() {
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
 		let cmd = RegisterCollection { address, rebaseable: true };
-		let buf = cmd.to_script();
+		let buf = cmd.as_script();
 		assert_eq!(
 			hex::encode(buf.into_bytes()),
 			"6a5f1600abcffffffffffffffffffffffffffffffffffcba01"
@@ -103,7 +103,7 @@ mod tests {
 	fn register_collection_deserialize_correctly() {
 		let address = H160::from_str("0xabcffffffffffffffffffffffffffffffffffcba").unwrap();
 		let cmd = RegisterCollection { address, rebaseable: true };
-		let buf = cmd.to_script();
+		let buf = cmd.as_script();
 		let result = RegisterCollection::from_script(&buf).unwrap();
 		assert_eq!(cmd, result);
 	}
