@@ -36,14 +36,12 @@ mod tests {
 	#[test]
 	fn brc721_token_display_utxo_id() {
 		let token = Brc721TokenOwnership::NftId(Brc721Output::default());
-
-		assert_eq!(format!("{}", token), "0 - 0 - 0");
+		assert_eq!(format!("{}", token), "0000000000000000000000000000000000000000000000000000000000000000 - 4294967295 - 0");
 	}
 
 	#[test]
 	fn brc721_token_display_owner() {
 		let token = Brc721TokenOwnership::InitialOwner(H160::zero());
-
 		assert_eq!(format!("{}", token), "0x0000000000000000000000000000000000000000");
 	}
 }
