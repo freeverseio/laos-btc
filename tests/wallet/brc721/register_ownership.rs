@@ -283,7 +283,7 @@ fn register_ownership_command_indexer_integration() {
 	let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
+		format!("/brc721/collection/2:1/token/{expected_token_id_as_u256}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
 			entry: Brc721TokenOwnership::NftId(Brc721Output {
@@ -303,7 +303,7 @@ fn register_ownership_command_indexer_integration() {
 	let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
+		format!("/brc721/collection/2:1/token/{expected_token_id_as_u256}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
 			entry: Brc721TokenOwnership::NftId(Brc721Output {
@@ -317,7 +317,7 @@ fn register_ownership_command_indexer_integration() {
 	let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 	ord.assert_html(
-		format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
+		format!("/brc721/collection/2:1/token/{expected_token_id_as_u256}"),
 		Chain::Regtest,
 		Brc721TokenHtml {
 			entry: Brc721TokenOwnership::NftId(Brc721Output {
