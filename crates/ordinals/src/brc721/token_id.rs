@@ -24,9 +24,9 @@ impl TryFrom<u128> for Slot {
 		if value > ((1u128 << 96) - 1) {
 			Err("Value exceeds 96-bit limit")
 		} else {
-			let bytes = value.to_le_bytes();
+			let bytes = value.to_be_bytes();
 			let slot_bytes: [u8; 12] =
-				bytes[..12].try_into().map_err(|_| "Slice conversion failed")?;
+				bytes[4..].try_into().map_err(|_| "Slice conversion failed")?;
 			Ok(Slot(slot_bytes))
 		}
 	}
@@ -35,8 +35,8 @@ impl TryFrom<u128> for Slot {
 impl From<Slot> for u128 {
 	fn from(slot: Slot) -> u128 {
 		let mut bytes = [0u8; 16];
-		bytes[..12].copy_from_slice(&slot.0);
-		u128::from_le_bytes(bytes)
+		bytes[4..].copy_from_slice(&slot.0);
+		u128::from_be_bytes(bytes)
 	}
 }
 
@@ -57,13 +57,13 @@ impl From<TokenId> for U256 {
 		// Copy the owner address bytes into the array
 		bytes[12..].copy_from_slice(&owner);
 
-		Self::from_little_endian(&bytes)
+		Self::from_big_endian(&bytes)
 	}
 }
 
 impl From<U256> for TokenId {
 	fn from(input: U256) -> Self {
-		let num = input.to_little_endian();
+		let num = input.to_big_endian();
 		let mut slot = [0u8; 12];
 		slot.copy_from_slice(&num[..12]);
 		let mut owner: [u8; 20] = [0u8; 20];
@@ -101,20 +101,20 @@ mod test {
 
 	#[test]
 	fn token_id_conversions() {
-		let slot = Slot::try_from(1).unwrap();
-		let owner = H160::from_str("0xf2188656f04bc18138144c734bed1bf3782e59b8").unwrap();
+		let slot = Slot::MAX_SLOT;
+		let owner = H160::from_str("0x8000000000000000000000000000000000000001").unwrap();
 		let token_id = TokenId::from((slot, owner));
 		assert_eq!(token_id.clone(), TokenId((slot.0, owner.0)));
 
 		let token_id_as_u256 = U256::from(token_id.clone());
 		assert_eq!(
 			token_id_as_u256.to_string(),
-			"83383134269214219439183069068932609969461089732144997588386360420266972020737"
+			"115792089237316195423570985007957157034604533206538721623099442498085163368449"
 		);
 
 		assert_eq!(
-			format!("{:x}", token_id_as_u256),
-			"b8592e78f31bed4b734c143881c14bf0568618f2000000000000000000000001"
+			format!("0x{:x}", token_id_as_u256),
+			"0xffffffffffffffffffffffff8000000000000000000000000000000000000001"
 		);
 
 		let recovered_token_id = TokenId::from(token_id_as_u256);

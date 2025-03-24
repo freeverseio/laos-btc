@@ -264,7 +264,7 @@ impl Server {
 				.route("/update", get(Self::update))
 				.route("/brc721/collections", get(Self::brc721_collections))
 				.route("/brc721/collection/:collection_id", get(Self::brc721_collection))
-				.route("/brc721/token/:collection_id/:token_id", get(Self::brc721_token))
+				.route("/brc721/collection/:collection_id/token/:token_id", get(Self::brc721_token))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -6970,7 +6970,7 @@ next
 
 		server.mine_blocks(1);
 		server.assert_response(
-			"/brc721/token/1:1/1234",
+			"/brc721/collection/1:1/token/1234",
 			StatusCode::NOT_FOUND,
 			UNEXISTING_COLLECTION,
 		);
@@ -6982,7 +6982,7 @@ next
 
 		server.mine_blocks(1);
 		server.assert_response(
-			"/brc721/token/1:1/absolutelynobrownm&ms",
+			"/brc721/collection/1:1/token/absolutelynobrownm&ms",
 			StatusCode::BAD_REQUEST,
 			"token_id is not a valid number",
 		);
@@ -7024,7 +7024,7 @@ next
 		server.mine_blocks(1);
 
 		server.assert_html(
-			"/brc721/token/2:1/1234",
+			"/brc721/collection/2:1/token/1234",
 			Brc721TokenHtml {
 				entry: Brc721TokenOwnership::InitialOwner(
 					H160::from_str("0000000000000000000000000000000000000000").unwrap(),
@@ -7080,7 +7080,7 @@ next
 		let expected_token_id_as_u256 = U256::from(expected_token_id);
 
 		server.assert_html(
-			format!("/brc721/token/2:1/{expected_token_id_as_u256}"),
+			format!("/brc721/collection/2:1/token/{expected_token_id_as_u256}"),
 			Brc721TokenHtml {
 				entry: Brc721TokenOwnership::NftId(Brc721Output {
 					outpoint: OutPoint { txid, vout: 1 },
