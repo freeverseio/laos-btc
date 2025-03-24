@@ -1124,7 +1124,7 @@ impl Index {
 		Ok(converted_result)
 	}
 
-	pub fn get_brc721_token_by_id(
+	pub fn get_brc721_token_ownership(
 		&self,
 		collection_id: Brc721CollectionId,
 		token_id: TokenId,

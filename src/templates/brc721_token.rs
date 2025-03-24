@@ -16,7 +16,7 @@
 
 use super::*;
 
-#[derive(Boilerplate, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Boilerplate, Clone, Copy, Debug, PartialEq)]
 pub struct Brc721TokenHtml {
 	pub entry: Brc721TokenOwnership,
 }
@@ -50,8 +50,8 @@ mod tests {
 				})
 			}
 			.to_string(),
-			"<h1>Token</h1>
-<p>c8cdf720db5562a039be5d81c51a07c5120eaf0bf142b2144f1a1eb7a95678d3 - 0 - 0</p>"
+			"<h1>Token Owner</h1>
+<p>c8cdf720db5562a039be5d81c51a07c5120eaf0bf142b2144f1a1eb7a95678d3:0:0</p>"
 		);
 	}
 
@@ -59,7 +59,7 @@ mod tests {
 	fn display_owner() {
 		assert_eq!(
 			Brc721TokenHtml { entry: Brc721TokenOwnership::InitialOwner(H160::zero()) }.to_string(),
-			"<h1>Token</h1>
+			"<h1>Token Owner</h1>
 <p>0x0000000000000000000000000000000000000000</p>"
 		);
 	}

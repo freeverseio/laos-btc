@@ -112,6 +112,11 @@ mod test {
 			"83383134269214219439183069068932609969461089732144997588386360420266972020737"
 		);
 
+		assert_eq!(
+			format!("{:x}", token_id_as_u256),
+			"b8592e78f31bed4b734c143881c14bf0568618f2000000000000000000000001"
+		);
+
 		let recovered_token_id = TokenId::from(token_id_as_u256);
 		assert_eq!(recovered_token_id, token_id);
 	}

@@ -1925,7 +1925,7 @@ impl Server {
 		let token_id = TokenId::from(num);
 
 		let entry = index
-			.get_brc721_token_by_id(collection_id, token_id)?
+			.get_brc721_token_ownership(collection_id, token_id)?
 			.ok_or_else(|| ServerError::NotFound(UNEXISTING_COLLECTION.to_string()))?;
 
 		Ok(if accept_json {
