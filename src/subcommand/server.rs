@@ -7027,7 +7027,7 @@ next
 			"/brc721/collection/2:1/token/1234",
 			Brc721TokenHtml {
 				entry: Brc721TokenOwnership::InitialOwner(
-					H160::from_str("0000000000000000000000000000000000000000").unwrap(),
+					H160::from_str("00000000000000000000000000000000000004d2").unwrap(),
 				),
 			},
 		);
