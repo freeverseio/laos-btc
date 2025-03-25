@@ -1124,11 +1124,22 @@ impl Index {
 		Ok(converted_result)
 	}
 
+	/*
+	I need a table with all intervals
+	map(collection_id):Vec<intervals> [10..100][2..4]
+	map(interval):address
+	-------------------
+
+	map(collection_id):interval_count
+	map(collection_id, inteval_idx):interval,address
+
+	 */
 	pub fn get_brc721_token_ownership(
 		&self,
 		collection_id: Brc721CollectionId,
 		token_id: TokenId,
 	) -> Result<Option<Brc721TokenOwnership>> {
+		// if collection doesn't exist ... skip
 		let maybe_collection = self.get_brc721_collection_by_id(collection_id)?;
 		if maybe_collection.is_none() {
 			return Ok(None);
