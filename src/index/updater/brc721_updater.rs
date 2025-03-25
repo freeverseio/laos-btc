@@ -179,19 +179,12 @@ where
 				let slot_end = *slot_range.end();
 
 				for slot in slot_range {
-					let token_id = TokenId::from((
-						Slot::try_from(slot).map_err(|err| anyhow::anyhow!(err))?,
-						h160_address,
-					));
-					if self.token_owners.get_value((token_id.0, collection_id_value)).is_some() {
-						return Err(anyhow::anyhow!(format!(
-							"Token {:?} already registered",
-							(token_id, collection_id_value)
-						)));
-					}
-
-					self.token_owners
-						.insert((token_id.0, collection_id_value), owner_bytes.clone())?;
+					self.process_slot(
+						slot,
+						collection_id_value,
+						h160_address.clone(),
+						owner_bytes.clone(),
+					)?;
 				}
 
 				let tx_out_idx = u32::try_from(index + 1)?;
@@ -216,6 +209,31 @@ where
 				}
 			}
 		}
+
+		Ok(())
+	}
+
+	fn process_slot(
+		&mut self,
+		slot: u128,
+		collection_id_value: (u64, u32),
+		h160_address: H160,
+		owner_bytes: Vec<u8>,
+	) -> Result<(), anyhow::Error> {
+		let token_id = TokenId::from((
+			Slot::try_from(slot).map_err(|err| anyhow::anyhow!(err))?,
+			h160_address,
+		));
+
+		if self.token_owners.get_value((token_id.0, collection_id_value)).is_some() {
+			return Err(anyhow::anyhow!(format!(
+				"Token {:?} already registered",
+				(token_id, collection_id_value)
+			)));
+		}
+
+		self.token_owners
+			.insert((token_id.0, collection_id_value), owner_bytes.clone())?;
 
 		Ok(())
 	}
