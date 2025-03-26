@@ -1,8 +1,9 @@
 use super::{Slot, TokenId};
 use sp_core::{H160, U256};
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, str::FromStr};
 
-struct TokenIdRange {
+#[derive(Debug)]
+pub struct TokenIdRange {
 	slot_range: RangeInclusive<Slot>,
 	registrant: H160,
 }
@@ -29,10 +30,42 @@ impl TokenIdRange {
 	}
 }
 
+impl redb::Value for TokenIdRange {
+	type SelfType<'a> = Self;
+	type AsBytes<'a> = [u8; 352];
+
+	fn fixed_width() -> Option<usize> {
+		// fist slot 96b + last slot 96b + registrant 160
+		Some(352)
+	}
+
+	fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+	where
+		Self: 'a,
+	{
+		let first_slot = Slot::try_from(1).unwrap();
+		let last_slot = Slot::try_from(9).unwrap();
+		let registrant = H160::from_str("0x000000000000000000000000FFFFFFFFFFFFFFFF").unwrap();
+		TokenIdRange::new(first_slot, last_slot, registrant)
+	}
+
+	fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+	where
+		Self: 'b,
+	{
+		let mut buffer: [u8; 352] = [0; 352];
+		buffer[0..].copy_from_slice(&value.slot_range.start().0);
+		buffer
+	}
+
+	fn type_name() -> redb::TypeName {
+		redb::TypeName::new("token_id_range")
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::str::FromStr;
 
 	#[test]
 	fn get_first_token_id() {

@@ -20,6 +20,7 @@ use ordinals::{
 	brc721::is_brc721_script, btc_address_to_h160, RegisterCollection, RegisterOwnership, Slot,
 	TokenId,
 };
+use token_id_range::TokenIdRange;
 
 use super::*;
 
@@ -65,6 +66,7 @@ impl_brc721_table!(Brc721TokenInCollection, TokenScriptOwner);
 impl_brc721_table!(OwnerUTXOIndex, TokenBundles);
 impl_brc721_table!(String, u128);
 impl_brc721_table!((), Vec<TokenScriptOwner>);
+impl_brc721_table!(Brc721CollectionIdValue, Vec<TokenIdRange>);
 
 pub(super) struct Brc721Updater<'a, 'client, T1, T2, T3, T4, T5> {
 	pub(super) height: u32,
