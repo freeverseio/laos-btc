@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
-mod token_range;
+mod token_id_range;
 
 use ordinals::{
 	brc721::is_brc721_script, btc_address_to_h160, RegisterCollection, RegisterOwnership, Slot,
