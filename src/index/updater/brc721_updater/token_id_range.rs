@@ -28,31 +28,23 @@ mod tests {
 
 	#[test]
 	fn get_first_token_id() {
-		// crate the Range
 		let first_slot = Slot::try_from(1).unwrap();
 		let last_slot = Slot::try_from(9).unwrap();
 		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
 		let range = TokenIdRange::new(first_slot, last_slot, registrant);
-
 		let first_token: U256 = range.first_token().into();
-
-		let hex_string = hex::encode(first_token.to_big_endian());
-		assert_eq!(hex_string, "000000000000000000000001d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
+		assert_eq!(hex::encode(first_token.to_big_endian()), "000000000000000000000001d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
 		assert_eq!(first_token.to_string(), "2675427360108358740834871412060616377274126761870");
 	}
 
 	#[test]
 	fn get_last_token_id() {
-		// Create the Range
 		let first_slot = Slot::try_from(1).unwrap();
 		let last_slot = Slot::try_from(9).unwrap();
 		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
 		let range = TokenIdRange::new(first_slot, last_slot, registrant);
-
 		let last_token: U256 = range.last_token().into();
-
-		let hex_string = hex::encode(last_token.to_big_endian());
-		assert_eq!(hex_string, "000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
+		assert_eq!(hex::encode(last_token.to_big_endian()), "000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
 		assert_eq!(last_token.to_string(), "14367440458755582086464350073790880534521587105678");
 	}
 }
