@@ -1,5 +1,4 @@
 use super::{Slot, TokenId};
-use redb::{TypeName, Value};
 use sp_core::{H160, U256};
 use std::{ops::RangeInclusive, str::FromStr};
 
@@ -31,7 +30,7 @@ impl TokenIdRange {
 	}
 }
 
-impl Value for TokenIdRange {
+impl redb::Value for TokenIdRange {
 	type SelfType<'a> = Self;
 	type AsBytes<'a> = [u8; 44];
 
@@ -61,8 +60,8 @@ impl Value for TokenIdRange {
 		buffer
 	}
 
-	fn type_name() -> TypeName {
-		TypeName::new("token_id_range")
+	fn type_name() -> redb::TypeName {
+		redb::TypeName::new("token_id_range")
 	}
 }
 
