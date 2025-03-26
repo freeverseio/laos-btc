@@ -5,6 +5,16 @@ use sp_core::{H160, U256};
 #[derive(Clone, Debug, PartialEq)]
 pub struct TokenId(pub ([u8; 12], [u8; 20]));
 
+impl TokenId {
+	pub fn registrant(&self) -> H160 {
+		H160::from(self.0 .1)
+	}
+
+	pub fn slot(&self) -> Slot {
+		Slot(self.0 .0)
+	}
+}
+
 /// Slot type - 96-bit unsigned integer
 #[derive(Eq, PartialEq, Clone, Copy, Default, PartialOrd, Ord, Hash, Debug)]
 pub struct Slot(pub [u8; 12]);

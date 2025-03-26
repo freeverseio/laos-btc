@@ -3,21 +3,29 @@ use sp_core::{H160, U256};
 use std::ops::RangeInclusive;
 
 struct TokenIdRange {
-	slot_rage: RangeInclusive<Slot>,
+	slot_range: RangeInclusive<Slot>,
 	registrant: H160,
 }
 
 impl TokenIdRange {
 	fn new(first: Slot, last: Slot, registrant: H160) -> Self {
-		TokenIdRange { slot_rage: first..=last, registrant }
+		TokenIdRange { slot_range: first..=last, registrant }
 	}
 
 	fn first_token(self) -> TokenId {
-		TokenId::from((self.slot_rage.start().clone(), self.registrant))
+		TokenId::from((self.slot_range.start().clone(), self.registrant))
 	}
 
 	fn last_token(self) -> TokenId {
-		TokenId::from((self.slot_rage.end().clone(), self.registrant))
+		TokenId::from((self.slot_range.end().clone(), self.registrant))
+	}
+
+	fn contains(&self, token: TokenId) -> bool {
+		if token.registrant() != self.registrant {
+			return false;
+		}
+
+		self.slot_range.contains(&token.slot())
 	}
 }
 
@@ -33,7 +41,10 @@ mod tests {
 		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
 		let range = TokenIdRange::new(first_slot, last_slot, registrant);
 		let first_token: U256 = range.first_token().into();
-		assert_eq!(hex::encode(first_token.to_big_endian()), "000000000000000000000001d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
+		assert_eq!(
+			hex::encode(first_token.to_big_endian()),
+			"000000000000000000000001d4a24fe19b5e0ed77137012b95b4433293e2ff8e"
+		);
 		assert_eq!(first_token.to_string(), "2675427360108358740834871412060616377274126761870");
 	}
 
@@ -44,7 +55,24 @@ mod tests {
 		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
 		let range = TokenIdRange::new(first_slot, last_slot, registrant);
 		let last_token: U256 = range.last_token().into();
-		assert_eq!(hex::encode(last_token.to_big_endian()), "000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
+		assert_eq!(
+			hex::encode(last_token.to_big_endian()),
+			"000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8e"
+		);
 		assert_eq!(last_token.to_string(), "14367440458755582086464350073790880534521587105678");
+	}
+
+	#[test]
+	fn test_contain() {
+		let first_slot = Slot::try_from(1).unwrap();
+		let last_slot = Slot::try_from(9).unwrap();
+		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
+		let range = TokenIdRange::new(first_slot, last_slot, registrant);
+
+		assert!(!range.contains(TokenId::from((Slot::try_from(0).unwrap(), registrant))));
+		assert!(range.contains(TokenId::from((first_slot, registrant))));
+		assert!(range.contains(TokenId::from((Slot::try_from(7).unwrap(), registrant))));
+		assert!(range.contains(TokenId::from((last_slot, registrant))));
+		assert!(!range.contains(TokenId::from((Slot::try_from(10).unwrap(), registrant))));
 	}
 }
