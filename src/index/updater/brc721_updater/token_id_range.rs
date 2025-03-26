@@ -2,14 +2,14 @@ use super::{Slot, TokenId};
 use sp_core::{H160, U256};
 use std::ops::RangeInclusive;
 
-struct TokenRange {
+struct TokenIdRange {
 	slot_rage: RangeInclusive<Slot>,
 	registrant: H160,
 }
 
-impl TokenRange {
+impl TokenIdRange {
 	fn new(first: Slot, last: Slot, registrant: H160) -> Self {
-		TokenRange { slot_rage: first..=last, registrant }
+		TokenIdRange { slot_rage: first..=last, registrant }
 	}
 
 	fn first_token(self) -> TokenId {
@@ -31,7 +31,7 @@ mod tests {
 		let first_slot = Slot::try_from(1).unwrap();
 		let last_slot = Slot::try_from(9).unwrap();
 		let registrant = H160::default();
-		let range = TokenRange::new(first_slot, last_slot, registrant);
+		let range = TokenIdRange::new(first_slot, last_slot, registrant);
 
 		let first_token: U256 = range.first_token().into();
 
@@ -46,7 +46,7 @@ mod tests {
 		let first_slot = Slot::try_from(1).unwrap();
 		let last_slot = Slot::try_from(9).unwrap();
 		let registrant = H160::default();
-		let range = TokenRange::new(first_slot, last_slot, registrant);
+		let range = TokenIdRange::new(first_slot, last_slot, registrant);
 
 		let last_token: U256 = range.last_token().into();
 
