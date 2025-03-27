@@ -7,6 +7,10 @@ pub mod register_collection;
 pub mod register_ownership;
 pub mod token;
 pub mod token_id;
+pub mod token_id_range;
+
+pub use token_id_range::TokenIdRange;
+
 use super::*;
 
 use bitcoin::opcodes;

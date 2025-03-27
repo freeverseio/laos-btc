@@ -43,7 +43,10 @@ use bitcoincore_rpc::{
 use chrono::SubsecRound;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::log_enabled;
-use ordinals::{brc721::token::Brc721Output, Slot, TokenId};
+use ordinals::{
+	brc721::{token::Brc721Output, TokenIdRange},
+	Slot, TokenId,
+};
 use redb::{
 	Database, DatabaseError, MultimapTable, MultimapTableDefinition, MultimapTableHandle,
 	ReadOnlyTable, ReadableMultimapTable, ReadableTable, ReadableTableMetadata, RepairSession,
@@ -97,6 +100,7 @@ define_table! { BRC721_TOKEN_TO_OWNER, Brc721TokenInCollection, TokenScriptOwner
 define_table! { BRC721_UTXO_TO_TOKEN_ID, OwnerUTXOIndex, TokenBundles }
 define_table! { BRC721_TOKENS_FOR_OWNER, String, u128 }
 define_table! { BRC721_UNSPENT_UTXOS, (), Vec<TokenScriptOwner> }
+define_table! { BRC721_COLLECTION_ID_TO_TOKEN_RANGES, Brc721CollectionId, Vec<TokenIdRange> }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {

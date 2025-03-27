@@ -416,6 +416,9 @@ impl Updater<'_> {
 
 			let mut brc721_unspent_utxos = wtx.open_table(BRC721_UNSPENT_UTXOS)?;
 
+			let mut brc721_collection_id_to_token_ranges =
+				wtx.open_table(BRC721_COLLECTION_ID_TO_TOKEN_RANGES)?;
+
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
 				client: &self.index.client,
@@ -424,6 +427,7 @@ impl Updater<'_> {
 				token_by_owner: &mut brc721_utxo_to_token_id,
 				tokens_for_owner: &mut brc721_tokens_for_owner,
 				unspent_utxos: &mut brc721_unspent_utxos,
+				collection_id_to_token_ranges: &mut brc721_collection_id_to_token_ranges,
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {
