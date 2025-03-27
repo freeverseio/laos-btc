@@ -36,7 +36,7 @@ impl redb::Value for TokenIdRange {
 
 	fn fixed_width() -> Option<usize> {
 		// first slot 96b + last slot 96b + registrant 160b
-		Some(352)
+		Some(44)
 	}
 
 	fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
@@ -70,12 +70,16 @@ mod tests {
 	use super::*;
 	use redb::Value;
 
+	fn setup_range(first_slot: u128, last_slot: u128, registrant: &str) -> TokenIdRange {
+		let first_slot = Slot::try_from(first_slot).unwrap();
+		let last_slot = Slot::try_from(last_slot).unwrap();
+		let registrant = H160::from_str(registrant).unwrap();
+		TokenIdRange::new(first_slot, last_slot, registrant)
+	}
+
 	#[test]
 	fn get_first_token_id() {
-		let first_slot = Slot::try_from(1).unwrap();
-		let last_slot = Slot::try_from(9).unwrap();
-		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
-		let range = TokenIdRange::new(first_slot, last_slot, registrant);
+		let range = setup_range(1, 9, "0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E");
 		let first_token: U256 = range.first_token().into();
 		assert_eq!(
 			hex::encode(first_token.to_big_endian()),
@@ -86,10 +90,7 @@ mod tests {
 
 	#[test]
 	fn get_last_token_id() {
-		let first_slot = Slot::try_from(1).unwrap();
-		let last_slot = Slot::try_from(9).unwrap();
-		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
-		let range = TokenIdRange::new(first_slot, last_slot, registrant);
+		let range = setup_range(1, 9, "0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E");
 		let last_token: U256 = range.last_token().into();
 		assert_eq!(
 			hex::encode(last_token.to_big_endian()),
@@ -100,26 +101,25 @@ mod tests {
 
 	#[test]
 	fn test_contain() {
-		let first_slot = Slot::try_from(1).unwrap();
-		let last_slot = Slot::try_from(9).unwrap();
+		let range = setup_range(1, 9, "0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E");
 		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
-		let range = TokenIdRange::new(first_slot, last_slot, registrant);
 
 		assert!(!range.contains(TokenId::from((Slot::try_from(0).unwrap(), registrant))));
-		assert!(range.contains(TokenId::from((first_slot, registrant))));
+		assert!(range.contains(TokenId::from((Slot::try_from(1).unwrap(), registrant))));
 		assert!(range.contains(TokenId::from((Slot::try_from(7).unwrap(), registrant))));
-		assert!(range.contains(TokenId::from((last_slot, registrant))));
+		assert!(range.contains(TokenId::from((Slot::try_from(9).unwrap(), registrant))));
 		assert!(!range.contains(TokenId::from((Slot::try_from(10).unwrap(), registrant))));
 	}
 
 	#[test]
 	fn test_as_bytes() {
-		let first_slot = Slot::try_from(1).unwrap();
-		let last_slot = Slot::try_from(9).unwrap();
-		let registrant = H160::from_str("0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E").unwrap();
-		let range = TokenIdRange::new(first_slot, last_slot, registrant);
-
+		let range = setup_range(1, 9, "0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E");
 		let buffer = TokenIdRange::as_bytes(&range);
 		assert_eq!(hex::encode(buffer), "000000000000000000000001000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
+	}
+
+	#[test]
+	fn check_width() {
+		assert_eq!(TokenIdRange::fixed_width(), Some(44));
 	}
 }
