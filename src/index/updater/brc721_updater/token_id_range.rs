@@ -66,7 +66,7 @@ impl redb::Value for TokenIdRange {
 	}
 
 	fn type_name() -> redb::TypeName {
-		redb::TypeName::new("token_id_range")
+		redb::TypeName::new("brc721::token_id_range")
 	}
 }
 
