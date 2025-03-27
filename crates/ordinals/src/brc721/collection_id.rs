@@ -269,6 +269,7 @@ mod tests {
 		let id = Brc721CollectionId { block: 5u64, tx: 1u32 };
 
 		let buffer = Brc721CollectionId::as_bytes(&id);
+		assert_eq!(buffer.len(), Brc721CollectionId::fixed_width().unwrap());
 		assert_eq!(hex::encode(buffer), "000000000000000500000001");
 
 		let id1 = Brc721CollectionId::from_bytes(&buffer);
