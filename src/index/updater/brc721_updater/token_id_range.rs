@@ -1,6 +1,6 @@
 use super::{Slot, TokenId};
-use sp_core::{H160, U256};
-use std::{ops::RangeInclusive, str::FromStr};
+use sp_core::H160;
+use std::ops::RangeInclusive;
 
 #[derive(Debug, PartialEq)]
 pub struct TokenIdRange {
@@ -74,6 +74,8 @@ impl redb::Value for TokenIdRange {
 mod tests {
 	use super::*;
 	use redb::Value;
+	use sp_core::U256;
+	use std::str::FromStr;
 
 	fn setup_range(first_slot: u128, last_slot: u128, registrant: &str) -> TokenIdRange {
 		let first_slot = Slot::try_from(first_slot).unwrap();
