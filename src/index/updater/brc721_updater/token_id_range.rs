@@ -2,7 +2,7 @@ use super::{Slot, TokenId};
 use sp_core::{H160, U256};
 use std::{ops::RangeInclusive, str::FromStr};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct TokenIdRange {
 	slot_range: RangeInclusive<Slot>,
 	registrant: H160,
@@ -43,9 +43,14 @@ impl redb::Value for TokenIdRange {
 	where
 		Self: 'a,
 	{
-		let first_slot = Slot::try_from(1).unwrap();
-		let last_slot = Slot::try_from(9).unwrap();
-		let registrant = H160::from_str("0x000000000000000000000000FFFFFFFFFFFFFFFF").unwrap();
+		if data.len() != Self::fixed_width().unwrap() {
+			unreachable!()
+		}
+
+		let first_slot = Slot(data[0..12].try_into().unwrap());
+		let last_slot = Slot(data[12..24].try_into().unwrap());
+		let registrant_array: [u8; 20] = data[24..44].try_into().unwrap();
+		let registrant = H160::from(registrant_array);
 		TokenIdRange::new(first_slot, last_slot, registrant)
 	}
 
@@ -115,11 +120,19 @@ mod tests {
 	fn test_as_bytes() {
 		let range = setup_range(1, 9, "0xD4a24FE19b5e0ED77137012B95b4433293E2Ff8E");
 		let buffer = TokenIdRange::as_bytes(&range);
+		assert_eq!(buffer.len(), TokenIdRange::fixed_width().unwrap());
 		assert_eq!(hex::encode(buffer), "000000000000000000000001000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8e");
 	}
 
 	#[test]
 	fn check_width() {
-		assert_eq!(TokenIdRange::fixed_width(), Some(44));
+		assert_eq!(TokenIdRange::fixed_width().unwrap(), 44);
+	}
+
+	#[test]
+	fn test_from_bytes() {
+		let buffer = hex::decode("000000000000000000000001000000000000000000000009d4a24fe19b5e0ed77137012b95b4433293e2ff8f").unwrap();
+		let range = TokenIdRange::from_bytes(&buffer);
+		assert_eq!(range, setup_range(1, 9, "0xd4a24fe19b5e0ed77137012b95b4433293e2ff8f"));
 	}
 }
