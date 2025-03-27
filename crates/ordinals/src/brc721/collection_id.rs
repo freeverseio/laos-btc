@@ -116,14 +116,10 @@ impl redb::Value for Brc721CollectionId {
 	where
 		Self: 'a,
 	{
-		if data.len() != Self::fixed_width().unwrap() {
-			unreachable!()
-		}
-
 		let block = u64::from_be_bytes(data[0..8].try_into().unwrap());
 		let tx = u32::from_be_bytes(data[8..12].try_into().unwrap());
 
-    Self{block, tx}
+		Self { block, tx }
 	}
 
 	fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
@@ -143,27 +139,11 @@ impl redb::Value for Brc721CollectionId {
 }
 
 impl redb::Key for Brc721CollectionId {
-    fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
-        let id1 = <Self as redb::Value>::from_bytes(data1);
-        let id2 = <Self as redb::Value>::from_bytes(data2);
-        id1.cmp(&id2)
-        /*
-        endian counts when multybyte types
-        u8  1 byte
-        u16 2 bytes = 1 => BE 0x0001 LE 0x0100
-        u32 4 bytes  BE(arm, powerPC) 0x01020304 LE(x86) 0x04030201 
-1000 000000000000 
-
-        u32, u16 ... runtime x86 ... arm
-
-        u16 -> &[u8] -> 0x0001
-        &[u8] -> u16 -> u16.from_be  
-
-        u16.as_byte() => &[u8] 
-        arm => 0x0001
-        x86 => 0x0100
-*/
-    }
+	fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
+		let id1 = <Self as redb::Value>::from_bytes(data1);
+		let id2 = <Self as redb::Value>::from_bytes(data2);
+		id1.cmp(&id2)
+	}
 }
 
 #[derive(Debug, PartialEq)]
@@ -190,6 +170,7 @@ impl std::error::Error for Error {}
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use redb::Value;
 
 	#[test]
 	fn leb128_encode_decode_small_number() {
@@ -281,5 +262,16 @@ mod tests {
 		let json = "\"1:2\"";
 		assert_eq!(serde_json::to_string(&rune_id).unwrap(), json);
 		assert_eq!(serde_json::from_str::<Brc721CollectionId>(json).unwrap(), rune_id);
+	}
+
+	#[test]
+	fn test_from_bytes_as_bytes() {
+		let id = Brc721CollectionId { block: 5u64, tx: 1u32 };
+
+		let buffer = Brc721CollectionId::as_bytes(&id);
+		assert_eq!(hex::encode(buffer), "000000000000000500000001");
+
+		let id1 = Brc721CollectionId::from_bytes(&buffer);
+		assert_eq!(id1, id);
 	}
 }
