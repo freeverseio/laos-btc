@@ -105,11 +105,11 @@ impl FromStr for Brc721CollectionId {
 
 impl redb::Value for Brc721CollectionId {
 	type SelfType<'a> = Self;
-	type AsBytes<'a> = [u8; 44];
+	type AsBytes<'a> = [u8; 12];
 
 	fn fixed_width() -> Option<usize> {
 		// first slot 96b + last slot 96b + registrant 160b
-		Some(44)
+		Some(12)
 	}
 
 	fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
@@ -120,15 +120,20 @@ impl redb::Value for Brc721CollectionId {
 			unreachable!()
 		}
 
-		Self::default()
+		let block = u64::from_be_bytes(data[0..8].try_into().unwrap());
+		let tx = u32::from_be_bytes(data[8..12].try_into().unwrap());
+
+    Self{block, tx}
 	}
 
 	fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
 	where
 		Self: 'b,
 	{
-		let mut buffer = [0u8; 44];
-		//		buffer[24..44].copy_from_slice(&value.registrant.as_bytes());
+		let mut buffer = [0u8; 12];
+
+		buffer[0..8].copy_from_slice(&value.block.to_be_bytes());
+		buffer[8..12].copy_from_slice(&value.tx.to_be_bytes());
 		buffer
 	}
 
@@ -138,11 +143,27 @@ impl redb::Value for Brc721CollectionId {
 }
 
 impl redb::Key for Brc721CollectionId {
-	fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
-		let id1 = <Self as redb::Value>::from_bytes(data1);
-		let id2 = <Self as redb::Value>::from_bytes(data2);
-		id1.cmp(&id2)
-	}
+    fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
+        let id1 = <Self as redb::Value>::from_bytes(data1);
+        let id2 = <Self as redb::Value>::from_bytes(data2);
+        id1.cmp(&id2)
+        /*
+        endian counts when multybyte types
+        u8  1 byte
+        u16 2 bytes = 1 => BE 0x0001 LE 0x0100
+        u32 4 bytes  BE(arm, powerPC) 0x01020304 LE(x86) 0x04030201 
+1000 000000000000 
+
+        u32, u16 ... runtime x86 ... arm
+
+        u16 -> &[u8] -> 0x0001
+        &[u8] -> u16 -> u16.from_be  
+
+        u16.as_byte() => &[u8] 
+        arm => 0x0001
+        x86 => 0x0100
+*/
+    }
 }
 
 #[derive(Debug, PartialEq)]
