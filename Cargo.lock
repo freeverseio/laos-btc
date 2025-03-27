@@ -3384,6 +3384,7 @@ dependencies = [
  "derive_more",
  "hex",
  "pretty_assertions",
+ "redb",
  "serde",
  "serde_json",
  "serde_with",

@@ -15,6 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
+use std::cmp::Ordering;
 
 #[derive(
 	Debug,
@@ -99,6 +100,48 @@ impl FromStr for Brc721CollectionId {
 			block: height.parse().map_err(Error::Block)?,
 			tx: index.parse().map_err(Error::Transaction)?,
 		})
+	}
+}
+
+impl redb::Value for Brc721CollectionId {
+	type SelfType<'a> = Self;
+	type AsBytes<'a> = [u8; 44];
+
+	fn fixed_width() -> Option<usize> {
+		// first slot 96b + last slot 96b + registrant 160b
+		Some(44)
+	}
+
+	fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+	where
+		Self: 'a,
+	{
+		if data.len() != Self::fixed_width().unwrap() {
+			unreachable!()
+		}
+
+		Self::default()
+	}
+
+	fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+	where
+		Self: 'b,
+	{
+		let mut buffer = [0u8; 44];
+		//		buffer[24..44].copy_from_slice(&value.registrant.as_bytes());
+		buffer
+	}
+
+	fn type_name() -> redb::TypeName {
+		redb::TypeName::new("brc721::collection_id")
+	}
+}
+
+impl redb::Key for Brc721CollectionId {
+	fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
+		let id1 = <Self as redb::Value>::from_bytes(data1);
+		let id2 = <Self as redb::Value>::from_bytes(data2);
+		id1.cmp(&id2)
 	}
 }
 
