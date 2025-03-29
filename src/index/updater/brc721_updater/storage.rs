@@ -42,12 +42,23 @@ mod test {
 	use super::{super::mock, *};
 	use sp_core::H160;
 
+	fn create_storage() -> Storage<mock::CollectionIdToTokenIdsRange> {
+		let collaction_ranges = mock::CollectionIdToTokenIdsRange::new();
+		Storage::new(collaction_ranges)
+	}
+
+	#[test]
+	fn get_registered_ranges_of_unexistent_collection_should_return_none() {
+		let storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+		assert!(storage.get_collection_token_id_ranges(&collection_id).is_none());
+	}
+
 	#[test]
 	fn add_token_range_of_unexistent_collection() {
-		let table = mock::CollectionIdToTokenIdsRange::new();
-		let mut storage = Storage::new(table);
-
+		let mut storage = create_storage();
 		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
 		let range =
 			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
 		assert!(storage.add_token_id_range(&collection_id, range).is_ok());
@@ -55,4 +66,30 @@ mod test {
 		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
 		assert_eq!(result.len(), 1);
 	}
+
+	#[test]
+	fn add_token_range_to_existing_collection() {
+		let mut storage = create_storage();
+
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add first range
+		let range1 =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_token_id_range(&collection_id, range1.clone()).is_ok());
+
+		// Add second range to the same collection
+		let range2 =
+			TokenIdRange::new(5.try_into().unwrap(), 6.try_into().unwrap(), H160::default());
+		assert!(storage.add_token_id_range(&collection_id, range2.clone()).is_ok());
+
+		// Verify both ranges are stored
+		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
+		assert_eq!(result.len(), 2);
+
+		// Verify the ranges are stored in the correct order
+		assert_eq!(result[0], range1);
+		assert_eq!(result[1], range2);
+	}
 }
+
