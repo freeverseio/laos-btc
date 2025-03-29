@@ -14,11 +14,11 @@ impl TokenIdRange {
 	}
 
 	pub fn first_token(self) -> TokenId {
-		TokenId::from((self.slot_range.start().clone(), self.registrant))
+		TokenId::from((*self.slot_range.start(), self.registrant))
 	}
 
 	pub fn last_token(self) -> TokenId {
-		TokenId::from((self.slot_range.end().clone(), self.registrant))
+		TokenId::from((*self.slot_range.end(), self.registrant))
 	}
 
 	pub fn contains(&self, token: TokenId) -> bool {
@@ -61,7 +61,7 @@ impl redb::Value for TokenIdRange {
 		let mut buffer = [0u8; 44];
 		buffer[0..12].copy_from_slice(&value.slot_range.start().0);
 		buffer[12..24].copy_from_slice(&value.slot_range.end().0);
-		buffer[24..44].copy_from_slice(&value.registrant.as_bytes());
+		buffer[24..44].copy_from_slice(value.registrant.as_bytes());
 		buffer
 	}
 

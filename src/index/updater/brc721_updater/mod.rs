@@ -226,4 +226,4 @@ where
 }
 
 #[cfg(test)]
-mod mocks;
+mod mock;
