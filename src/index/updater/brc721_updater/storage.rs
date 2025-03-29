@@ -15,6 +15,7 @@ impl<T: Table<Brc721CollectionId, Vec<TokenIdRange>>> Storage<T> {
 	pub fn new(table: T) -> Self {
 		Storage { collection_id_to_token_id_range: table }
 	}
+
 	fn add_token_id_range(
 		&mut self,
 		collection_id: &Brc721CollectionId,
@@ -40,17 +41,16 @@ impl<T: Table<Brc721CollectionId, Vec<TokenIdRange>>> Storage<T> {
 mod test {
 	use super::{super::mock, *};
 	use sp_core::H160;
-	use std::collections::HashMap;
 
 	#[test]
 	fn add_token_range_of_unexistent_collection() {
-		let mut table = mock::CollectionIdToTokenIdsRange::new();
+		let table = mock::CollectionIdToTokenIdsRange::new();
 		let mut storage = Storage::new(table);
 
 		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
 		let range =
 			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
-		storage.add_token_id_range(&collection_id, range);
+		assert!(storage.add_token_id_range(&collection_id, range).is_ok());
 
 		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
 		assert_eq!(result.len(), 1);
