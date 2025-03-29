@@ -2,7 +2,7 @@ use super::{Slot, TokenId};
 use sp_core::H160;
 use std::ops::RangeInclusive;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TokenIdRange {
 	slot_range: RangeInclusive<Slot>,
 	registrant: H160,

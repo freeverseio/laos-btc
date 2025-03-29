@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
+mod storage;
+
 use ordinals::{
 	brc721::{is_brc721_script, TokenIdRange},
 	btc_address_to_h160, RegisterCollection, RegisterOwnership, Slot, TokenId,
@@ -222,3 +224,6 @@ where
 		Ok(())
 	}
 }
+
+#[cfg(test)]
+mod mocks;
