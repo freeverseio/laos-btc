@@ -92,4 +92,3 @@ mod test {
 		assert_eq!(result[1], range2);
 	}
 }
-
