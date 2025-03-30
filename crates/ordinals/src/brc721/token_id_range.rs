@@ -9,24 +9,52 @@ pub struct TokenIdRange {
 }
 
 impl TokenIdRange {
+	/// Creates a new TokenIdRange with the specified first and last slots and registrant address.
 	pub fn new(first: Slot, last: Slot, registrant: H160) -> Self {
 		TokenIdRange { slot_range: first..=last, registrant }
 	}
 
-	pub fn first_token(self) -> TokenId {
+	/// Returns the first token ID in this range.
+	///
+	/// Note: This method consumes self.
+	pub fn first_token(&self) -> TokenId {
 		TokenId::from((*self.slot_range.start(), self.registrant))
 	}
 
-	pub fn last_token(self) -> TokenId {
+	/// Returns the last token ID in this range.
+	///
+	/// Note: This method consumes self.
+	pub fn last_token(&self) -> TokenId {
 		TokenId::from((*self.slot_range.end(), self.registrant))
 	}
 
+	/// Checks if the given token ID is contained within this range.
+	///
+	/// Returns false if the token has a different registrant or if the slot is outside the range.
 	pub fn contains(&self, token: TokenId) -> bool {
 		if token.registrant() != self.registrant {
 			return false;
 		}
 
 		self.slot_range.contains(&token.slot())
+	}
+
+	/// Checks if this range overlaps with another TokenIdRange.
+	pub fn overlaps(&self, other: &TokenIdRange) -> bool {
+		// If the registrants are different, the ranges don't overlap
+		if self.registrant != other.registrant {
+			return false;
+		}
+
+		// Check if the slot ranges overlap
+		let self_start = *self.slot_range.start();
+		let self_end = *self.slot_range.end();
+		let other_start = *other.slot_range.start();
+		let other_end = *other.slot_range.end();
+
+		// Ranges overlap if one range's start is <= the other's end
+		// and one range's end is >= the other's start
+		self_start <= other_end && self_end >= other_start
 	}
 }
 

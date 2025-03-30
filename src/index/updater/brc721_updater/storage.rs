@@ -1,3 +1,5 @@
+use redb::StorageError;
+
 use super::{Brc721CollectionId, TokenIdRange};
 
 pub type Result = redb::Result;
@@ -21,11 +23,21 @@ impl<T: Table<Brc721CollectionId, Vec<TokenIdRange>>> Storage<T> {
 		collection_id: &Brc721CollectionId,
 		range: TokenIdRange,
 	) -> Result {
-		let mut ranges = match self.collection_id_to_token_id_range.get(collection_id) {
-			Some(existing_ranges) => existing_ranges,
-			None => Vec::new(),
-		};
+		let mut ranges = self
+			.collection_id_to_token_id_range
+			.get(collection_id)
+			.unwrap_or_else(|| Vec::new());
+
+		// Check for intersection with existing ranges.  Return an error if an intersection exists.
+		for existing_range in &ranges {
+			if existing_range.overlaps(&range) {
+				return Err(StorageError::PreviousIo); // TODO create a proper error
+			}
+		}
+
 		ranges.push(range);
+
+		// Update the storage with the modified ranges and return the result
 		self.collection_id_to_token_id_range.insert(collection_id, ranges)
 	}
 
@@ -90,5 +102,27 @@ mod test {
 		// Verify the ranges are stored in the correct order
 		assert_eq!(result[0], range1);
 		assert_eq!(result[1], range2);
+	}
+
+	#[test]
+	fn add_token_range_with_already_registered_tokens() {
+		let mut storage = create_storage();
+
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add first range
+		let range1 =
+			TokenIdRange::new(3.try_into().unwrap(), 8.try_into().unwrap(), H160::default());
+		assert!(storage.add_token_id_range(&collection_id, range1.clone()).is_ok());
+
+		// Add second range to the same collection
+		let range2 =
+			TokenIdRange::new(8.try_into().unwrap(), 9.try_into().unwrap(), H160::default());
+		assert!(storage.add_token_id_range(&collection_id, range2.clone()).is_err());
+
+		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
+		assert_eq!(result.len(), 1);
+
+		assert_eq!(result[0], range1);
 	}
 }
