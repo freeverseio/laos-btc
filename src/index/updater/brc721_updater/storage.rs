@@ -61,9 +61,10 @@ mod test {
 	use super::{super::mock, *};
 	use sp_core::H160;
 
-	fn create_storage() -> Storage<mock::CollectionIdToTokenIdsRange> {
+	fn create_storage() -> Storage<mock::CollectionIdToTokenIdsRange, mock::TokenIdsRangeToData> {
 		let collaction_ranges = mock::CollectionIdToTokenIdsRange::new();
-		Storage::new(collaction_ranges)
+		let range_data = mock::TokenIdsRangeToData::new();
+		Storage::new(collaction_ranges, range_data)
 	}
 
 	#[test]
