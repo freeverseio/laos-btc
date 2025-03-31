@@ -1,3 +1,4 @@
+use ordinals::brc721::range_data;
 use redb::StorageError;
 
 use super::{Brc721CollectionId, RangeData, TokenIdRange};
@@ -42,9 +43,11 @@ impl<T0: Table<Brc721CollectionId, Vec<TokenIdRange>>, T1: Table<TokenIdRange, R
 			}
 		}
 
-		ranges.push(range);
+		ranges.push(range.clone());
 
-		// Update the storage with the modified ranges and return the result
+		let range_data = RangeData {};
+
+		self.token_id_range_to_range_data.insert(&range, range_data)?;
 		self.collection_id_to_token_id_range.insert(collection_id, ranges)
 	}
 
