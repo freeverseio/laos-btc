@@ -17,7 +17,7 @@
 mod storage;
 
 use ordinals::{
-	brc721::{is_brc721_script, TokenIdRange},
+	brc721::{is_brc721_script, RangeData, TokenIdRange},
 	btc_address_to_h160, RegisterCollection, RegisterOwnership, Slot, TokenId,
 };
 

@@ -1,6 +1,6 @@
 use redb::StorageError;
 
-use super::{Brc721CollectionId, TokenIdRange};
+use super::{Brc721CollectionId, RangeData, TokenIdRange};
 
 pub type Result = redb::Result;
 
@@ -9,13 +9,20 @@ pub trait Table<K, V> {
 	fn get(&self, key: &K) -> Option<V>;
 }
 
-struct Storage<T: Table<Brc721CollectionId, Vec<TokenIdRange>>> {
-	collection_id_to_token_id_range: T,
+struct Storage<T0, T1>
+where
+	T0: Table<Brc721CollectionId, Vec<TokenIdRange>>,
+	T1: Table<TokenIdRange, RangeData>,
+{
+	collection_id_to_token_id_range: T0,
+	token_id_range_to_range_data: T1,
 }
 
-impl<T: Table<Brc721CollectionId, Vec<TokenIdRange>>> Storage<T> {
-	pub fn new(table: T) -> Self {
-		Storage { collection_id_to_token_id_range: table }
+impl<T0: Table<Brc721CollectionId, Vec<TokenIdRange>>, T1: Table<TokenIdRange, RangeData>>
+	Storage<T0, T1>
+{
+	pub fn new(t0: T0, t1: T1) -> Self {
+		Storage { collection_id_to_token_id_range: t0, token_id_range_to_range_data: t1 }
 	}
 
 	fn add_token_id_range(

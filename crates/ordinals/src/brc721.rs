@@ -3,12 +3,14 @@ pub mod bitcoin_script;
 pub mod collection;
 pub mod collection_id;
 pub mod operations;
+pub mod range_data;
 pub mod register_collection;
 pub mod register_ownership;
 pub mod token;
 pub mod token_id;
 pub mod token_id_range;
 
+pub use range_data::RangeData;
 pub use token_id_range::TokenIdRange;
 
 use super::*;
