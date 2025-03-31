@@ -1,4 +1,3 @@
-use ordinals::brc721::range_data;
 use redb::StorageError;
 
 use super::{Brc721CollectionId, RangeData, TokenIdRange};
@@ -31,10 +30,8 @@ impl<T0: Table<Brc721CollectionId, Vec<TokenIdRange>>, T1: Table<TokenIdRange, R
 		collection_id: &Brc721CollectionId,
 		range: TokenIdRange,
 	) -> Result {
-		let mut ranges = self
-			.collection_id_to_token_id_range
-			.get(collection_id)
-			.unwrap_or_else(|| Vec::new());
+		let mut ranges =
+			self.collection_id_to_token_id_range.get(collection_id).unwrap_or_else(Vec::new);
 
 		// Check for intersection with existing ranges.  Return an error if an intersection exists.
 		for existing_range in &ranges {

@@ -10,7 +10,7 @@ pub type CollectionIdToTokenIdsRange = HashMap<Brc721CollectionId, Vec<TokenIdRa
 
 impl Table<Brc721CollectionId, Vec<TokenIdRange>> for CollectionIdToTokenIdsRange {
 	fn insert(&mut self, key: &Brc721CollectionId, value: Vec<TokenIdRange>) -> Result {
-		HashMap::insert(self, key.clone(), value);
+		HashMap::insert(self, *key, value);
 		Ok(())
 	}
 	fn get(&self, key: &Brc721CollectionId) -> Option<Vec<TokenIdRange>> {
