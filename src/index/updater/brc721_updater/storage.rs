@@ -51,10 +51,7 @@ impl<T0: Table<Brc721CollectionId, Vec<TokenIdRange>>, T1: Table<TokenIdRange, R
 		self.collection_id_to_token_id_range.insert(collection_id, ranges)
 	}
 
-	fn get_collection_token_id_ranges(
-		&self,
-		collection_id: &Brc721CollectionId,
-	) -> Option<Vec<TokenIdRange>> {
+	fn get_token_id_ranges(&self, collection_id: &Brc721CollectionId) -> Option<Vec<TokenIdRange>> {
 		self.collection_id_to_token_id_range.get(collection_id)
 	}
 }
@@ -74,7 +71,7 @@ mod test {
 	fn get_registered_ranges_of_unexistent_collection_should_return_none() {
 		let storage = create_storage();
 		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
-		assert!(storage.get_collection_token_id_ranges(&collection_id).is_none());
+		assert!(storage.get_token_id_ranges(&collection_id).is_none());
 	}
 
 	#[test]
@@ -86,7 +83,7 @@ mod test {
 			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
 		assert!(storage.add_token_id_range(&collection_id, range).is_ok());
 
-		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
+		let result = storage.get_token_id_ranges(&collection_id).unwrap();
 		assert_eq!(result.len(), 1);
 	}
 
@@ -107,7 +104,7 @@ mod test {
 		assert!(storage.add_token_id_range(&collection_id, range2.clone()).is_ok());
 
 		// Verify both ranges are stored
-		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
+		let result = storage.get_token_id_ranges(&collection_id).unwrap();
 		assert_eq!(result.len(), 2);
 
 		// Verify the ranges are stored in the correct order
@@ -131,7 +128,7 @@ mod test {
 			TokenIdRange::new(8.try_into().unwrap(), 9.try_into().unwrap(), H160::default());
 		assert!(storage.add_token_id_range(&collection_id, range2.clone()).is_err());
 
-		let result = storage.get_collection_token_id_ranges(&collection_id).unwrap();
+		let result = storage.get_token_id_ranges(&collection_id).unwrap();
 		assert_eq!(result.len(), 1);
 
 		assert_eq!(result[0], range1);
