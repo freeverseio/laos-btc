@@ -20,61 +20,58 @@ pub(crate) const BRC721_INIT_CODE: opcodes::Opcode = opcodes::all::OP_PUSHNUM_15
 
 /// Checks if a given script is a BRC721 script.
 pub fn is_brc721_script(script: &ScriptBuf) -> bool {
-	// Create an iterator for the instructions in the script.
-	let mut instructions = script.instructions().peekable();
-
-	// Expect the first instruction to be OP_RETURN, which signals the start of a script.
-	if !matches!(instructions.next(), Some(Ok(Instruction::Op(op))) if op == bitcoin::opcodes::all::OP_RETURN)
-	{
-		return false; // If it's not OP_RETURN, return false.
+	let buffer = script.as_bytes();
+	if buffer.len() < 2 {
+		return false;
 	}
 
-	// Check for the next instruction to see if it matches the BRC721 initialization code.
-	matches!(instructions.next(), Some(Ok(Instruction::Op(op))) if op == BRC721_INIT_CODE)
+	buffer[0..2] == [opcodes::all::OP_RETURN.to_u8(), BRC721_INIT_CODE.to_u8()]
 }
 
-/// Tests for the BRC721 script functions.
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bitcoin::{blockdata::script::Builder, opcodes};
 
 	#[test]
-	fn test_valid_brc721_script() {
-		let script = Builder::new()
-			.push_opcode(opcodes::all::OP_RETURN)
-			.push_opcode(BRC721_INIT_CODE)
-			.into_script();
-
+	fn test_is_brc721_script_valid() {
+		let script =
+			ScriptBuf::from(vec![opcodes::all::OP_RETURN.to_u8(), BRC721_INIT_CODE.to_u8()]);
 		assert!(is_brc721_script(&script));
 	}
 
 	#[test]
-	fn test_invalid_script_op_return_missing() {
-		// Create a script without OP_RETURN
-		let script = Builder::new()
-            .push_opcode(BRC721_INIT_CODE) // Invalid because it must start with OP_RETURN
-            .into_script();
-
+	fn test_is_brc721_script_invalid_first_opcode() {
+		let script = ScriptBuf::from(vec![
+			opcodes::all::OP_RETURN_189.to_u8(), // Invalid first opcode
+			BRC721_INIT_CODE.to_u8(),
+		]);
 		assert!(!is_brc721_script(&script));
 	}
 
 	#[test]
-	fn test_invalid_script_wrong_op_return() {
-		// Create a script that has OP_RETURN but doesn't follow it with BRC721_INIT_CODE
-		let script = Builder::new()
-            .push_opcode(opcodes::all::OP_RETURN)
-            .push_opcode(opcodes::all::OP_PUSHNUM_14) // Wrong opcode
-            .into_script();
-
+	fn test_is_brc721_script_invalid_second_opcode() {
+		let script = ScriptBuf::from(vec![
+			opcodes::all::OP_RETURN.to_u8(),
+			opcodes::all::OP_PUSHNUM_16.to_u8(), // Invalid second opcode
+		]);
 		assert!(!is_brc721_script(&script));
 	}
 
 	#[test]
-	fn test_invalid_script_empty() {
-		// Test an empty script
-		let script = Builder::new().into_script();
-
+	fn test_is_brc721_script_too_short() {
+		let script = ScriptBuf::from(vec![
+			opcodes::all::OP_RETURN.to_u8(), // Only one byte, too short
+		]);
 		assert!(!is_brc721_script(&script));
+	}
+
+	#[test]
+	fn test_is_brc721_script_too_long() {
+		let script = ScriptBuf::from(vec![
+			opcodes::all::OP_RETURN.to_u8(),
+			BRC721_INIT_CODE.to_u8(),
+			opcodes::all::OP_PUSHNUM_4.to_u8(), // Extra byte, too long
+		]);
+		assert!(is_brc721_script(&script)); // The function should only check the first two bytes
 	}
 }

@@ -57,7 +57,7 @@ impl TryFrom<ScriptBuf> for RegisterOwnership {
 		expect_opcode(&mut instructions, opcodes::all::OP_RETURN, "OP_RETURN")?;
 		expect_opcode(&mut instructions, BRC721_INIT_CODE, "BRC721_INIT_CODE")?;
 
-		let buffer = expect_push_bytes(&mut instructions, None, "Register ownership operation")?;
+		let buffer = expect_push_bytes(&mut instructions, "Register ownership operation")?;
 
 		if buffer.len() < MIN_BUFFER_SIZE {
 			return Err(BitcoinScriptError::InvalidLength("script is too short".to_string()));

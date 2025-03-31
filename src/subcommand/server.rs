@@ -7001,7 +7001,7 @@ next
 			outputs: 1,
 			op_return_index: Some(0),
 			op_return_value: Some(0),
-			op_return: Some(rc.to_script()),
+			op_return: Some(rc.as_script()),
 			..default()
 		});
 
@@ -7046,7 +7046,7 @@ next
 			outputs: 1,
 			op_return_index: Some(0),
 			op_return_value: Some(0),
-			op_return: Some(rc.to_script()),
+			op_return: Some(rc.as_script()),
 			..default()
 		});
 
@@ -7126,7 +7126,7 @@ next
 			outputs: 1,
 			op_return_index: Some(0),
 			op_return_value: Some(0),
-			op_return: Some(rc.to_script()),
+			op_return: Some(rc.as_script()),
 			..default()
 		});
 
@@ -7160,7 +7160,7 @@ next
 			outputs: 1,
 			op_return_index: Some(0),
 			op_return_value: Some(0),
-			op_return: Some(rc.to_script()),
+			op_return: Some(rc.as_script()),
 			..default()
 		});
 
@@ -7191,7 +7191,7 @@ next
 			outputs: 1,
 			op_return_index: Some(0),
 			op_return_value: Some(0),
-			op_return: Some(rc.to_script()),
+			op_return: Some(rc.as_script()),
 			..default()
 		});
 
@@ -7243,7 +7243,7 @@ next
 			outputs: 1,
 			op_return_index: Some(0),
 			op_return_value: Some(0),
-			op_return: Some(rc.to_script()),
+			op_return: Some(rc.as_script()),
 			..default()
 		});
 
