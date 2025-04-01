@@ -9,7 +9,7 @@ pub trait Table<K, V> {
 	fn get(&self, key: &K) -> Option<V>;
 }
 
-struct Storage<T0, T1>
+pub struct Storage<T0, T1>
 where
 	T0: Table<Brc721CollectionId, Vec<TokenIdRange>>,
 	T1: Table<TokenIdRange, RangeData>,
@@ -50,6 +50,10 @@ impl<T0: Table<Brc721CollectionId, Vec<TokenIdRange>>, T1: Table<TokenIdRange, R
 
 	fn get_token_id_ranges(&self, collection_id: &Brc721CollectionId) -> Option<Vec<TokenIdRange>> {
 		self.collection_id_to_token_id_range.get(collection_id)
+	}
+
+	fn get_range_data(&self, range: &TokenIdRange) -> Option<RangeData> {
+		self.token_id_range_to_range_data.get(range)
 	}
 }
 

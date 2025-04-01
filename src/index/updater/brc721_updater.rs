@@ -16,12 +16,12 @@
 
 mod storage;
 
+use super::*;
 use ordinals::{
 	brc721::{is_brc721_script, RangeData, TokenIdRange},
 	btc_address_to_h160, RegisterCollection, RegisterOwnership, Slot, TokenId,
 };
-
-use super::*;
+use storage::Storage;
 
 pub(super) trait Brc721Table<K, V> {
 	fn insert(&mut self, key: K, value: V) -> redb::Result;
