@@ -130,4 +130,57 @@ mod test {
 
 		assert_eq!(result[0], range1);
 	}
+
+	#[test]
+	fn get_data_for_existing_range_should_return_data() {
+		let mut storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add a range
+		let range =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range.clone()).is_ok());
+
+		// Verify we can get the data for this range
+		let data = storage.get_data(&range);
+		assert!(data.is_some());
+	}
+
+	#[test]
+	fn get_data_for_nonexistent_range_should_return_none() {
+		let storage = create_storage();
+
+		// Create a range that hasn't been added to storage
+		let range =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+
+		// Verify get_data returns None for this range
+		let data = storage.get_data(&range);
+		assert!(data.is_none());
+	}
+
+	#[test]
+	fn get_data_after_adding_multiple_ranges() {
+		let mut storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add first range
+		let range1 =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range1.clone()).is_ok());
+
+		// Add second range
+		let range2 =
+			TokenIdRange::new(5.try_into().unwrap(), 6.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range2.clone()).is_ok());
+
+		// Verify we can get data for both ranges
+		assert!(storage.get_data(&range1).is_some());
+		assert!(storage.get_data(&range2).is_some());
+
+		// Create a range that hasn't been added
+		let range3 =
+			TokenIdRange::new(7.try_into().unwrap(), 8.try_into().unwrap(), H160::default());
+		assert!(storage.get_data(&range3).is_none());
+	}
 }
