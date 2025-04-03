@@ -13,16 +13,14 @@ impl redb::Value for RangeData {
 	where
 		Self: 'a,
 	{
-		// Since RangeData is empty, we just return a new instance
-		// regardless of the input bytes
-		RangeData {}
+		unimplemented!()
 	}
 
 	fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
 	where
 		Self: 'b,
 	{
-		[0u8]
+		unimplemented!()
 	}
 
 	fn type_name() -> redb::TypeName {
