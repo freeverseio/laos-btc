@@ -15,6 +15,7 @@
 // along with LAOS.  If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
+use std::cmp::Ordering;
 
 #[derive(
 	Debug,
@@ -102,6 +103,49 @@ impl FromStr for Brc721CollectionId {
 	}
 }
 
+impl redb::Value for Brc721CollectionId {
+	type SelfType<'a> = Self;
+	type AsBytes<'a> = [u8; 12];
+
+	fn fixed_width() -> Option<usize> {
+		// first slot 96b + last slot 96b + registrant 160b
+		Some(12)
+	}
+
+	fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+	where
+		Self: 'a,
+	{
+		let block = u64::from_be_bytes(data[0..8].try_into().unwrap());
+		let tx = u32::from_be_bytes(data[8..12].try_into().unwrap());
+
+		Self { block, tx }
+	}
+
+	fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+	where
+		Self: 'b,
+	{
+		let mut buffer = [0u8; 12];
+
+		buffer[0..8].copy_from_slice(&value.block.to_be_bytes());
+		buffer[8..12].copy_from_slice(&value.tx.to_be_bytes());
+		buffer
+	}
+
+	fn type_name() -> redb::TypeName {
+		redb::TypeName::new("brc721::collection_id")
+	}
+}
+
+impl redb::Key for Brc721CollectionId {
+	fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
+		let id1 = <Self as redb::Value>::from_bytes(data1);
+		let id2 = <Self as redb::Value>::from_bytes(data2);
+		id1.cmp(&id2)
+	}
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Error {
 	Separator,
@@ -126,6 +170,7 @@ impl std::error::Error for Error {}
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use redb::Value;
 
 	#[test]
 	fn leb128_encode_decode_small_number() {
@@ -217,5 +262,17 @@ mod tests {
 		let json = "\"1:2\"";
 		assert_eq!(serde_json::to_string(&rune_id).unwrap(), json);
 		assert_eq!(serde_json::from_str::<Brc721CollectionId>(json).unwrap(), rune_id);
+	}
+
+	#[test]
+	fn test_from_bytes_as_bytes() {
+		let id = Brc721CollectionId { block: 5u64, tx: 1u32 };
+
+		let buffer = Brc721CollectionId::as_bytes(&id);
+		assert_eq!(buffer.len(), Brc721CollectionId::fixed_width().unwrap());
+		assert_eq!(hex::encode(buffer), "000000000000000500000001");
+
+		let id1 = Brc721CollectionId::from_bytes(&buffer);
+		assert_eq!(id1, id);
 	}
 }

@@ -41,6 +41,7 @@ pub(crate) use sat::SatHtml;
 
 pub use blocks::BlocksHtml;
 pub use brc721_collections::Brc721CollectionsHtml;
+pub use brc721_token::Brc721TokenHtml;
 pub use inscription::InscriptionHtml;
 pub use rune::RuneHtml;
 pub use runes::RunesHtml;
@@ -51,6 +52,7 @@ pub mod address;
 pub mod block;
 pub mod blocks;
 pub mod brc721_collections;
+pub mod brc721_token;
 mod children;
 mod clock;
 pub mod collections;

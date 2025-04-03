@@ -3,7 +3,7 @@
 /// error otherwise.
 #[derive(Debug, Clone, PartialEq)]
 #[repr(u8)]
-pub(crate) enum Brc721Operation {
+pub enum Brc721Operation {
 	RegisterCollection = 0x00,
 	RegisterOwnership = 0x01,
 }
