@@ -77,10 +77,10 @@ impl Updater<'_> {
 				.unwrap_or(0),
 		)?;
 
-		let mut progress_bar = if cfg!(test) ||
-			log_enabled!(log::Level::Info) ||
-			starting_height <= self.height ||
-			self.index.settings.integration_test()
+		let mut progress_bar = if cfg!(test)
+			|| log_enabled!(log::Level::Info)
+			|| starting_height <= self.height
+			|| self.index.settings.integration_test()
 		{
 			None
 		} else {
@@ -347,10 +347,10 @@ impl Updater<'_> {
 			wtx.open_table(INSCRIPTION_ID_TO_SEQUENCE_NUMBER)?;
 		let mut statistic_to_count = wtx.open_table(STATISTIC_TO_COUNT)?;
 
-		if self.index.index_inscriptions ||
-			self.index.index_addresses ||
-			self.index.index_sats ||
-			self.index.index_brc721
+		if self.index.index_inscriptions
+			|| self.index.index_addresses
+			|| self.index.index_sats
+			|| self.index.index_brc721
 		{
 			self.index_utxo_entries(
 				&block,
@@ -416,9 +416,6 @@ impl Updater<'_> {
 
 			let mut brc721_unspent_utxos = wtx.open_table(BRC721_UNSPENT_UTXOS)?;
 
-			let mut brc721_collection_id_to_token_ranges =
-				wtx.open_table(BRC721_COLLECTION_ID_TO_TOKEN_RANGES)?;
-
 			let mut brc721_collection_updater = Brc721Updater {
 				height: self.height,
 				client: &self.index.client,
@@ -427,7 +424,6 @@ impl Updater<'_> {
 				token_by_owner: &mut brc721_utxo_to_token_id,
 				tokens_for_owner: &mut brc721_tokens_for_owner,
 				unspent_utxos: &mut brc721_unspent_utxos,
-				collection_id_to_token_ranges: &mut brc721_collection_id_to_token_ranges,
 			};
 
 			for (i, (tx, _)) in block.txdata.iter().enumerate() {
@@ -474,8 +470,8 @@ impl Updater<'_> {
 			wtx.open_table(SEQUENCE_NUMBER_TO_INSCRIPTION_ENTRY)?;
 		let mut transaction_id_to_transaction = wtx.open_table(TRANSACTION_ID_TO_TRANSACTION)?;
 
-		let index_inscriptions = self.height >= self.index.settings.first_inscription_height() &&
-			self.index.index_inscriptions;
+		let index_inscriptions = self.height >= self.index.settings.first_inscription_height()
+			&& self.index.index_inscriptions;
 
 		// If the receiver still has inputs something went wrong in the last
 		// block and we shouldn't recover from this and commit the last block

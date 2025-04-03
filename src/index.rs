@@ -100,7 +100,6 @@ define_table! { BRC721_TOKEN_TO_OWNER, Brc721TokenInCollection, TokenScriptOwner
 define_table! { BRC721_UTXO_TO_TOKEN_ID, OwnerUTXOIndex, TokenBundles }
 define_table! { BRC721_TOKENS_FOR_OWNER, String, u128 }
 define_table! { BRC721_UNSPENT_UTXOS, (), Vec<TokenScriptOwner> }
-define_table! { BRC721_COLLECTION_ID_TO_TOKEN_RANGES, Brc721CollectionId, Vec<TokenIdRange> }
 
 #[derive(Copy, Clone)]
 pub(crate) enum Statistic {
@@ -791,8 +790,8 @@ impl Index {
 		let value = statistic_to_count
 			.get(&(statistic.key()))?
 			.map(|x| x.value())
-			.unwrap_or_default() +
-			n;
+			.unwrap_or_default()
+			+ n;
 		statistic_to_count.insert(&statistic.key(), &value)?;
 		Ok(())
 	}
@@ -1741,9 +1740,9 @@ impl Index {
 	}
 
 	pub fn is_output_spent(&self, outpoint: OutPoint) -> Result<bool> {
-		Ok(outpoint != OutPoint::null() &&
-			outpoint != self.settings.chain().genesis_coinbase_outpoint() &&
-			if self.have_full_utxo_index() {
+		Ok(outpoint != OutPoint::null()
+			&& outpoint != self.settings.chain().genesis_coinbase_outpoint()
+			&& if self.have_full_utxo_index() {
 				self.database
 					.begin_read()?
 					.open_table(OUTPOINT_TO_UTXO_ENTRY)?
@@ -2218,10 +2217,11 @@ impl Index {
 					}
 				}
 			},
-			None =>
+			None => {
 				if self.index_sats {
 					assert_eq!(satpoint.outpoint, unbound_outpoint())
-				},
+				}
+			},
 		}
 	}
 

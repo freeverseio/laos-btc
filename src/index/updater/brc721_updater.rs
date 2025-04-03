@@ -67,7 +67,7 @@ impl_brc721_table!(String, u128);
 impl_brc721_table!((), Vec<TokenScriptOwner>);
 impl_brc721_table!(Brc721CollectionId, Vec<TokenIdRange>);
 
-pub(super) struct Brc721Updater<'a, 'client, T1, T2, T3, T4, T5, T6> {
+pub(super) struct Brc721Updater<'a, 'client, T1, T2, T3, T4, T5> {
 	pub(super) height: u32,
 	pub(super) client: &'client Client,
 	pub(super) collection_table: &'a mut T1,
@@ -75,17 +75,15 @@ pub(super) struct Brc721Updater<'a, 'client, T1, T2, T3, T4, T5, T6> {
 	pub(super) token_by_owner: &'a mut T3,
 	pub(super) tokens_for_owner: &'a mut T4,
 	pub(super) unspent_utxos: &'a mut T5,
-	pub(super) collection_id_to_token_ranges: &'a mut T6,
 }
 
-impl<T1, T2, T3, T4, T5, T6> Brc721Updater<'_, '_, T1, T2, T3, T4, T5, T6>
+impl<T1, T2, T3, T4, T5> Brc721Updater<'_, '_, T1, T2, T3, T4, T5>
 where
 	T1: Brc721Table<Brc721CollectionIdValue, RegisterCollectionValue>,
 	T2: Brc721Table<Brc721TokenInCollection, TokenScriptOwner>,
 	T3: Brc721Table<OwnerUTXOIndex, TokenBundles>,
 	T4: Brc721Table<String, u128>,
 	T5: Brc721Table<(), Vec<TokenScriptOwner>>,
-	T6: Brc721Table<Brc721CollectionId, Vec<TokenIdRange>>,
 {
 	pub(super) fn index_brc721(&mut self, tx_index: u32, tx: &Transaction) -> Result<()> {
 		if tx.output.is_empty() {

@@ -4,6 +4,14 @@ use super::{Brc721CollectionId, RangeData, TokenIdRange};
 
 pub type Result = redb::Result;
 
+//define_table {
+//	($name:ident, $key:ty, $value:ty) => {
+//		const $name: TableDefinition<$key, $value> = TableDefinition::new(stringify!($name));
+//	};
+//}
+
+//define_table! { BRC721_COLLECTION_ID_TO_TOKEN_RANGES, Brc721CollectionId, Vec<TokenIdRange> }
+
 pub trait Table<K, V> {
 	fn insert(&mut self, key: &K, value: V) -> Result;
 	fn get(&self, key: &K) -> Option<V>;
