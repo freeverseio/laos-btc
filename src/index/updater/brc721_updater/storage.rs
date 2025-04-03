@@ -11,6 +11,12 @@ pub type Result = redb::Result;
 //}
 
 //define_table! { BRC721_COLLECTION_ID_TO_TOKEN_RANGES, Brc721CollectionId, Vec<TokenIdRange> }
+//
+
+const BRC721_COLLECTION_ID_TO_TOKEN_RANGES: redb::TableDefinition<
+	Brc721CollectionId,
+	Vec<TokenIdRange>,
+> = redb::TableDefinition::new("BRC721_COLLECTION_ID_TO_TOKEN_RANGES");
 
 pub trait Table<K, V> {
 	fn insert(&mut self, key: &K, value: V) -> Result;
