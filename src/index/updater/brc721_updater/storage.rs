@@ -1,4 +1,4 @@
-use redb::StorageError;
+use redb::{Key, StorageError, Value};
 
 use super::{Brc721CollectionId, RangeData, TokenIdRange};
 
@@ -13,10 +13,13 @@ pub type Result = redb::Result;
 //define_table! { BRC721_COLLECTION_ID_TO_TOKEN_RANGES, Brc721CollectionId, Vec<TokenIdRange> }
 //
 
-const BRC721_COLLECTION_ID_TO_TOKEN_RANGES: redb::TableDefinition<
+const COLLECTION_ID_TO_TOKEN_ID_RANGES: redb::TableDefinition<
 	Brc721CollectionId,
 	Vec<TokenIdRange>,
-> = redb::TableDefinition::new("BRC721_COLLECTION_ID_TO_TOKEN_RANGES");
+> = redb::TableDefinition::new("BRC721_COLLECTION_ID_TO_TOKEN_ID_RANGES");
+
+const TOKEN_ID_RANGES_TO_RANGE_DATA: redb::TableDefinition<TokenIdRange, RangeData> =
+	redb::TableDefinition::new("BRC721_TOKEN_ID_RANGE_TO_RANGE_DATA");
 
 pub trait Table<K, V> {
 	fn insert(&mut self, key: &K, value: V) -> Result;

@@ -1,5 +1,6 @@
 use super::{Slot, TokenId};
 use sp_core::H160;
+use std::cmp::Ordering;
 use std::ops::RangeInclusive;
 
 #[derive(Debug, PartialEq, Clone, Eq, Hash)]
@@ -95,6 +96,12 @@ impl redb::Value for TokenIdRange {
 
 	fn type_name() -> redb::TypeName {
 		redb::TypeName::new("brc721::token_id_range")
+	}
+}
+
+impl redb::Key for TokenIdRange {
+	fn compare(data1: &[u8], data2: &[u8]) -> Ordering {
+		data1.cmp(data2)
 	}
 }
 
