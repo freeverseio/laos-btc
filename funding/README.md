@@ -1,7 +1,3 @@
-Great, I’ll prepare a detailed guide on how to apply for Polkadot Treasury funding for your BRC721 protocol—focusing on building an indexer integrating Bitcoin and the LAOS parachain, which may require changes to LAOS itself. I’ll cover treasury proposals, bounties, and tips as potential paths, and tailor everything to your early-stage status and cross-chain architecture.
-
-I’ll get back to you soon with a comprehensive guide.
-
 # Guide to Polkadot Treasury Funding for a Cross-Chain NFT Project (BRC721)
 
 **Introduction:**  
