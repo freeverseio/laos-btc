@@ -1,13 +1,10 @@
 # laos-btc
 
-`laos-btc` is an index, block explorer, and command-line wallet. It is experimental
+`laos-btc` is an indexer, block explorer, and command-line wallet. It is experimental
 software with no warranty. See [LICENSE](LICENSE) for more details.
 
-Ordinal theory imbues satoshis with numismatic value, allowing them to
-be collected and traded as curios.
+It implements the BRC721 protocol as specified in the research publication [Scalable Non-Fungible Tokens on Bitcoin](https://eprint.iacr.org/2025/641).
 
-Ordinal numbers are serial numbers for satoshis, assigned in the order in which
-they are mined, and preserved across transactions.
 
 ## Wallet
 
