@@ -33,7 +33,6 @@ The total amount requested is 40,000 DOT, to be allocated approximately as follo
 * [LAOS Parachain Repository](https://github.com/freeverseio/laos)
 
 [2] [LAOS Medium](https://medium.com/laosnetwork), [Post About Gaming using LAOS](https://medium.com/laosnetwork/laos-network-lists-token-forges-partnership-with-sequence-to-bring-scalable-free-2-play-gaming-to-d49e56f7770f)
-[BRC721 Repository](https://github.com/freeverseio/laos-btc)
 
 [3] [Scalable Non-Fungible Tokens on Bitcoin](https://eprint.iacr.org/2025/641)
 
