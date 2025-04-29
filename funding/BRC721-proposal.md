@@ -27,7 +27,7 @@ The total amount requested is 40,000 DOT, to be allocated approximately as follo
 
 ## References
 
-[1] About LAOS
+[1] About LAOS:
 * [Main site](https://laosnetwork.io)
 * [Resources](https://docs.laosnetwork.io/learn/resources), including whitepaper, developer docs, etc.
 * [LAOS Parachain Repository](https://github.com/freeverseio/laos)
