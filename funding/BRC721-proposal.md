@@ -1,4 +1,4 @@
-# Bitcoin Integration of Bridgeless Minting using Polkadot
+# Bitcoin Integration of the BRC721 protocol to scale Bitcoin NFT using Polkadot coretime
 
 This proposal requests funding to complete the integration of the BRC721 protocol, enabling bridgeless minting of NFTs directly on the Bitcoin network.
 
