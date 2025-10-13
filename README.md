@@ -1,13 +1,19 @@
 # laos-btc
 
-`laos-btc` is an index, block explorer, and command-line wallet. It is experimental
+`laos-btc` is an indexer, block explorer, and command-line wallet. It is experimental
 software with no warranty. See [LICENSE](LICENSE) for more details.
 
-Ordinal theory imbues satoshis with numismatic value, allowing them to
-be collected and traded as curios.
+It is based on the protocol described in the [BRC-721 research paper](https://eprint.iacr.org/2025/641).
 
-Ordinal numbers are serial numbers for satoshis, assigned in the order in which
-they are mined, and preserved across transactions.
+BRC-721 scales the creation, management, and trading of non-fungible tokens (NFTs) on Bitcoin by
+extending [Bridgeless Minting patterns](https://github.com/freeverseio/laos-whitepaper/blob/main/laos.pdf) previously used on other blockchains.
+
+The protocol leverages on-chain Bitcoin data to handle all aspects of token ownership, including trading, while integrating a secondary consensus system for minting and optionally modifying token metadata. 
+
+To minimize its on-chain footprint, the protocol utilizes the `OP_RETURN` mechanism for ownership records, while complementary NFT-related actions are stored on the LAOS blockchain. All data remains permanently on-chain, with no reliance on bridges or third-party operators.
+
+The `OP_RETURN` pattern is heavily inspired by the [Runes Protocol](https://docs.ordinals.com/runes.html), which greatly simplifies previous patterns based on [Ordinal Theory](https://docs.ordinals.com/), used by [Inscriptions/Ordinals](https://ordinals.com/).
+
 
 ## Wallet
 
