@@ -18,7 +18,7 @@ The result is an ecosystem primitive that makes Bitcoin NFT and RWA-style assets
 - Verifiable rules and provenance
 - Application-grade indexing and developer UX
 
-All deliverables will be **fully open-source**.
+All deliverables will continue to be **fully open-source**.
 
 ---
 
@@ -100,7 +100,7 @@ Polkadot (and coretime) is built for parallel execution and modular infrastructu
   - Collection logic
   - Early tooling
 
-A [demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d) of the current status of the BRC-721 can be seen on the LAOS blog.
+A [demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d) of the current status of the BRC-721 can be seen on the LAOS Medium blog.
 
 This proposal funds the last-mile work needed for ecosystem-grade reliability:
 - Reorg-safe dual-chain indexing
@@ -118,24 +118,24 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 ### 5.1 Core Deliverables
 
 1) **Bitcoin ↔ LAOS dual-chain indexer (production-grade)**
-- Reorg handling up to configurable depth (target tested: 200 blocks)
+- Reorg handling up to configurable depth
 - Deterministic rollback and replay
 - Exportable event stream / database schema
 
-2) **Complete BRC-721 validation logic**
+1) **Complete BRC-721 validation logic**
 - Full protocol rules coverage
 - Published test vectors and adversarial cases
 - “Known-good” reference implementation
 
-3) **Wallet + developer libraries**
+1) **Wallet + developer libraries**
 - Minimal, auditable libraries for constructing/validating BRC-721 transactions
 - Reference integration guidance for wallet providers
 
-4) **Polkadot SDK package for parachain / dApp teams**
+1) **Polkadot SDK package for parachain / dApp teams**
 - Clear integration path for Polkadot builders
 - Templates + example flows
 
-5) **Reference dApp + documentation**
+1) **Reference dApp + documentation**
 - Demonstrates mint → index → verify → trade/list (as applicable)
 - End-to-end developer documentation
 
@@ -304,6 +304,27 @@ It is designed to be easy to evaluate:
 
 - **Appendix A:** Repositories + licenses + scope-lock tag/hash + IPFS hash  
 - **Appendix B:** Team bios + roles + time allocation  
-- **Appendix C:** Security reviewer candidates / quote / scope  
+- **Appendix C:** [TONI: NOT NEEDED?] Security reviewer candidates / quote / scope  
 - **Appendix D:** Architecture diagram + data flow  
 - **Appendix E:** Partner signals (may be anonymized if NDA)
+
+## Bios
+
+### Toni Mateos
+
+Dr. Toni Mateos leads research at LAOS Network. He was recently awarded an Oscar for Scientific & Technological Achievements from the Academy of Motion Picture Arts and Sciences, as co-creator of Dolby Atmos, from research to product, a tech that has reached ~1Bn users in 90+ countries. 
+
+He was Director of Research at Dolby Laboratories for 7 years. In 2019, he left Dolby to co-found Freeverse, a blockchain R&D company, with the vision of using blockchain technology to bring digital ownership to the mainstream.
+
+Toni holds a degree in Quantum Gravity (U. Barcelona), a PhD in Mathematical Physics (String Theory, Imperial College London), a Postgrad in Blockchain Technologies (Polytechnic University of Catalonia), has 17 years of experience leading R&D teams in the entertainment tech industry, and is author of 30+ patents in various technological fields. 
+
+### Alessandro Siniscalchi
+
+Alessandro is the Lead Engineer at LAOS Network, bringing over 20 years of experience deploying mission-critical systems across domains including blockchain, industrial control for space observatories, military avionics, cinema sound, and audio signal processing. He is highly experienced in system design, software quality, and agile development practices.
+
+Alessandro became a Polkadot protocol developer in 2022 after graduating from the inaugural Polkadot Blockchain Academy and has been a key contributor to the Polkadot ecosystem ever since.
+
+### Alun Evans
+
+Dr. Alun Evans has over 20 years of experience in the tech industry for entertainment. Alun has a passion for building teams with a strong collaborative culture, that are focused on creating products that solve genuine problems. Previously, he was CEO of Shar3d.io (collaborative 3D applications on the web), CTO of Bodypal.com (virtual garment and fitting service), and Director of Barcelona World Race - THE GAME, the first-ever video game that allowed players to compete in a simultaneous real-world sporting event.  Alun has a Ph.D. in Medical Physics from University College London.
+
