@@ -1,10 +1,10 @@
 # Bitcoin + Polkadot: Completing the BRC-721 Integration to Scale Bitcoin NFTs via Polkadot Coretime
 
-**Referendum type:** Treasury Spend (Medium Spender)  
-**Requested amount:** **120,000 USDC** (from Polkadot Treasury via Asset Hub)  
-**Purpose:** Complete the open-source BRC-721 integration stack so Bitcoin-native NFTs can scale using Polkadot (via LAOS + coretime) as the deterministic computation, validation, and metadata layer.
+Referendum type: Treasury Spend (Medium Spender)
 
----
+Requested amount: **140,000 USDC** (from Polkadot Treasury via Asset Hub)
+
+Purpose: Complete the open-source BRC-721 integration stack so Bitcoin-native NFTs can scale using Polkadot(via LAOS + coretime) as the deterministic computation, validation, and metadata layer.
 
 ## 1) Summary
 
@@ -20,11 +20,19 @@ The result is an ecosystem primitive that makes Bitcoin NFT and RWA-style assets
 
 All deliverables will be **fully open-source**.
 
----
+**Current Status**
+
+The technical implementation of BRC-721 has been started by the LAOS team and is currently at 70% completion. 
+We have prepared several videos, documents, and AI-assistants to demonstrate the current status of development:
+
+- [Introduction to BRC-721 video]()
+- [Current technical implementation video]()
+- [Text walkthough/demo]()
+- [Open ChatGPT Explainer]()
 
 ## 2) Benefits for the Polkadot ecosystem
 
-Polkadot Treasury spending should create durable, compounding value for DOT holders. This proposal does that in four concrete ways.
+Polkadot Treasury spending should create durable, compounding value for DOT holders. This proposal does that in four concrete ways:
 
 ### 2.1 Increased demand for Coretime (Polkadot 2.0 economics)
 
@@ -35,16 +43,18 @@ BRC-721 uses Polkadot as the computation and metadata layer. As adoption grows, 
 ### 2.2 A credible “Bitcoin interoperability” narrative with real builders
 
 Bitcoin remains the largest liquidity network in crypto. BRC-721 gives Polkadot a *specific*, developer-usable wedge into Bitcoin:
-- Not “bridging marketing,” but actual tooling and infrastructure developers can use.
+
+- Not “bridging marketing” but actual tooling and infrastructure developers can use.
 - A clear value proposition: Bitcoin-native assets + Polkadot-grade compute/metadata.
 
 This helps Polkadot compete in the interoperability landscape with a differentiated story: **Polkadot as the computation layer for Bitcoin-native assets**.
 
-**Measurable signal:** number of external Bitcoin ecosystem teams running the indexer and integrating wallet libraries within 60 days of release.
+**Measurable signal:** number of external Bitcoin ecosystem teams running the indexer and integrating wallet libraries within 120 days of release.
 
 ### 2.3 Reusable infrastructure for the wider Polkadot ecosystem
 
 The deliverables are designed to be reusable beyond BRC-721:
+
 - Reorg-safe event indexing patterns
 - Deterministic validation pipelines
 - SDK packaging for parachains/dApps
@@ -69,8 +79,6 @@ This is infrastructure that benefits the ecosystem broadly, not just one product
 - Developer tooling and reference implementations
 - Security review work that raises ecosystem trust
 
----
-
 ## 3) Why Polkadot? Why now?
 
 ### 3.1 Bitcoin policy changes do not remove NFT/RWA constraints
@@ -88,30 +96,23 @@ Polkadot (and coretime) is built for parallel execution and modular infrastructu
 - Maintain an on-chain canonical metadata/evolution layer
 - Provide developer-grade UX via SDKs, indexers, and reference integrations
 
----
+## 4) What already exists
 
-## 4) What already exists (de-risking)
+The technical implementation of BRC-721 has been started by the LAOS team and is currently at 70% completion. 
 
-- **LAOS parachain** is live, stable, and in production. LAOS's Bridgeless Minting allows NFTs to minted on any EVM chain, while spending only gas in LAOS. The solution greatly scales NFT minting and is already being used by several web3 games.
-- **BRC-721 research/spec** exists publicly.
+- [LAOS parachain](https://laosnetwork.io) is live, stable, and in production. LAOS's Bridgeless Minting allows NFTs to minted on any EVM chain, while spending only gas in LAOS. The solution greatly scales NFT minting and is already being used by several web3 games.
+- [BRC-721 research/spec](https://eprint.iacr.org/2025/641) exists publicly.
 - Core primitives already implemented:
   - UTXO parsing
   - Taproot-related logic (as required by the protocol)
   - Collection logic
   - Early tooling
+- [Introduction to BRC-721 video]()
+- [Current technical implementation video]()
+- [Text walkthough/demo]()
+- [Open ChatGPT Explainer]()
 
-A [demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d) of the current status of the BRC-721 can be seen on the LAOS blog.
-
-This proposal funds the last-mile work needed for ecosystem-grade reliability:
-- Reorg-safe dual-chain indexing
-- Full validation coverage
-- SDK packaging
-- Documentation and reference integrations
-- Independent security review
-
----
-
-## 5) What this proposal delivers (open-source)
+## 5) What this proposal delivers
 
 All deliverables will be released under **MIT or Apache-2.0** (final list in Appendix A), with public repositories and reproducible builds.
 
@@ -145,22 +146,13 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 - Tutorials and technical write-ups
 - Office hours for early integrators
 
----
+## 6) Execution plan and milestones
 
-## 6) Execution plan and milestones (with acceptance criteria)
+**Target completion:** end of **Q2 2026**
 
-Because Treasury spends are not inherently escrowed, this proposal is structured around **objective, milestone-based delivery**. The preferred mechanism is:
+### Milestone 1 (Weeks 1–8): Indexer foundation + reorg engine
 
-- **Spend 1 (this referendum): Milestone 1 funding**
-- **Spend 2 and Spend 3 (follow-up referenda): Milestones 2 and 3 funding**
-
-If the community prefers a single spend, funds will be managed via a public multisig (see Section 8), with strict reporting and return-of-unspent commitment.
-
-**Target completion:** end of **Q1 2026**
-
-### Milestone 1 (Weeks 1–5): Indexer foundation + reorg engine
-
-**Acceptance criteria**
+**Criteria**
 - Reorg simulation harness passes up to **200 blocks**
 - Deterministic rollback verified (repeatable state from the same inputs)
 - Indexing latency target: **< 2 seconds** for new events under normal conditions
@@ -169,15 +161,15 @@ If the community prefers a single spend, funds will be managed via a public mult
   - Release instructions
   - Operator documentation
 
-### Milestone 2 (Weeks 6–10): Full validation + SDK packaging
+### Milestone 2 (Weeks 9–16): Full validation + SDK packaging
 
-**Acceptance criteria**
+**Criteria**
 - Protocol rule coverage documented and complete
 - Comprehensive test vectors published (including malformed/adversarial cases)
 - SDK packaged and released with example integration project
 - Reference dApp alpha available on a public test environment
 
-### Milestone 3 (Weeks 11–14): Security review + mainnet readiness + adoption push
+### Milestone 3 (Weeks 16–24): Security review + mainnet readiness
 
 **Acceptance criteria**
 - Independent security review completed (scope defined in Section 9)
@@ -187,36 +179,26 @@ If the community prefers a single spend, funds will be managed via a public mult
   - 3 workshops (recordings published)
   - Tutorial series published
 
----
+## 7) Budget request (140,000 USDC) with itemization
 
-## 7) Budget request (120,000 USDC) with itemization
-
-**Total requested:** **120,000 USDC**  
+**Total requested:** **140,000 USDC**  
 **Rationale:** stablecoin budgeting reduces volatility and makes costs predictable. Funds are requested via Asset Hub in USDC.
 
-### 7.1 Breakdown
+Breakdown:
 
-- **Engineering (3 engineers, part-time, 14 weeks): 78,000 USDC**
+- **Engineering (1 full-time engineer, 1 part-time engineer, 24 weeks): 78,000 USDC**
   - Indexer/reorg + validation + SDK + CI/release engineering
 - **Infrastructure (nodes, storage, monitoring, CI runners): 8,000 USDC**
 - **Security review (independent): 18,000 USDC**
   - Focus: validation correctness, indexer assumptions, key handling, adversarial inputs
-- **Documentation + developer relations + workshops: 10,000 USDC**
+- **Documentation + developer relations + workshops + events: 30,000 USDC**
 - **Contingency (unspent returned to Treasury): 6,000 USDC**
-
-### 7.2 Staged funding amounts (recommended)
-
-- **Milestone 1:** 45,000 USDC  
-- **Milestone 2:** 40,000 USDC  
-- **Milestone 3:** 35,000 USDC  
-
----
 
 ## 8) Accountability, reporting, and controls
 
 ### 8.1 Public reporting
 
-- Weekly progress updates on Polkassembly/Subsquare plus GitHub links
+- Weekly progress updates on Polkassembly, plus GitHub links and on the LAOS blog
 - Public dashboard: milestones, commits, releases, tests, open issues
 - “Scope lock” snapshot at referendum start:
   - Git tag / commit hash
@@ -227,48 +209,14 @@ If the community prefers a single spend, funds will be managed via a public mult
 Funds to be sent to:
 - **Polkadot Asset Hub address (USDC):** `[TO BE FILLED]`
 
-Controlled by a **public multisig** (X-of-Y), with signers:
-- 2 core project leads
-- 1 independent community signer (reputable, non-team)
-- (Optional) observer role for auditor/community member (non-signing)
+Controlled by a **multisig** (3-of-5), with signers:
+- 4 core project members
+- 1 independent LAOS board member (reputable, non-team)
 
 ### 8.3 Return-of-unspent commitment
 
 - Any unspent funds will be returned to the Treasury within **30 days** of completion.
 - A public final accounting report will be published.
-
-### 8.4 “Value back to Treasury” (non-binding inside spend proposal)
-
-This project is open-source infrastructure; the primary value is:
-- Increased coretime demand
-- Ecosystem expansion and developer inflow
-- Reusable tooling for parachains and dApps
-
-If optional paid services are offered later (e.g., hosted indexing API), a separate OpenGov process will be proposed to define any voluntary Treasury contribution model rather than embedding “handshake promises” here.
-
----
-
-## 9) Risk management
-
-### 9.1 Reorg / consensus risk
-
-- Configurable reorg depth (tested target: 200 blocks)
-- Deterministic rollback + replay
-- Snapshot/catch-up and backfill pipelines
-
-### 9.2 Fee spikes / Bitcoin volatility
-
-- Adaptive fee estimation
-- Batched commitments where applicable
-- Optional delayed submission modes for fee-sensitive applications
-
-### 9.3 Security
-
-- Independent review focused on correctness and adversarial inputs
-- Responsible disclosure policy
-- Clear remediation and post-mortem process (if needed)
-
----
 
 ## 10) KPIs (measurable, time-bound)
 
@@ -279,14 +227,12 @@ If optional paid services are offered later (e.g., hosted indexing API), a separ
 - SDK released + reference dApp demonstrating end-to-end flow
 - Mainnet readiness checklist completed and published
 
-### 10.2 Ecosystem KPIs (within 60 days post-release)
+### 10.2 Ecosystem KPIs (within 120 days post-release)
 
 - 2 parachain or Polkadot teams prototyping SDK usage
 - 2 external users running the indexer (self-hosted)
 - 3 workshops delivered; recordings published
 - 4 technical posts + tutorial series published
-
----
 
 ## 11) Conclusion
 
@@ -298,12 +244,20 @@ It is designed to be easy to evaluate:
 - Transparent reporting and controls
 - Fully open-source deliverables
 
----
+## Appendices
 
-## Appendices (to be completed before posting)
+**Appendix A:** References
 
-- **Appendix A:** Repositories + licenses + scope-lock tag/hash + IPFS hash  
-- **Appendix B:** Team bios + roles + time allocation  
-- **Appendix C:** Security reviewer candidates / quote / scope  
-- **Appendix D:** Architecture diagram + data flow  
-- **Appendix E:** Partner signals (may be anonymized if NDA)
+- [LAOS parachain](https://laosnetwork.io)
+- [BRC-721 research/spec](https://eprint.iacr.org/2025/641).
+- [Introduction to BRC-721 video]()
+- [Current technical implementation video]()
+- [Text walkthough/demo]()
+- [Open ChatGPT Explainer]()
+
+**Appendix B:** Team
+
+- [Alessandro Siniscalchi](https://www.linkedin.com/in/asiniscalchi/)
+- [Dr. Toni Mateos](https://www.linkedin.com/in/toni--mateos/)
+- [Dr. Alun Evans](https://www.linkedin.com/in/alun-evans/)  
+
