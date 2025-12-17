@@ -21,15 +21,15 @@ All deliverables will continue to be **fully open-source**.
 **Current Status**
 
 The technical implementation of BRC-721 has been started by the LAOS team and is currently at 70% completion. 
-We have prepared videos, documents, and AI-assistants to demonstrate the current status of development:
 
-- [Introduction to BRC-721 video]()
-- [Current technical implementation video]()
-- [Open ChatGPT Explainer](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
 The team has created a walkthrough video, explaining the basics of BRC-721, and showing the current status of the technical implementation. It can be viewed here: [https://www.youtube.com/watch?v=1Yt_LHAr8z0](https://www.youtube.com/watch?v=1Yt_LHAr8z0)
 
 [![LAOS Technical Demo](https://spaces.gorengine.com/laos/demo50.jpg)](https://www.youtube.com/watch?v=1Yt_LHAr8z0)
+
+We have also created a ChatGPT agent that can answer any questions about BRC-721. Please see it here: [https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
+
+[![LAOS ChatGPT](https://spaces.gorengine.com/laos/chatdemo.jpg)](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
 ## 2) Benefits for the Polkadot ecosystem
 
