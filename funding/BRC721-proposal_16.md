@@ -1,6 +1,6 @@
 # Bitcoin + Polkadot: Completing the BRC-721 Integration to Scale Bitcoin NFTs via Polkadot Coretime
 
-Requested amount: **122,000 USDC** (from Polkadot Treasury via Asset Hub)
+Requested amount: **122,000 USDC**
 
 Purpose: Complete the open-source BRC-721 integration stack so Bitcoin-native NFTs can scale using Polkadot(via LAOS + coretime) as the deterministic computation, validation, and metadata layer.
 
