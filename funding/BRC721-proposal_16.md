@@ -18,7 +18,7 @@ The result is an ecosystem primitive that makes Bitcoin NFT and RWA-style assets
 - Verifiable rules and provenance
 - Application-grade indexing and developer UX
 
-All deliverables will be **fully open-source**.
+All deliverables will continue to be **fully open-source**.
 
 **Current Status**
 
@@ -77,7 +77,6 @@ All work is released under permissive licenses with reproducible builds and publ
 This is infrastructure that benefits the ecosystem broadly, not just one product. Treasury is the appropriate mechanism to fund:
 - Open-source protocol integrations
 - Developer tooling and reference implementations
-- Security review work that raises ecosystem trust
 
 ## 3) Why Polkadot? Why now?
 
@@ -107,10 +106,9 @@ The technical implementation of BRC-721 has been started by the LAOS team and is
   - Taproot-related logic (as required by the protocol)
   - Collection logic
   - Early tooling
-- [Introduction to BRC-721 video]()
-- [Current technical implementation video]()
-- [Text walkthough/demo]()
-- [Open ChatGPT Explainer]()
+- [Current technical implementation video](https://youtu.be/1Yt_LHAr8z0)
+- [Text walkthough/demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d)
+- [Open ChatGPT Explainer](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
 ## 5) What this proposal delivers
 
@@ -119,7 +117,7 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 ### 5.1 Core Deliverables
 
 1) **Bitcoin ↔ LAOS dual-chain indexer (production-grade)**
-- Reorg handling up to configurable depth (target tested: 200 blocks)
+- Reorg handling up to configurable depth
 - Deterministic rollback and replay
 - Exportable event stream / database schema
 
@@ -161,7 +159,7 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
   - Release instructions
   - Operator documentation
 
-### Milestone 2 (Weeks 9–16): Full validation + SDK packaging
+### Milestone 2 (Weeks 9–14): Full validation + SDK packaging
 
 **Criteria**
 - Protocol rule coverage documented and complete
@@ -169,28 +167,24 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 - SDK packaged and released with example integration project
 - Reference dApp alpha available on a public test environment
 
-### Milestone 3 (Weeks 16–24): Security review + mainnet readiness
+### Milestone 3 (Weeks 16–20): Mainnet readiness
 
 **Acceptance criteria**
-- Independent security review completed (scope defined in Section 9)
-- Findings triaged and remediated or explicitly accepted with rationale
 - Mainnet readiness checklist completed and published
 - Adoption outputs delivered:
   - 3 workshops (recordings published)
   - Tutorial series published
+  - Presentation at relevant conference/event
 
-## 7) Budget request (140,000 USDC) with itemization
+## 7) Budget request (122,000 USDC) with itemization
 
-**Total requested:** **140,000 USDC**  
-**Rationale:** stablecoin budgeting reduces volatility and makes costs predictable. Funds are requested via Asset Hub in USDC.
+**Total requested:** **122,000 USDC**  
 
 Breakdown:
 
-- **Engineering (1 full-time engineer, 1 part-time engineer, 24 weeks): 78,000 USDC**
+- **Engineering (1 full-time engineer, 1 part-time engineer, 20 weeks): 78,000 USDC**
   - Indexer/reorg + validation + SDK + CI/release engineering
 - **Infrastructure (nodes, storage, monitoring, CI runners): 8,000 USDC**
-- **Security review (independent): 18,000 USDC**
-  - Focus: validation correctness, indexer assumptions, key handling, adversarial inputs
 - **Documentation + developer relations + workshops + events: 30,000 USDC**
 - **Contingency (unspent returned to Treasury): 6,000 USDC**
 
@@ -198,22 +192,13 @@ Breakdown:
 
 ### 8.1 Public reporting
 
-- Weekly progress updates on Polkassembly, plus GitHub links and on the LAOS blog
+- Weekly progress updates on Polkassembly, plus GitHub links and on the LAOS Medium blog
 - Public dashboard: milestones, commits, releases, tests, open issues
 - “Scope lock” snapshot at referendum start:
   - Git tag / commit hash
   - IPFS hash of the scope and budget document
 
-### 8.2 Recipient and fund controls
-
-Funds to be sent to:
-- **Polkadot Asset Hub address (USDC):** `[TO BE FILLED]`
-
-Controlled by a **multisig** (3-of-5), with signers:
-- 4 core project members
-- 1 independent LAOS board member (reputable, non-team)
-
-### 8.3 Return-of-unspent commitment
+### 8.2 Return-of-unspent commitment
 
 - Any unspent funds will be returned to the Treasury within **30 days** of completion.
 - A public final accounting report will be published.
@@ -246,18 +231,37 @@ It is designed to be easy to evaluate:
 
 ## Appendices
 
-**Appendix A:** References
+#### Appendix A: References
 
 - [LAOS parachain](https://laosnetwork.io)
 - [BRC-721 research/spec](https://eprint.iacr.org/2025/641).
-- [Introduction to BRC-721 video]()
-- [Current technical implementation video]()
-- [Text walkthough/demo]()
-- [Open ChatGPT Explainer]()
+- [Introduction to BRC-721 video (AI)](https://youtu.be/vUzTmcARSQI)
+- [Current technical implementation video](https://youtu.be/1Yt_LHAr8z0)
+- [Text walkthough/demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d)
+- [Open ChatGPT Explainer](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
-**Appendix B:** Team
+#### Appendix B: Team Bios
 
-- [Alessandro Siniscalchi](https://www.linkedin.com/in/asiniscalchi/)
-- [Dr. Toni Mateos](https://www.linkedin.com/in/toni--mateos/)
-- [Dr. Alun Evans](https://www.linkedin.com/in/alun-evans/)  
+#### Dr. Toni Mateos
+
+[LinkedIn](https://www.linkedin.com/in/toni--mateos/)
+Dr. Toni Mateos leads research at LAOS Network. He was recently awarded an Oscar for Scientific & Technological Achievements from the Academy of Motion Picture Arts and Sciences, as co-creator of Dolby Atmos, from research to product, a tech that has reached ~1Bn users in 90+ countries. 
+
+He was Director of Research at Dolby Laboratories for 7 years. In 2019, he left Dolby to co-found Freeverse, a blockchain R&D company, with the vision of using blockchain technology to bring digital ownership to the mainstream.
+
+Toni holds a degree in Quantum Gravity (U. Barcelona), a PhD in Mathematical Physics (String Theory, Imperial College London), a Postgrad in Blockchain Technologies (Polytechnic University of Catalonia), has 17 years of experience leading R&D teams in the entertainment tech industry, and is author of 30+ patents in various technological fields. 
+
+#### Alessandro Siniscalchi
+
+[LinkedIn](https://www.linkedin.com/in/asiniscalchi/)
+Alessandro is the Lead Engineer at LAOS Network, bringing over 20 years of experience deploying mission-critical systems across domains including blockchain, industrial control for space observatories, military avionics, cinema sound, and audio signal processing. He is highly experienced in system design, software quality, and agile development practices.
+
+Alessandro became a Polkadot protocol developer in 2022 after graduating from the inaugural Polkadot Blockchain Academy and has been a key contributor to the Polkadot ecosystem ever since.
+
+#### Dr. Alun Evans
+
+[LinkedIn](https://www.linkedin.com/in/alun-evans/)  
+Dr. Alun Evans has over 20 years of experience in the tech industry for entertainment. Alun has a passion for building teams with a strong collaborative culture, that are focused on creating products that solve genuine problems. Previously, he was CEO of Shar3d.io (collaborative 3D applications on the web), CTO of Bodypal.com (virtual garment and fitting service), and Director of Barcelona World Race - THE GAME, the first-ever video game that allowed players to compete in a simultaneous real-world sporting event.  Alun has a Ph.D. in Medical Physics from University College London.
+
+
 
