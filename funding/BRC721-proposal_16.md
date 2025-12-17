@@ -195,9 +195,6 @@ Breakdown:
 
 - Weekly progress updates on Polkassembly, plus GitHub links and on the LAOS Medium blog
 - Public dashboard: milestones, commits, releases, tests, open issues
-- “Scope lock” snapshot at referendum start:
-  - Git tag / commit hash
-  - IPFS hash of the scope and budget document
 
 ### 8.2 Return-of-unspent commitment
 
