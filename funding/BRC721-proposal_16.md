@@ -21,7 +21,7 @@ All deliverables will continue to be **fully open-source**.
 **Current Status**
 
 The technical implementation of BRC-721 has been started by the LAOS team and is currently at 70% completion. 
-We have prepared several videos, documents, and AI-assistants to demonstrate the current status of development:
+We have prepared videos, documents, and AI-assistants to demonstrate the current status of development:
 
 - [Introduction to BRC-721 video]()
 - [Current technical implementation video]()
