@@ -257,7 +257,7 @@ Alessandro became a Polkadot protocol developer in 2022 after graduating from th
 #### Dr. Alun Evans
 
 [LinkedIn](https://www.linkedin.com/in/alun-evans/)  
-Dr. Alun Evans has over 20 years of experience in the tech industry for entertainment. Alun has a passion for building teams with a strong collaborative culture, that are focused on creating products that solve genuine problems. Previously, he was CEO of Shar3d.io (collaborative 3D applications on the web), CTO of Bodypal.com (virtual garment and fitting service), and Director of Barcelona World Race - THE GAME, the first-ever video game that allowed players to compete in a simultaneous real-world sporting event.  Alun has a Ph.D. in Medical Physics from University College London.
+Dr. Alun Evans is a co-founder of LAOS Network, and has over 20 years of experience in the tech industry for entertainment. Alun has a passion for building teams with a strong collaborative culture, that are focused on creating products that solve genuine problems. Previously, he was CEO of Shar3d.io (collaborative 3D applications on the web), CTO of Bodypal.com (virtual garment and fitting service), and Director of Barcelona World Race - THE GAME, the first-ever video game that allowed players to compete in a simultaneous real-world sporting event.  Alun has a Ph.D. in Medical Physics from University College London.
 
 
 
