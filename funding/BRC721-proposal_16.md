@@ -241,6 +241,7 @@ It is designed to be easy to evaluate:
 #### Dr. Toni Mateos
 
 [LinkedIn](https://www.linkedin.com/in/toni--mateos/)
+
 Dr. Toni Mateos leads research at LAOS Network. He was recently awarded an Oscar for Scientific & Technological Achievements from the Academy of Motion Picture Arts and Sciences, as co-creator of Dolby Atmos, from research to product, a tech that has reached ~1Bn users in 90+ countries. 
 
 He was Director of Research at Dolby Laboratories for 7 years. In 2019, he left Dolby to co-found Freeverse, a blockchain R&D company, with the vision of using blockchain technology to bring digital ownership to the mainstream.
@@ -250,13 +251,15 @@ Toni holds a degree in Quantum Gravity (U. Barcelona), a PhD in Mathematical Phy
 #### Alessandro Siniscalchi
 
 [LinkedIn](https://www.linkedin.com/in/asiniscalchi/)
+
 Alessandro is the Lead Engineer at LAOS Network, bringing over 20 years of experience deploying mission-critical systems across domains including blockchain, industrial control for space observatories, military avionics, cinema sound, and audio signal processing. He is highly experienced in system design, software quality, and agile development practices.
 
 Alessandro became a Polkadot protocol developer in 2022 after graduating from the inaugural Polkadot Blockchain Academy and has been a key contributor to the Polkadot ecosystem ever since.
 
 #### Dr. Alun Evans
 
-[LinkedIn](https://www.linkedin.com/in/alun-evans/)  
+[LinkedIn](https://www.linkedin.com/in/alun-evans/)
+
 Dr. Alun Evans is a co-founder of LAOS Network, and has over 20 years of experience in the tech industry for entertainment. Alun has a passion for building teams with a strong collaborative culture, that are focused on creating products that solve genuine problems. Previously, he was CEO of Shar3d.io (collaborative 3D applications on the web), CTO of Bodypal.com (virtual garment and fitting service), and Director of Barcelona World Race - THE GAME, the first-ever video game that allowed players to compete in a simultaneous real-world sporting event.  Alun has a Ph.D. in Medical Physics from University College London.
 
 
