@@ -152,7 +152,6 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 
 ### Milestone 1 (Weeks 1–8): Indexer foundation + reorg engine
 
-**Criteria**
 - Reorg simulation harness passes up to **200 blocks**
 - Deterministic rollback verified (repeatable state from the same inputs)
 - Indexing latency target: **< 2 seconds** for new events under normal conditions
@@ -163,7 +162,6 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 
 ### Milestone 2 (Weeks 9–14): Full validation + SDK packaging
 
-**Criteria**
 - Protocol rule coverage documented and complete
 - Comprehensive test vectors published (including malformed/adversarial cases)
 - SDK packaged and released with example integration project
@@ -171,7 +169,6 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 
 ### Milestone 3 (Weeks 16–20): Mainnet readiness
 
-**Acceptance criteria**
 - Mainnet readiness checklist completed and published
 - Adoption outputs delivered:
   - 3 workshops (recordings published)
