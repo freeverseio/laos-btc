@@ -18,6 +18,8 @@ The result is an ecosystem primitive that makes Bitcoin NFT and RWA-style assets
 
 All deliverables will continue to be **fully open-source**.
 
+This proposal does not fund LAOS chain development. LAOS is already live and funded independently. Treasury funds only the BRC-721 integration, indexer, SDK, and Polkadot-facing tooling.
+
 **Current Status**
 
 The technical implementation of BRC-721 has been started by the LAOS team and is currently at 70% completion. 
@@ -39,9 +41,9 @@ Polkadot Treasury spending should create durable, compounding value for DOT hold
 
 BRC-721 uses Polkadot as the computation and metadata layer. As adoption grows, the indexer/validation workload and protocol usage create **ongoing demand for coretime** (directly or via chains/services that procure it), supporting the long-term economics of Polkadot.
 
-**Measurable signal:** post-launch, we will track coretime usage attributable to BRC-721 workloads and publish a  usages report (where measurable).
+**Measurable signal:** post-launch, we will track coretime usage attributable to BRC-721 workloads and publish a usage report (where measurable).
 
-### 2.2 A credible “Bitcoin interoperability” narrative with real builders
+### 2.2 Establishing Polkadot as a credible Bitcoin Interoperability layer for builders
 
 Bitcoin remains the largest liquidity network in crypto. BRC-721 gives Polkadot a *specific*, developer-usable wedge into Bitcoin:
 
@@ -94,13 +96,13 @@ Recent Bitcoin relay policy changes have increased default limits for certain da
 Polkadot (and coretime) is built for parallel execution and modular infrastructure. BRC-721 leverages this to:
 - Offload computation and deterministic validation to Polkadot
 - Maintain an on-chain canonical metadata/evolution layer
-- Provide developer-grade UX via SDKs, indexers, and reference integrations
+- Provide production-ready UX via SDKs, indexers, and reference integrations
 
 ## 4) What already exists
 
 The technical implementation of BRC-721 has been started by the LAOS team and is currently at 70% completion. 
 
-- [LAOS parachain](https://laosnetwork.io) is live, stable, and in production. LAOS's Bridgeless Minting allows NFTs to minted on any EVM chain, while spending only gas in LAOS. The solution greatly scales NFT minting and is already being used by several web3 games.
+- [LAOS parachain](https://laosnetwork.io) is live, stable, and in production. LAOS's Bridgeless Minting allows NFTs to be minted on any EVM chain, while spending only gas in LAOS. The solution greatly scales NFT minting and is already being used by several web3 games.
 - [BRC-721 research/spec](https://eprint.iacr.org/2025/641) exists publicly.
 - Core primitives already implemented:
   - UTXO parsing
@@ -108,7 +110,7 @@ The technical implementation of BRC-721 has been started by the LAOS team and is
   - Collection logic
   - Early tooling
 - [Current technical implementation video](https://youtu.be/1Yt_LHAr8z0)
-- [Text walkthough/demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d)
+- [Text walkthrough/demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d)
 - [Open ChatGPT Explainer](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
 ## 5) What this proposal delivers
