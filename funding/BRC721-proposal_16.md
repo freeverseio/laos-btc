@@ -143,6 +143,7 @@ All deliverables will be released under **MIT or Apache-2.0** (final list in App
 
 - 3 workshops targeting Bitcoin developers
 - Tutorials and technical write-ups
+- Presentation at relevant conference/event
 - Office hours for early integrators
 
 ## 6) Execution plan and milestones
