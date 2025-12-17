@@ -85,6 +85,8 @@ This is infrastructure that benefits the ecosystem broadly, not just one product
 
 ### 3.1 Bitcoin policy changes do not remove NFT/RWA constraints
 
+BRC-721 is not only designed to compete with Ordinals-style collectibles or speculative Bitcoin NFTs; it also targets application-grade assets such as RWAs, gaming items, naming systems, and other high-volume use cases that require deterministic ownership, scalable metadata, and long-term evolution.
+
 Recent Bitcoin relay policy changes have increased default limits for certain data-carrying outputs, but Bitcoin still does not provide:
 - General-purpose computation for NFT/RWA logic
 - A rich, canonical metadata layer
