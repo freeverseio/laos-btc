@@ -30,9 +30,9 @@ Polkadot Treasury spending should create durable, compounding value for DOT hold
 
 BRC-721 uses Polkadot as the computation and metadata layer. As adoption grows, the indexer/validation workload and protocol usage create **ongoing demand for coretime** (directly or via chains/services that procure it), supporting the long-term economics of Polkadot.
 
-**Measurable signal:** post-launch, we will track coretime usage attributable to BRC-721 workloads and publish a  usages report (where measurable).
+**Measurable signal:** post-launch, we will track coretime usage attributable to BRC-721 workloads and publish a usage report (where measurable).
 
-### 2.2 A credible “Bitcoin interoperability” narrative with real builders
+### 2.2 Establishing Polkadot as a credible Bitcoin Interoperability layer for builders
 
 Bitcoin remains the largest liquidity network in crypto. BRC-721 gives Polkadot a *specific*, developer-usable wedge into Bitcoin:
 - Not “bridging marketing,” but actual tooling and infrastructure developers can use.
@@ -86,13 +86,13 @@ Recent Bitcoin relay policy changes have increased default limits for certain da
 Polkadot (and coretime) is built for parallel execution and modular infrastructure. BRC-721 leverages this to:
 - Offload computation and deterministic validation to Polkadot
 - Maintain an on-chain canonical metadata/evolution layer
-- Provide developer-grade UX via SDKs, indexers, and reference integrations
+- Provide production-ready UX via SDKs, indexers, and reference integrations
 
 ---
 
 ## 4) What already exists (de-risking)
 
-- **LAOS parachain** is live, stable, and in production. LAOS's Bridgeless Minting allows NFTs to minted on any EVM chain, while spending only gas in LAOS. The solution greatly scales NFT minting and is already being used by several web3 games.
+- **LAOS parachain** is live, stable, and in production. LAOS's Bridgeless Minting allows NFTs to be minted on any EVM chain, while spending only gas in LAOS. The solution greatly scales NFT minting and is already being used by several web3 games.
 - **BRC-721 research/spec** exists publicly.
 - Core primitives already implemented:
   - UTXO parsing
