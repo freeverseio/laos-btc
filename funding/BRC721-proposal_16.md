@@ -1,8 +1,6 @@
 # Bitcoin + Polkadot: Completing the BRC-721 Integration to Scale Bitcoin NFTs via Polkadot Coretime
 
-Referendum type: Treasury Spend (Medium Spender)
-
-Requested amount: **140,000 USDC** (from Polkadot Treasury via Asset Hub)
+Requested amount: **122,000 USDC** (from Polkadot Treasury via Asset Hub)
 
 Purpose: Complete the open-source BRC-721 integration stack so Bitcoin-native NFTs can scale using Polkadot(via LAOS + coretime) as the deterministic computation, validation, and metadata layer.
 
@@ -27,8 +25,11 @@ We have prepared several videos, documents, and AI-assistants to demonstrate the
 
 - [Introduction to BRC-721 video]()
 - [Current technical implementation video]()
-- [Text walkthough/demo]()
-- [Open ChatGPT Explainer]()
+- [Open ChatGPT Explainer](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
+
+The team has created a walkthrough video, explaining the basics of BRC-721, and showing the current status of the technical implementation. It can be viewed here: [https://www.youtube.com/watch?v=1Yt_LHAr8z0](https://www.youtube.com/watch?v=1Yt_LHAr8z0)
+
+[![LAOS Technical Demo](https://spaces.gorengine.com/laos/demo50.jpg)](https://www.youtube.com/watch?v=1Yt_LHAr8z0)
 
 ## 2) Benefits for the Polkadot ecosystem
 
@@ -231,7 +232,7 @@ It is designed to be easy to evaluate:
 
 ## Appendices
 
-#### Appendix A: References
+### Appendix A: References
 
 - [LAOS parachain](https://laosnetwork.io)
 - [BRC-721 research/spec](https://eprint.iacr.org/2025/641).
@@ -240,7 +241,7 @@ It is designed to be easy to evaluate:
 - [Text walkthough/demo](https://medium.com/laosnetwork/bitcoin-demo-of-the-new-brc-721-protocol-87e33e26321d)
 - [Open ChatGPT Explainer](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
-#### Appendix B: Team Bios
+### Appendix B: Team Bios
 
 #### Dr. Toni Mateos
 
