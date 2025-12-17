@@ -20,6 +20,8 @@ The result is an ecosystem primitive that makes Bitcoin NFT and RWA-style assets
 
 All deliverables will continue to be **fully open-source**.
 
+This proposal does not fund LAOS chain development. LAOS is already live and funded independently. Treasury funds only the BRC-721 integration, indexer, SDK, and Polkadot-facing tooling.
+
 ---
 
 ## 2) Benefits for the Polkadot ecosystem
