@@ -29,7 +29,7 @@ The team has created a walkthrough video, explaining the basics of BRC-721, and 
 
 We have also created a ChatGPT agent that can answer any questions about BRC-721. Please see it here: [https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
-[![LAOS ChatGPT](https://spaces.gorengine.com/laos/chatdemo50.jpg)](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
+[![LAOS ChatGPT](https://spaces.gorengine.com/laos/chatdemo50.jpeg)](https://chatgpt.com/g/g-6935d265a9bc8191b00c390933e5d73c-brc721-guru)
 
 ## 2) Benefits for the Polkadot ecosystem
 
