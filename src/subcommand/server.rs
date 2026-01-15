@@ -21,12 +21,12 @@ use self::{
 };
 use super::*;
 use crate::templates::{
-	AddressHtml, BlockHtml, BlocksHtml, Brc721CollectionsHtml, ChildrenHtml, ClockSvg,
-	CollectionsHtml, HomeHtml, InputHtml, InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml,
-	OutputHtml, PageContent, PageHtml, ParentsHtml, PreviewAudioHtml, PreviewCodeHtml,
-	PreviewFontHtml, PreviewImageHtml, PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml,
-	PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RareTxt, RuneHtml, RuneNotFoundHtml,
-	RunesHtml, SatHtml, TransactionHtml,
+	AddressHtml, BlockHtml, BlocksHtml, Brc721CollectionsHtml, Brc721TokenHtml, ChildrenHtml,
+	ClockSvg, CollectionsHtml, HomeHtml, InputHtml, InscriptionHtml, InscriptionsBlockHtml,
+	InscriptionsHtml, OutputHtml, PageContent, PageHtml, ParentsHtml, PreviewAudioHtml,
+	PreviewCodeHtml, PreviewFontHtml, PreviewImageHtml, PreviewMarkdownHtml, PreviewModelHtml,
+	PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RareTxt, RuneHtml,
+	RuneNotFoundHtml, RunesHtml, SatHtml, TransactionHtml,
 };
 use axum::{
 	body,
@@ -38,6 +38,7 @@ use axum::{
 };
 use axum_server::Handle;
 use brotli::Decompressor;
+use ordinals::TokenId;
 use rust_embed::RustEmbed;
 use rustls_acme::{
 	acme::{LETS_ENCRYPT_PRODUCTION_DIRECTORY, LETS_ENCRYPT_STAGING_DIRECTORY},
@@ -45,6 +46,7 @@ use rustls_acme::{
 	caches::DirCache,
 	AcmeConfig,
 };
+use sp_core::U256;
 use std::{str, sync::Arc};
 use tokio_stream::StreamExt;
 use tower_http::{
@@ -61,6 +63,8 @@ mod accept_json;
 mod error;
 pub mod query;
 mod server_config;
+
+const UNEXISTING_COLLECTION: &str = "unexisting collection";
 
 enum SpawnConfig {
 	Https(AxumAcceptor),
@@ -260,6 +264,7 @@ impl Server {
 				.route("/update", get(Self::update))
 				.route("/brc721/collections", get(Self::brc721_collections))
 				.route("/brc721/collection/:collection_id", get(Self::brc721_collection))
+				.route("/brc721/collection/:collection_id/token/:token_id", get(Self::brc721_token))
 				.fallback(Self::fallback)
 				.layer(Extension(index))
 				.layer(Extension(server_config.clone()))
@@ -1899,12 +1904,35 @@ impl Server {
 		// If the collection does not exist, return a `NotFound` error.
 		let collection = index
 			.get_brc721_collection_by_id(collection_id)?
-			.ok_or_else(|| ServerError::NotFound("unexistent collection".to_string()))?;
+			.ok_or_else(|| ServerError::NotFound(UNEXISTING_COLLECTION.to_string()))?;
 
 		let response_data = serde_json::to_value(collection).unwrap();
 
 		// Return the JSON response as an HTTP response.
 		Ok(Json(response_data).into_response())
+	}
+
+	async fn brc721_token(
+		Extension(server_config): Extension<Arc<ServerConfig>>,
+		Extension(index): Extension<Arc<Index>>,
+		Path((collection_id, token_id)): Path<(Brc721CollectionId, String)>,
+		AcceptJson(accept_json): AcceptJson,
+	) -> ServerResult {
+		// check if token_id is a valid number
+		let num = U256::from_dec_str(&token_id)
+			.map_err(|_| ServerError::BadRequest("token_id is not a valid number".to_string()))?;
+
+		let token_id = TokenId::from(num);
+
+		let entry = index
+			.get_brc721_token_ownership(collection_id, token_id)?
+			.ok_or_else(|| ServerError::NotFound(UNEXISTING_COLLECTION.to_string()))?;
+
+		Ok(if accept_json {
+			Json(Brc721TokenHtml { entry }).into_response()
+		} else {
+			Brc721TokenHtml { entry }.page(server_config).into_response()
+		})
 	}
 
 	async fn inscriptions_paginated(
@@ -2099,8 +2127,13 @@ impl Server {
 
 #[cfg(test)]
 mod tests {
+	use crate::templates::Brc721TokenHtml;
+
 	use super::*;
-	use ordinals::RegisterCollection;
+	use ordinals::{
+		brc721::token::Brc721Output, RegisterCollection, RegisterOwnership, Slot, SlotsBundle,
+		TokenId,
+	};
 	use reqwest::Url;
 	use serde::de::DeserializeOwned;
 	use sp_core::H160;
@@ -6932,6 +6965,132 @@ next
 	}
 
 	#[test]
+	fn brc721_no_token() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+		server.assert_response(
+			"/brc721/collection/1:1/token/1234",
+			StatusCode::NOT_FOUND,
+			UNEXISTING_COLLECTION,
+		);
+	}
+
+	#[test]
+	fn brc721_malformed_token_id() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+		server.assert_response(
+			"/brc721/collection/1:1/token/absolutelynobrownm&ms",
+			StatusCode::BAD_REQUEST,
+			"token_id is not a valid number",
+		);
+	}
+
+	#[test]
+	fn brc721_not_registered_token() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.as_script()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		let ro = RegisterOwnership {
+			collection_id: Brc721CollectionId { block: 2, tx: 1 },
+			slots_bundles: vec![SlotsBundle(vec![(0..=3)])],
+		};
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[(1, 0, 0, Default::default())],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(ro.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		server.assert_html(
+			"/brc721/collection/2:1/token/1234",
+			Brc721TokenHtml {
+				entry: Brc721TokenOwnership::InitialOwner(
+					H160::from_str("00000000000000000000000000000000000004d2").unwrap(),
+				),
+			},
+		);
+	}
+
+	#[test]
+	fn brc721_registered_token() {
+		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
+
+		server.mine_blocks(1);
+
+		let rc = RegisterCollection { ..Default::default() };
+
+		let _ = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(rc.as_script()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		let ro = RegisterOwnership {
+			collection_id: Brc721CollectionId { block: 2, tx: 1 },
+			slots_bundles: vec![SlotsBundle(vec![(0..=3)])],
+		};
+
+		let pubkey_hex = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+		let pubkey_bytes = hex::decode(pubkey_hex).unwrap();
+		let signature = vec![0x30, 0x45, 0x02, 0x21];
+
+		let txid = server.core.broadcast_tx(TransactionTemplate {
+			inputs: &[(1, 0, 0, vec![signature, pubkey_bytes.clone()].into())],
+			outputs: 1,
+			op_return_index: Some(0),
+			op_return_value: Some(0),
+			op_return: Some(ro.into()),
+			..default()
+		});
+
+		server.mine_blocks(1);
+
+		let expected_token_id = TokenId::from((
+			Slot::try_from(3).unwrap(),
+			H160::from_str("422dd7fc22339593e95681d096b2399cd4be9df2").unwrap(),
+		));
+
+		let expected_token_id_as_u256 = U256::from(expected_token_id);
+
+		server.assert_html(
+			format!("/brc721/collection/2:1/token/{expected_token_id_as_u256}"),
+			Brc721TokenHtml {
+				entry: Brc721TokenOwnership::NftId(Brc721Output {
+					outpoint: OutPoint { txid, vout: 1 },
+					nft_idx: 3,
+				}),
+			},
+		);
+	}
+
+	#[test]
 	fn brc721_no_collections_html() {
 		let server = TestServer::builder().chain(Chain::Regtest).index_brc721().build();
 
@@ -7065,7 +7224,7 @@ next
 		server.assert_response(
 			"/brc721/collection/1020:1",
 			StatusCode::NOT_FOUND,
-			"unexistent collection",
+			UNEXISTING_COLLECTION,
 		);
 	}
 

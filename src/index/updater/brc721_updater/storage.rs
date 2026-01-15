@@ -1,0 +1,204 @@
+use redb::{Key, StorageError, Value};
+
+use super::{Brc721CollectionId, RangeData, TokenIdRange};
+
+pub type Result = redb::Result;
+
+//define_table {
+//	($name:ident, $key:ty, $value:ty) => {
+//		const $name: TableDefinition<$key, $value> = TableDefinition::new(stringify!($name));
+//	};
+//}
+
+//define_table! { BRC721_COLLECTION_ID_TO_TOKEN_RANGES, Brc721CollectionId, Vec<TokenIdRange> }
+//
+
+const COLLECTION_ID_TO_TOKEN_ID_RANGES: redb::TableDefinition<
+	Brc721CollectionId,
+	Vec<TokenIdRange>,
+> = redb::TableDefinition::new("BRC721_COLLECTION_ID_TO_TOKEN_ID_RANGES");
+
+const TOKEN_ID_RANGES_TO_RANGE_DATA: redb::TableDefinition<TokenIdRange, RangeData> =
+	redb::TableDefinition::new("BRC721_TOKEN_ID_RANGE_TO_RANGE_DATA");
+
+pub trait Table<K, V> {
+	fn insert(&mut self, key: &K, value: V) -> Result;
+	fn get(&self, key: &K) -> Option<V>;
+}
+
+pub struct Storage<T0, T1>
+where
+	T0: Table<Brc721CollectionId, Vec<TokenIdRange>>,
+	T1: Table<TokenIdRange, RangeData>,
+{
+	collection_id_to_token_id_range: T0,
+	token_id_range_to_range_data: T1,
+}
+
+impl<T0: Table<Brc721CollectionId, Vec<TokenIdRange>>, T1: Table<TokenIdRange, RangeData>>
+	Storage<T0, T1>
+{
+	pub fn new(t0: T0, t1: T1) -> Self {
+		Storage { collection_id_to_token_id_range: t0, token_id_range_to_range_data: t1 }
+	}
+
+	fn add_range(&mut self, collection_id: &Brc721CollectionId, range: TokenIdRange) -> Result {
+		let mut ranges =
+			self.collection_id_to_token_id_range.get(collection_id).unwrap_or_else(Vec::new);
+
+		// Check for intersection with existing ranges.  Return an error if an intersection exists.
+		for existing_range in &ranges {
+			if existing_range.overlaps(&range) {
+				return Err(StorageError::PreviousIo); // TODO create a proper error
+			}
+		}
+
+		ranges.push(range.clone());
+
+		let range_data = RangeData {};
+
+		self.token_id_range_to_range_data.insert(&range, range_data)?;
+		self.collection_id_to_token_id_range.insert(collection_id, ranges)
+	}
+
+	fn get_ranges(&self, collection_id: &Brc721CollectionId) -> Option<Vec<TokenIdRange>> {
+		self.collection_id_to_token_id_range.get(collection_id)
+	}
+
+	fn get_data(&self, range: &TokenIdRange) -> Option<RangeData> {
+		self.token_id_range_to_range_data.get(range)
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::{super::mock, *};
+	use sp_core::H160;
+
+	fn create_storage() -> Storage<mock::CollectionIdToTokenIdsRange, mock::TokenIdsRangeToData> {
+		Storage {
+			collection_id_to_token_id_range: mock::CollectionIdToTokenIdsRange::new(),
+			token_id_range_to_range_data: mock::TokenIdsRangeToData::new(),
+		}
+	}
+
+	#[test]
+	fn get_registered_ranges_of_unexistent_collection_should_return_none() {
+		let storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+		assert!(storage.get_ranges(&collection_id).is_none());
+	}
+
+	#[test]
+	fn add_token_range_of_unexistent_collection() {
+		let mut storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		let range =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range).is_ok());
+
+		let result = storage.get_ranges(&collection_id).unwrap();
+		assert_eq!(result.len(), 1);
+	}
+
+	#[test]
+	fn add_token_range_to_existing_collection() {
+		let mut storage = create_storage();
+
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add first range
+		let range1 =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range1.clone()).is_ok());
+
+		// Add second range to the same collection
+		let range2 =
+			TokenIdRange::new(5.try_into().unwrap(), 6.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range2.clone()).is_ok());
+
+		// Verify both ranges are stored
+		let result = storage.get_ranges(&collection_id).unwrap();
+		assert_eq!(result.len(), 2);
+
+		// Verify the ranges are stored in the correct order
+		assert_eq!(result[0], range1);
+		assert_eq!(result[1], range2);
+	}
+
+	#[test]
+	fn add_token_range_with_already_registered_tokens() {
+		let mut storage = create_storage();
+
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add first range
+		let range1 =
+			TokenIdRange::new(3.try_into().unwrap(), 8.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range1.clone()).is_ok());
+
+		// Add second range to the same collection
+		let range2 =
+			TokenIdRange::new(8.try_into().unwrap(), 9.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range2.clone()).is_err());
+
+		let result = storage.get_ranges(&collection_id).unwrap();
+		assert_eq!(result.len(), 1);
+
+		assert_eq!(result[0], range1);
+	}
+
+	#[test]
+	fn get_data_for_existing_range_should_return_data() {
+		let mut storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add a range
+		let range =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range.clone()).is_ok());
+
+		// Verify we can get the data for this range
+		let data = storage.get_data(&range);
+		assert!(data.is_some());
+	}
+
+	#[test]
+	fn get_data_for_nonexistent_range_should_return_none() {
+		let storage = create_storage();
+
+		// Create a range that hasn't been added to storage
+		let range =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+
+		// Verify get_data returns None for this range
+		let data = storage.get_data(&range);
+		assert!(data.is_none());
+	}
+
+	#[test]
+	fn get_data_after_adding_multiple_ranges() {
+		let mut storage = create_storage();
+		let collection_id = Brc721CollectionId { block: 1, tx: 2 };
+
+		// Add first range
+		let range1 =
+			TokenIdRange::new(3.try_into().unwrap(), 4.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range1.clone()).is_ok());
+
+		// Add second range
+		let range2 =
+			TokenIdRange::new(5.try_into().unwrap(), 6.try_into().unwrap(), H160::default());
+		assert!(storage.add_range(&collection_id, range2.clone()).is_ok());
+
+		// Verify we can get data for both ranges
+		assert!(storage.get_data(&range1).is_some());
+		assert!(storage.get_data(&range2).is_some());
+
+		// Create a range that hasn't been added
+		let range3 =
+			TokenIdRange::new(7.try_into().unwrap(), 8.try_into().unwrap(), H160::default());
+		assert!(storage.get_data(&range3).is_none());
+	}
+}

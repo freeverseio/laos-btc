@@ -8,6 +8,9 @@ pub enum AddressMappingError {
 	/// Invalid address error
 	#[error("Invalid BTC address: `{0}`. Only P2PKH and P2WPKH supported.")]
 	InvalidAddress(Address),
+
+	#[error("Invalid TxIn. Only P2PKH and P2WPKH supported.")]
+	InvalidInput,
 }
 
 pub fn btc_address_to_h160(address: Address) -> Result<H160, AddressMappingError> {
